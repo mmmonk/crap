@@ -32,8 +32,8 @@ if ( fork ) {
 		syswrite STDOUT, $data, $bytes_read;
 	}
 } else {
-#	my $cmd="connect $host:$port HTTP/1.0\nHOST $host:$port\n\n";
-	my $cmd="testssh\n";
+	my $cmd="connect $host:$port HTTP/1.0\nHOST $host:$port\n\n";
+#	my $cmd="testssh\n";
 	syswrite $sock, $cmd, length($cmd);
 	while ( 1 ) {
 		my $data;

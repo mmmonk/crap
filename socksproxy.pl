@@ -1,24 +1,29 @@
 #!/usr/bin/perl
 
-# Author: Marek Lukaszuk <m.lukaszuk<at>gmail.com>
-# Copyright (c) 2008, Marek £ukaszuk 
-# BSD License at http://monkey.geeks.pl/bsd/
+### Author: Marek Lukaszuk <m.lukaszuk<at>gmail.com>
+### Copyright (c) 2008, Marek £ukaszuk 
+### BSD License at http://monkey.geeks.pl/bsd/
+
+### http://en.wikipedia.org/wiki/SOCKS
 
 use warnings;
 use strict;
 use Socket;
 use threads('stack_size' => 16384);
 
-my $SOCKS;
-
 my $pserver = shift @ARGV;
 my $pport = shift @ARGV;
 my $host = shift @ARGV;
 my $port = shift @ARGV;
+my $sver = shift @ARGV;
+
+$sver = 5 unless $sver;
 
 die "Usage: $0 proxyipaddres proxyport host port\n" unless $port and not @ARGV;
 
+###
 ### sub for the read thread
+###
 sub proxyread {
 	my $pread=shift;
 	my $data;
@@ -32,7 +37,9 @@ sub proxyread {
 	}
 }
 
+###
 ### sub for the write thread
+###
 sub proxywrite {
 	my $pwrite=shift;
 	my $data;
@@ -47,22 +54,65 @@ sub proxywrite {
 }
 
 
+my $SOCKS;
 socket($SOCKS,PF_INET,SOCK_STREAM,6);
-my $sin = sockaddr_in($pport,inet_aton($pserver));
-connect($SOCKS,$sin);
+connect($SOCKS,sockaddr_in($pport,inet_aton($pserver))) or die "\n>>> proxy server ".$pserver.":".$pport." not responding <<<\n";
 
-my $socks_conn=pack('ccn',4,1,$port).inet_aton($host).chr(0);
-syswrite $SOCKS, $socks_conn, length($socks_conn);
-sysread $SOCKS, $socks_conn, 8;
-$socks_conn=(unpack('cc',$socks_conn))[1];
+my $socks_conn;
 
-if ($socks_conn eq 90){
-	my $proxyr = threads->create('proxyread',$SOCKS);
-	my $proxyw = threads->create('proxywrite',$SOCKS);
+if ($sver eq 5){
+	###
+	### connection using SOCKS5
+	###
+	### http://tools.ietf.org/html/rfc1928
+	
+	$socks_conn = pack('ccc',5,1,0);
 
-	$proxyw->join;
-	$proxyr->join;
+	syswrite $SOCKS, $socks_conn, length($socks_conn);
+	sysread $SOCKS, $socks_conn, 1024;
+
+	$socks_conn = (unpack('cc',$socks_conn))[1];
+
+	die "\n>>> wrong authentication tyoe <<<\n\n" if ($socks_conn eq 255);
+
+	if ($host=~/^\d+\.\d+\.\d+\.\d+$/){
+		$socks_conn = pack('cccc',5,1,0,1).inet_aton($host).pack('n',$port);
+	}else{
+		$socks_conn = pack('ccccc',5,1,0,3,length($host)).$host.pack('n',$port);
+	}
+
+	syswrite $SOCKS, $socks_conn, length($socks_conn);
+	sysread $SOCKS, $socks_conn, 1024;
+
+	$socks_conn = (unpack('cc',$socks_conn))[1];
+
+	die "\n>>> connection not allowed <<<\n\n" unless ($socks_conn eq 0);
 }else{
-	warn "\n>>> proxy server ".$pserver.":".$pport." not responding <<<\n\n";
+
+	####
+	#### we are connecting to IPv4 address, using SOCKS4
+	####
+	if ($host=~/^\d+\.\d+\.\d+\.\d+$/){
+		$socks_conn = pack('ccn',4,1,$port).inet_aton($host).chr(0);
+	}else{
+	####
+	#### we are connecting to FQDN, using SOCKS4A
+	####
+		$socks_conn = pack('ccn',4,1,$port).inet_aton('0.0.0.20').chr(0).$host.chr(0);
+	}
+	
+	syswrite $SOCKS, $socks_conn, length($socks_conn);
+	sysread $SOCKS, $socks_conn, 8;
+
+	$socks_conn = (unpack('cc',$socks_conn))[1];
+
+	die "\n>>> connection not allowed <<<\n\n" unless ($socks_conn eq 90);
+
 }
+
+my $proxyr = threads->create('proxyread',$SOCKS);
+my $proxyw = threads->create('proxywrite',$SOCKS);
+
+$proxyw->join;
+$proxyr->join;
 

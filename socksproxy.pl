@@ -6,8 +6,8 @@
 
 use warnings;
 use strict;
-use Net::SOCKS;
-#use Socket;
+#use Net::SOCKS;
+use Socket;
 use threads('stack_size' => 16384);
 
 my $pserver = shift @ARGV;
@@ -46,11 +46,11 @@ sub proxywrite {
 }
 
 
-my $sock = new Net::SOCKS(socks_addr => "$pserver",
-                socks_port => "$pport",
-                protocol_version => 5);
+socket(SOCKS,PF_INET,SOCK_STREAM,6);
+my $sin = sockaddr_in($pport,inet_aton($pserver));
+connect(SOCKS,$sin);
+my 
 
-my $proxy = $sock->connect(peer_addr => "$host", peer_port => "$port");
 
 if ($proxy){
 	my $proxyr = threads->create('proxyread',$proxy);

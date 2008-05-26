@@ -6,9 +6,10 @@
 
 use warnings;
 use strict;
-#use Net::SOCKS;
 use Socket;
 use threads('stack_size' => 16384);
+
+my $SOCKS;
 
 my $pserver = shift @ARGV;
 my $pport = shift @ARGV;
@@ -46,18 +47,22 @@ sub proxywrite {
 }
 
 
-socket(SOCKS,PF_INET,SOCK_STREAM,6);
+socket($SOCKS,PF_INET,SOCK_STREAM,6);
 my $sin = sockaddr_in($pport,inet_aton($pserver));
-connect(SOCKS,$sin);
-my 
+connect($SOCKS,$sin);
 
+my $socks_conn=pack('ccn',4,1,$port).inet_aton($host).chr(0);
+syswrite $SOCKS, $socks_conn, length($socks_conn);
+sysread $SOCKS, $socks_conn, 8;
+$socks_conn=(unpack('cc',$socks_conn))[1];
 
-if ($proxy){
-	my $proxyr = threads->create('proxyread',$proxy);
-	my $proxyw = threads->create('proxywrite',$proxy);
+if ($socks_conn eq 90){
+	my $proxyr = threads->create('proxyread',$SOCKS);
+	my $proxyw = threads->create('proxywrite',$SOCKS);
 
 	$proxyw->join;
 	$proxyr->join;
 }else{
 	warn "\n>>> proxy server ".$pserver.":".$pport." not responding <<<\n\n";
-} 
+}
+

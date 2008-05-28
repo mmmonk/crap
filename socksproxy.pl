@@ -53,7 +53,6 @@ sub proxywrite {
 	}
 }
 
-
 my $SOCKS;
 socket($SOCKS,PF_INET,SOCK_STREAM,6);
 connect($SOCKS,sockaddr_in($pport,inet_aton($pserver))) or die "\n>>> proxy server ".$pserver.":".$pport." not responding <<<\n";
@@ -87,7 +86,8 @@ if ($sver eq 5){
 	$socks_conn = (unpack('cc',$socks_conn))[1];
 
 	die "\n>>> connection not allowed <<<\n\n" unless ($socks_conn eq 0);
-}else{
+
+} elsif ($sver eq 4) {
 
 	####
 	#### we are connecting to IPv4 address, using SOCKS4
@@ -108,6 +108,8 @@ if ($sver eq 5){
 
 	die "\n>>> connection not allowed <<<\n\n" unless ($socks_conn eq 90);
 
+}else{
+	die "\n>>> not implemented <<<\n\n";
 }
 
 my $proxyr = threads->create('proxyread',$SOCKS);

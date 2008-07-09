@@ -11,19 +11,31 @@ my $delay=shift;
 my $MAX_TO_READ=1000;
 my $data;
 
-my $srv = IO::Socket::INET->new(Proto => "udp", LocalPort => $lport)
-    or die "Couldn't be a udp server on port $lport : $!\n";
+srand(time);
+
+my $srv = IO::Socket::INET->new(LocalAddr=>'172.26.27.253', Proto => "udp", LocalPort => $lport) or die "Couldn't be a udp server on port $lport : $!\n";
 
 my $cli = IO::Socket::INET->new(Proto => "udp", PeerPort => $dport, PeerAddr => "127.0.0.1") or die "Couldn't create socket: $!\n";
 
 while ($srv->recv($data, $MAX_TO_READ)) {
 	print "######### new request ############\n";
-	print ">> ".time." got something sending it the server\n";
+	print ">  ".time." got something\n";
+#	if ($delay > 0){
+#		my $sleep = rand($delay*10)/10;
+#		print "?? ".time." sleeping for $sleep seconds\n";
+#		select(undef, undef, undef, $sleep);
+#	}	
+	print ">  ".time." sending it the server\n";
 	$cli->send($data);
 	print "<  ".time." got answer\n";
 	$cli->recv($data,$MAX_TO_READ);
-	print "?? ".time." sleeping for $delay seconds\n";
-	select(undef, undef, undef, $delay);
+
+	if ($delay > 0){
+		my $sleep = $delay;
+#		my $sleep = rand($delay*10)/10;
+		print "?? ".time." sleeping for $sleep seconds\n";
+		select(undef, undef, undef, $sleep);
+	}
 	print ">  ".time." sending to the client\n";
 	$srv->send($data);
 } 

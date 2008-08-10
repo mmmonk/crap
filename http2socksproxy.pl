@@ -27,7 +27,9 @@ $sver = 5 unless $sver;
 sub proxy {
 	my $sockr=shift;
 	my $sockw=shift;
+	my $scanCG=shift;
 	my $data;
+
 	while ( 1 ) {
 		my $bytes_read = sysread $sockr, $data, 1500;
 		if ( not $bytes_read ) {
@@ -48,7 +50,7 @@ my $CONN;
 socket ($LISTEN, PF_INET, SOCK_STREAM, 6);
 setsockopt ($LISTEN, SOL_SOCKET, SO_REUSEADDR, 1);
 bind ($LISTEN, sockaddr_in(8081,inet_aton("127.0.0.1")));
-listen ($LISTEN, 5);
+listen ($LISTEN, 50);
 while ( accept($CONN, $LISTEN) ){
 	my $t_client=threads->create('takecall',$CONN);
 	$t_client->join;	

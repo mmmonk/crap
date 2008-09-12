@@ -72,7 +72,7 @@ if ($sver eq 5){
 
 	$socks_conn = (unpack('cc',$socks_conn))[1];
 
-	die "\n>>> wrong authentication tyoe <<<\n\n" if ($socks_conn eq 255);
+	die "\n>>> wrong authentication type <<<\n\n" if ($socks_conn eq 255);
 
 	if ($host=~/^\d+\.\d+\.\d+\.\d+$/){
 		$socks_conn = pack('cccc',5,1,0,1).inet_aton($host).pack('n',$port);

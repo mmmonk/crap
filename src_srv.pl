@@ -8,10 +8,12 @@ use warnings;
 use strict;
 
 use POSIX;
-use Digest::SHA qw(sha512);
+use Digest::SHA qw(sha512_base64);
 use IO::Socket::Socks;
 use IO::Socket::INET;
 use threads('stack_size' => 16384,'exit' => 'threads_only');
+
+my $DEBUG=0;
 
 my $pserver = shift @ARGV;
 my $pport = shift @ARGV;
@@ -40,7 +42,16 @@ while (1) {
 	}	
 
 	warn ct," - connected to proxy server ".$pserver.":".$pport."\n";
-	
+
+	### AUTHORIZATION
+	my $data;
+        sysread $sock, $data, 86;
+	warn ">>> auth recv: $data <<<<\n" if ($DEBUG==1); 
+	$data=$data.$secret;
+        $data=sha512_base64($data);
+	warn ">>> auth send: $data <<<<\n" if ($DEBUG==1);
+        syswrite $sock, $data, length($data);
+
 	my $ssh = IO::Socket::INET->new(
 		Proto => "tcp",
 		PeerAddr => "127.0.0.1",
@@ -52,16 +63,8 @@ while (1) {
 		next;
 	}
 
-
-	### AUTHORIZATION
-	my $data;
-        sysread $sock, $data, 1448;
-        $data=$data.$secret;
-        $data=sha512($data);
-        syswrite $sock, $data, length($data);
-
 	### REMOVING BANNER
-	sysread $ssh, $data, 1448;
+	sysread $ssh, $data, 86;
 
 	### GOOD TO GO	
 	my $proxyr = threads->create('io_thread',$sock,$ssh);

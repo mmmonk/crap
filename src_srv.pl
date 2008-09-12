@@ -6,7 +6,9 @@
 
 use warnings;
 use strict;
+
 use POSIX;
+use Digest::SHA qw(sha512);
 use IO::Socket::Socks;
 use IO::Socket::INET;
 use threads('stack_size' => 16384,'exit' => 'threads_only');
@@ -15,6 +17,8 @@ my $pserver = shift @ARGV;
 my $pport = shift @ARGV;
 my $host = shift @ARGV;
 my $port = shift @ARGV;
+
+my $secret="I67Fkjpjgi5rWymauvkRBUqAAKhprAG57tU4Ke5j6ZV2KnUk0S0tQQXAnkxOAtPASqfmPGMb4ShpgHefSZM8dIucgJ52RCEaJUAWzm0gEW7YJbrkBb489EpiZnh0hZ7S";
 
 die "Usage: $0 proxyipaddres proxyport host port\n" unless $port and not @ARGV;
 
@@ -48,10 +52,18 @@ while (1) {
 		next;
 	}
 
-	### BANNER
-	my $null;
-	sysread $ssh, $null, 1500;
-	
+
+	### AUTHORIZATION
+	my $data;
+        sysread $sock, $data, 1448;
+        $data=$data.$secret;
+        $data=sha512($data);
+        syswrite $sock, $data, length($data);
+
+	### REMOVING BANNER
+	sysread $ssh, $data, 1448;
+
+	### GOOD TO GO	
 	my $proxyr = threads->create('io_thread',$sock,$ssh);
 	my $proxyw = threads->create('io_thread',$ssh,$sock);
 
@@ -65,7 +77,7 @@ sub io_thread {
 	my $data;
 
 	while (1) {
-		my $br = sysread $read, $data, 1500;
+		my $br = sysread $read, $data, 1448;
 		if ( not $br ) {
 			shutdown($read,2);
 			shutdown($write,2);

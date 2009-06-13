@@ -9,6 +9,7 @@ use warnings;
 use integer;
 
 use LWP::UserAgent;
+use threads('stack_size' => 16384,'exit' => 'threads_only');
 
 sub recursGet;
 

@@ -1,16 +1,23 @@
 #!/usr/bin/env python
+"""
+Author: <m.lukaszuk(at)gmail.com> 2009
 
+Script to download torrents from RSS feeds with filtering for only intresting ones ;)
+"""
 import httplib
 import feedparser
 import re
-import os
+import os 
+import time 
+import random
+import socket
 
 # list of RSS feeds that we are intrested in
-RSSFEEDS = ( 
-  'http://www.ebookshare.net/plus/rss/index.xml',
-  #'http://rss.bt-chat.com/?group=3&cat=9',
-  'http://www.mininova.org/rss.xml?user=MVGroup'
-  ) 
+RSSFEEDS = [
+  'http://rss.bt-chat.com/?group=3&cat=9',
+  'http://www.mininova.org/rss.xml?user=MVGroup',
+  'http://www.ebookshare.net/plus/rss/index.xml'
+  ] 
 
 # dictionary of lists of how we need to transform the link from the host to get the link to the torrent file 
 RSSDOWNLOAD = {
@@ -18,21 +25,32 @@ RSSDOWNLOAD = {
   'www.mininova.org': ['http://(.+?)/tor/(\d+)','http://\g<1>/get/\g<2>']  
   }
 
-# you can only set the feed to belong either to RSSALLOW or RSSDENY not to both
 # dictionary of lists of what we are intrested in specific feeds 
 RSSALLOW = {
-}
+  'http://www.ebookshare.net/plus/rss/index.xml': ['-lib','ebook-'],
+  'http://rss.bt-chat.com/?group=3&cat=9': ['kings','leverage','lie.to.me','the.unit']
+  }
 
 # dictionary of lists of what we are not intrested in specific feeds
 RSSDENY = {
-}
+  'http://www.ebookshare.net/plus/rss/index.xml': ['microsoft office','religion','social','history','sharepoint','visual basic','dot net','active directory']
+  }
 
 
 TORRENTSDIR = '/home/case/Desktop/torrents/'
 DATAFILE = TORRENTSDIR+'rss_torrents.dat'
 DATATMPFILE = TORRENTSDIR+'rss_torrents.tmp'
 
+# global socket timeout in seconds (used in httplib)
+timeout = 10
+socket.setdefaulttimeout(timeout)
+
 DEBUG=1
+
+HTTPHEADERS = {
+  'User-Agent':	'Mozilla/5.0 (Windows; U; Windows NT 5.1; en; rv:1.8.1.3) Gecko/20070309 Firefox/2.0.0.3',
+  'Connection': 'close'
+}
 
 def DbPrint(debugstr,errorvar=0):
   ''' 
@@ -60,10 +78,13 @@ def AddToDataFile(url):
   adds url to the temporary data file
   intput: url of the torrent file that we have already downloaded
   '''
-  datatmpfile = open(DATATMPFILE,'a')
-  datatmpfile.write(url+'\n')
-  datatmpfile.close()
-
+  try: 
+	datatmpfile = open(DATATMPFILE,'a')
+	datatmpfile.write(url+'\n')
+	datatmpfile.close()
+  except:
+	DbPrint('error while writing '+DATATMPFILE,1)
+	exit
 
 def LoadDataFile(file):
   '''
@@ -72,6 +93,8 @@ def LoadDataFile(file):
   '''
 
   global SEENTORRENTS
+
+  SEENTORRENTS = [ ]
 
   DbPrint('Loading data file '+file)
 
@@ -106,10 +129,23 @@ def GetFile(url):
 
   DbPrint('connecting to '+url[0]+'/'+url[2])
 
-  http_connection = httplib.HTTPConnection(url[0],80,5)
-  http_connection.request('GET',"/"+url[2])
-  http_response = http_connection.getresponse();
+  HTTPHEADERS['Host'] = url[0]
+
+  http_connection = httplib.HTTPConnection(url[0])
+  http_connection.request('GET',"/"+url[2],'',HTTPHEADERS)
+  
+  try:
+	http_response = http_connection.getresponse();
+  except socket.timeout:
+	DbPrint('Connection timed out')
+	return
+
+  data = http_response.read()
   http_connection.close()
+
+  if not len(data) > 0:
+	DbPrint('length of the response is 0')
+	return
 
   DbPrint('response is "'+repr(http_response.status)+' '+http_response.reason+'" and it is '+http_response.getheader('Content-Type'))
 
@@ -145,10 +181,11 @@ def GetFile(url):
 
   try:
 	torrent = open(TORRENTSDIR+filename,'wb')
-	torrent.write(http_response.read());
+	torrent.write(data);
 	torrent.close()
 	DbPrint('  completed')
 	AddToDataFile(url[0]+'/'+url[2])
+
   except:
 	DbPrint('  error while saving',1)
 	
@@ -160,39 +197,50 @@ def ReadFeed(url):
   '''
   DbPrint('connecting to RSS feed '+url)
 
-  rssfeed = feedparser.parse(url)
-
   if 'http://' in url:
     host = url.replace('http://','',1)
 
   host = (host.partition('/'))[0]
 
+  try:
+	rssfeed = feedparser.parse(url)
+  except socket.timeout:
+	DbPrint('Connection timed out')
+	for torrentlink in SEENTORRENTS:
+	  if host in torrentlink:
+		AddToDataFile(torrentlink)
+	return
+
   for rssentry in rssfeed.entries:
 	DbPrint('---------------------- start new link ----------------------')
 	DbPrint('torrent title - "'+rssentry.title+'"')
+
+	title = rssentry.title.lower()
+
+	DbPrint('torrent title for checking against the filters - "'+title+'"')
 
 	torrentdenied = False
 
 	if url in RSSALLOW:
 	  DbPrint('feed in RSSALLOW')
 	  for text in RSSALLOW[url]:
-		if text not in rssentry.title:
-		  DbPrint('  denied')
-		  torrentdenied=True
+  		if text not in title: 
+		  torrentdenied = True
 		else:
-		  DbPrint('  allowed')
+		  torrentdenied = False
+		  break
 
 	if url in RSSDENY and not torrentdenied:
 	  DbPrint('feed in RSSDENY:')
 	  for text in RSSDENY[url]:
-		if text in rssentry.title:
-		  DbPrint(' denied')
-		  torrentdenied=True
+		if text in title: 
+		  torrentdenied = True
+		  break
 		else:
-		  DbPrint(' allowed')
+		  torrentdenied = False
 
 	if not torrentdenied:
-
+	  pass
 	  if host in RSSDOWNLOAD:
 		DbPrint('host in the RSSDOWNLOAD list')
 		DbPrint('  orginal link '+rssentry.link)
@@ -200,17 +248,29 @@ def ReadFeed(url):
 		DbPrint('  new link '+rssentry.link)
 	  
 	  GetFile(rssentry.link)
-
+	else:
+	  DbPrint('not intrested in this torrent')
 
 if __name__ == '__main__':
 
+  random.seed()
+
+  feedparser.USER_AGENT = HTTPHEADERS['User-Agent']
   LoadDataFile(DATAFILE)
 
-  for feed in RSSFEEDS:
-	ReadFeed(feed)
-  
+  try:
+	for feed in RSSFEEDS:
+	  DbPrint('====================== start new feed ======================')
+	  ReadFeed(feed)
+	  sleeptime=random.randint(2,15)
+	  DbPrint('sleeping for '+str(sleeptime)+' seconds')
+	  time.sleep(sleeptime)
+
+  except KeyboardInterrupt:
+	DbPrint('CTRL+C pressed, exiting')
+ 
   try:
 	open(DATATMPFILE,'r')
 	os.rename(DATATMPFILE,DATAFILE)
   except:
-	pass  
+	pass

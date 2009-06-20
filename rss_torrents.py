@@ -136,7 +136,7 @@ def GetFile(url):
   
   try:
 	http_response = http_connection.getresponse();
-  except socket.timeout:
+  except: 
 	DbPrint('Connection timed out')
 	return
 
@@ -204,8 +204,8 @@ def ReadFeed(url):
 
   try:
 	rssfeed = feedparser.parse(url)
-  except socket.timeout:
-	DbPrint('Connection timed out')
+  except:
+	DbPrint('Connection problems')
 	for torrentlink in SEENTORRENTS:
 	  if host in torrentlink:
 		AddToDataFile(torrentlink)

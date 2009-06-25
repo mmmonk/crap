@@ -9,15 +9,15 @@ my %emails=();
 
 open(FD,$file);
 while(<FD>){
-	chomp;
 	$_=lc;
-	s/\".+?\"//;
-	my @a=split(',',$_);
-	if ($a[0]=~/@/){
-		$emails{$a[0]}=1;
-	}else{
-		$emails{$a[1]}=1;
-	}
+	s/(\"|\r|\n)//g;
+	s/(e-mail address: |im: .+?: )//g;
+
+	my @a = split (',',$_);
+	foreach my $f (@a){
+		$emails{$f}=1 if ($f=~/\@/);
+	}	
+
 }
 close(FD);
 

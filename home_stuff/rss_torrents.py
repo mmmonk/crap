@@ -28,12 +28,12 @@ RSSDOWNLOAD = {
 # dictionary of lists of what we are intrested in specific feeds 
 RSSALLOW = {
   'http://www.ebookshare.net/plus/rss/index.xml': ['-lib','ebook-'],
-  'http://rss.bt-chat.com/?group=3&cat=9': ['kings','leverage','lie.to.me','the.unit']
+  'http://rss.bt-chat.com/?group=3&cat=9': ['kings','leverage','lie.to.me','the.unit','mentalist','mythbusters']
   }
 
 # dictionary of lists of what we are not intrested in specific feeds
 RSSDENY = {
-  'http://www.ebookshare.net/plus/rss/index.xml': ['microsoft office','religion','social','history','sharepoint','visual basic','dot net','active directory']
+  'http://www.ebookshare.net/plus/rss/index.xml': ['microsoft office','religion','social','history','sharepoint','visual basic','dot net','sql','ado net','active directory']
   }
 
 
@@ -45,7 +45,7 @@ DATATMPFILE = TORRENTSDIR+'rss_torrents.tmp'
 timeout = 10
 socket.setdefaulttimeout(timeout)
 
-DEBUG=1
+DEBUG=0
 
 HTTPHEADERS = {
   'User-Agent':	'Mozilla/5.0 (Windows; U; Windows NT 5.1; en; rv:1.8.1.3) Gecko/20070309 Firefox/2.0.0.3',

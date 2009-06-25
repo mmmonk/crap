@@ -1313,7 +1313,7 @@ REQ1_DOOR_BELL 			00000000 *
 get system 
 
 Product Name: NetScreen-2000
-Serial Number: 0079032005000111, Control Number: 00000000
+Serial Number: 0000000000000001, Control Number: 00000000
 Hardware Version: 3010(0)-(04), FPGA checksum: 00000000, VLAN1 IP (0.0.0.0)
 Software Version: 6.1.0r3.0, Type: Firewall+VPN
 OS Loader Version: 1.1.5
@@ -5355,12 +5355,8 @@ set ssh version v2
 set ssh enable
 set config lock timeout 5
 unset license-key auto-update
-set snmp community "fortinet" Read-Only Trap-on traffic version v2c  
-set snmp community "public" Read-Only Trap-on traffic version v2c  
-set snmp community "ptkrosolid" Read-Only Trap-on traffic version any  
-set snmp host "ptkrosolid" 192.168.249.15 255.255.255.255 src-interface ethernet4/1 trap v2
-set snmp host "public" 192.168.249.0 255.255.255.0 src-interface ethernet4/1 
-set snmp host "fortinet" 192.168.249.190 255.255.255.255 src-interface ethernet4/1 trap v2
+set snmp community "xxxxxxxx" Read-Only Trap-on traffic version v2c  
+set snmp host "xxxxxxxx" 192.168.249.190 255.255.255.255 src-interface ethernet4/1 trap v2
 set snmp name "nsisg2000"
 set snmp port listen 161
 set snmp port trap 162

@@ -33,13 +33,16 @@ RSSALLOW = {
 
 # dictionary of lists of what we are not intrested in specific feeds
 RSSDENY = {
-  'http://www.ebookshare.net/plus/rss/index.xml': ['microsoft office','religion','social','history','sharepoint','visual basic','dot net','sql','ado net','active directory']
+  'http://www.ebookshare.net/plus/rss/index.xml': ['microsoft office','religion','social','history','sharepoint','visual basic','dot net','sql','ado net','active directory','photoshop','adobe','rowman']
   }
 
 
 TORRENTSDIR = '/home/case/Desktop/torrents/'
 DATAFILE = TORRENTSDIR+'rss_torrents.dat'
 DATATMPFILE = TORRENTSDIR+'rss_torrents.tmp'
+
+# time in minutes
+HOWOFTENTOCHECK = 45
 
 # global socket timeout in seconds (used in httplib)
 timeout = 10
@@ -51,6 +54,9 @@ HTTPHEADERS = {
   'User-Agent':	'Mozilla/5.0 (Windows; U; Windows NT 5.1; en; rv:1.8.1.3) Gecko/20070309 Firefox/2.0.0.3',
   'Connection': 'close'
 }
+
+
+############################# FUNCTIONS #############################
 
 def DbPrint(debugstr,errorvar=0):
   ''' 
@@ -84,7 +90,7 @@ def AddToDataFile(url):
 	datatmpfile.close()
   except:
 	DbPrint('error while writing '+DATATMPFILE,1)
-	exit
+	os._exit(os.EX_CANTCREAT)
 
 def LoadDataFile(file):
   '''
@@ -250,6 +256,10 @@ def ReadFeed(url):
 	  GetFile(rssentry.link)
 	else:
 	  DbPrint('not intrested in this torrent')
+
+
+
+#####################################################################
 
 if __name__ == '__main__':
 

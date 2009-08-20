@@ -55,7 +55,7 @@ if ($data eq $data1){
 }
 
 ### GIVING BANNER TO THE CLIENT
-$data="SSH-2.0-OpenSSH_5.1p1 Debian-2\n";
+$data="SSH-2.0-OpenSSH_5.1p1 Debian-7\n";
 syswrite STDOUT,$data, length($data);
 
 my $proxyr = threads->create('io_rt',$cli);

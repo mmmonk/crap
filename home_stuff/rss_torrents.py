@@ -173,7 +173,8 @@ def GetFile(url):
   # then check if the server send us Content-Disposition header with the filename
   if 'filename' in http_response.getheader('Content-Disposition'):
 	filename = (http_response.getheader('Content-Disposition').rpartition('='))[2]
-  
+ 
+  # change this, make this unicode safe, remove everything except [a-z] and _ 
   filename = filename.lower().replace(' ','_').strip('?\/*+!"')
 
   DbPrint('saving torrent to file '+TORRENTSDIR+filename)

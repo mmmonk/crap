@@ -33,7 +33,7 @@ RSSALLOW = {
 
 # dictionary of lists of what we are not intrested in specific feeds
 RSSDENY = {
-  'http://www.ebookshare.net/plus/rss/index.xml': ['microsoft office','religion','social','history','sharepoint','visual basic','dot net','sql','ado net','active directory','photoshop','adobe','rowman']
+  'http://www.ebookshare.net/plus/rss/index.xml': ['microsoft office','religion','social','history','sharepoint','visual basic','dot net','sql','ado net','active directory','photoshop','adobe','rowman','routledge']
   }
 
 
@@ -174,7 +174,11 @@ def GetFile(url):
   if 'filename' in http_response.getheader('Content-Disposition'):
 	filename = (http_response.getheader('Content-Disposition').rpartition('='))[2]
  
-  # change this, make this unicode safe, remove everything except [a-z] and _ 
+  try:
+	filename = str(filename)
+  except UnicodeEncodeError:
+	filename = filename.encode('ascii', 'ignore')
+
   filename = filename.lower().replace(' ','_').strip('?\/*+!"')
 
   DbPrint('saving torrent to file '+TORRENTSDIR+filename)

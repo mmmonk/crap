@@ -31,18 +31,20 @@ for defttl in [64,128,255]:
 
 print "%s is probably %d hops away" % (dst,ttldiff)
 
-my_seq=my_seq+1
+#my_seq=my_seq+1
 
 data="GET / HTTP/1.0\r"
-res=sr1(ip/TCP(sport=my_sport, dport=my_dport, flags="A", seq=my_seq, ack=my_ack)/data,retry=3,timeout=2)
+res=sr1(ip/TCP(sport=my_sport, dport=my_dport, flags="PA", seq=my_seq, ack=my_ack)/data,retry=3,timeout=2)
 
-my_ack=res.seq+1
-my_seq=my_seq+1
+my_ack=res.seq
+my_seq=my_seq+len(data)
+
+data="Host: "+target+"\r\r"
 
 end=0
 while end == 0:
 	ip.ttl=my_ttl
-	back=sr1(ip/TCP(sport=my_sport, dport=my_dport, flags="A", seq=my_seq, ack=my_ack)/data,retry=3,timeout=2)
+	back=sr1(ip/TCP(sport=my_sport, dport=my_dport, flags="PA", seq=my_seq, ack=my_ack)/data,retry=3,timeout=2)
 	if back:	
 		#back.display()
 		print "%d : %s this hop TTL %d" % (my_ttl,back.src,back.ttl)

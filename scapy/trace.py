@@ -89,11 +89,12 @@ while 1 == 1:
 		print "Probable SYN proxy, SA TTL %d, now TTL %d" % (dttl,rcv.ttl)
 	  print "done, got: TCP flags: %s" % TCPflags(rcv.payload.flags)
 
-	  if rcv.len < 128:
+	  if len(rcv.payload.payload) < 10: 
 		cap = sniff(filter = "tcp and port 80 and port %d and host %s" % (my_sport,dst), count = 1,timeout = 5)
 		for tmp in cap:
-		  if tmp.payload.proto == 6 and tmp.payload.len > 128:
+		  if tmp.payload.proto == 6 and len(tmp.payload.payload.payload) < 10:
 			rcv = tmp.payload
+			break
 
 	  if rcv.len > 128:
 		header = str(rcv.payload.payload)

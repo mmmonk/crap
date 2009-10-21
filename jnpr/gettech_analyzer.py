@@ -50,6 +50,8 @@ except:
 	print "usage: "+sys.argv[0]+" get_tech_file"
 	sys.exit(2)
 
+def get_sat():
+  
 
 for line in fs.readlines():
 	if 'get ' in line:
@@ -59,3 +61,4 @@ for line in fs.readlines():
 				break
 			FuncCount=FuncCount+1
 		print FuncCount
+

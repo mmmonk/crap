@@ -29,7 +29,7 @@ data = s.recv(1024)
 ver,code,head = struct.unpack('BBH',data[:4])
 print ' %s %d %s ' % (ver, code, head)
 
-s.send("GET / HTTP\\1.0\r\r")
+s.send("GET / HTTP 1.0\r\r")
 data = s.recv(1024)
 
 print data

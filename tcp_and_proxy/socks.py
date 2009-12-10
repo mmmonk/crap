@@ -38,13 +38,13 @@ if ver == 5:
   data = s.recv(1024)
   auth = struct.unpack('2B',data)[1]
   if auth != 255:
-	nport = struct.pack('!H',port)
-	try:
-	  data = struct.pack('!4B',5,1,0,1)+socket.inet_aton(host)+nport
-	except socket.error:
-	  data = struct.pack('!5B',5,1,0,3,len(host))+host+nport
+    nport = struct.pack('!H',port)
+    try:
+      data = struct.pack('!4B',5,1,0,1)+socket.inet_aton(host)+nport
+    except socket.error:
+      data = struct.pack('!5B',5,1,0,3,len(host))+host+nport
   else:
-	exit = 1
+	  exit = 1
 
 elif ver == 4 or ver == '4a':
   try:
@@ -57,9 +57,7 @@ else:
 
 if exit != 1:
   s.send(data)
-
   data = s.recv(256)
-
   code = struct.unpack('BBH',data[:4])[1]
   
   if (code == 90 and ver == 4) or (code == 0 and ver == 5): 

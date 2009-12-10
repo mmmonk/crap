@@ -5,23 +5,19 @@ import struct
 import sys
 from threading import Thread
 
+
+
 def socks_read(socks):
-  try:
-    while 1:
-      data = socks.recv(1500)
-      if data:
-        sys.stdout.write(data)
-  except:
-    socks.close()
+  while 1:
+	data = socks.recv(1500)
+	if data:
+	  sys.stdout.write(data)
 
 def socks_write(socks):
-  try: 
-    while 1:
-      data = sys.stdin.readline()
-      if data:
-        socks.send(data)
-  except:
-    socks.close()
+  while 1:
+	data = sys.stdin.readline()
+	if data:
+	  socks.send(data)
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(('127.0.0.1', 1080))
@@ -50,7 +46,7 @@ elif ver == 4 or ver == '4a':
   try:
     data = struct.pack('!2BH',4,1,port)+socket.inet_aton(host)+chr(0)
   except socket.error:
-    data = struct.pack('!2BH',4,1,port)+socket.inet_aton('0.0.0.1')+chr(0)+host
+    data = struct.pack('!2BH',4,1,port)+socket.inet_aton('0.0.0.1')+chr(0)+host+chr(0)
 
 else:
   exit = 1
@@ -67,4 +63,6 @@ if exit != 1:
     sread.start()
     swrite.start()
     sread.join()
-    swrite.join()
+	swrite.join()
+
+s.close()

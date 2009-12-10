@@ -5,20 +5,23 @@ import struct
 import sys
 from threading import Thread
 
+def socks_read(socks):
+  try:
+    while 1:
+      data = socks.recv(1500)
+      if data:
+        sys.stdout.write(data)
+  except:
+    socks.close()
 
-def prd(socket):
-  data = 1
-  while (data):
-    data = socket.recv(1500)
-    if data:
-      sys.stdout.write(data)
-
-def pwr(socket):
-  data = 1
-  while(data):
-    data = sys.stdin.readline()
-    if data:
-      socket.send(data)
+def socks_write(socks):
+  try: 
+    while 1:
+      data = sys.stdin.readline()
+      if data:
+        socks.send(data)
+  except:
+    socks.close()
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(('127.0.0.1', 1080))
@@ -60,18 +63,10 @@ if exit != 1:
   code = struct.unpack('BBH',data[:4])[1]
   
   if (code == 90 and ver == 4) or (code == 0 and ver == 5): 
-    t1 = Thread(target=prd, args=(s,))
-    t2 = Thread(target=pwr, args=(s,))
+    sread = Thread(target=socks_read, args=(s,))
+    swrite = Thread(target=socks_write, args=(s,))
 
-    t1.start()
-    t2.start()
-  
-#    data = 'GET / HTTP/1.0\n\n'
-#    s.send(data)
-#
-#    data = s.recv(1024)
-#
-#    print data
-
-s.close()
-
+    sread.start()
+    swrite.start()
+    sread.join()
+    swrite.join()

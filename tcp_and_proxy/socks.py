@@ -18,8 +18,7 @@ def socks_read(socks):
 def socks_write(socks):
 
   while 1:
-#    data = sys.stdin.read()
-    data = raw_input()
+    data = sys.stdin.read()
     if data:
       socks.send(data)
     else:

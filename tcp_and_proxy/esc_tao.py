@@ -100,21 +100,21 @@ if __name__ == '__main__':
     else:
       ver = 5
 
-    socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-      socks.connect((phost, pport))
-    except socket.error:
-      sys.stderr.write("[-] problem connecting to "+str(phost)+":"+str(pport)+"\n")
-      socks.close()
-      sys.exit()  
+    while 1:
+      socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      try:
+        socks.connect((phost, pport))
+      except socket.error:
+        sys.stderr.write("[-] problem connecting to "+str(phost)+":"+str(pport)+"\n")
+        socks.close()
 
-    if socks:
-      sys.stderr.write("[+] connecting via "+str(phost)+":"+str(pport)+"\n")
+      if socks:
+        sys.stderr.write("[+] connecting via "+str(phost)+":"+str(pport)+"\n")
 
-      if (ver == 5 and socks5(socks,host,port) == 1) or (ver == 4 and socks4(socks,host,port) == 1): 
-        exchange(socks)
-      else:
-        sys.stderr.write("[-] unsupported socks version or the authentication failed")
+        if (ver == 5 and socks5(socks,host,port) == 1) or (ver == 4 and socks4(socks,host,port) == 1): 
+          exchange(socks)
+        else:
+          sys.stderr.write("[-] unsupported socks version or the authentication failed")
 
   else:
     sys.stderr.write("usage: "+sys.argv[0]+" ip_socks port_socks ip_dest port_dest [socks_ver]\n")

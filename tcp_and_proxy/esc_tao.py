@@ -14,7 +14,7 @@ def debug(message):
 def xor(xorstr,xorsec,i,xorseclen):
   # input:
   # xorstr - data
-  # xorsec - xoring secret
+  # xorsec - list xoring secret
   # i - where are we in the xoring secret
   # xorseclen - the length of xoring secret
   # return:
@@ -25,8 +25,8 @@ def xor(xorstr,xorsec,i,xorseclen):
   xorstrrange = range(len(xorstr))
 
   for c in xorstrrange:
-    xorstr[c]=(xorstr[c]^xorsec[i])
-    i+=1
+    xorstr[c] = (xorstr[c]^xorsec[i])
+    i += 1
     if i >= xorseclen:
       i = 0
 
@@ -156,35 +156,38 @@ if __name__ == '__main__':
       if socks_try < socks_limit:
         try:
           socks.connect((phost, pport))
-          debug("[+] connecting via "+str(phost)+":"+str(pport)+"\n")
+#          debug("[+] connecting via "+str(phost)+":"+str(pport)+"\n")
         except socket.error:
-          debug("[-] problem connecting to "+str(phost)+":"+str(pport)+"\n")
+#          debug("[-] problem connecting to "+str(phost)+":"+str(pport)+"\n")
           connected = 0
 
       else:
         try:
           socks.connect((host, port))
-          debug("[+] connecting direct to "+str(host)+":"+str(port)+"\n")
+#          debug("[+] connecting direct to "+str(host)+":"+str(port)+"\n")
         except:
-          debug("[-] problem connecting direct to "+str(host)+":"+str(port)+"\n")
+#          debug("[-] problem connecting direct to "+str(host)+":"+str(port)+"\n")
           connected = 0
 
       if connected == 1:
 
-        if (ver == 5 and socks5(socks,host,port) == 1) or (ver == 4 and socks4(socks,host,port) == 1) or (socks_try >= socks_limit): 
+        if (socks_try >= socks_limit) or (ver == 5 and socks5(socks,host,port) == 1) or (ver == 4 and socks4(socks,host,port) == 1): 
 
           ssh = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+          debug("[+] connected to "+str(host)+":"+str(port)+"\n")
+
           try:
             ssh.connect(('127.0.0.1',22))
             exchange(ssh,socks)
             socks.shutdown(2)
             ssh.shutdown(2)
             ssh.close()
+            debug("[+] connection closed\n")
           except:
             pass
         
-        else:
-          debug("[-] socks server couldn't establish the connection to "+str(host)+":"+str(port)+"\n") 
+#        else:
+#          debug("[-] socks server couldn't establish the connection to "+str(host)+":"+str(port)+"\n") 
         
         socks.close()
       

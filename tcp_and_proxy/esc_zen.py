@@ -21,8 +21,8 @@ def xor(xorstr,xorsec,i,xorseclen):
   xorstrrange = range(len(xorstr))
 
   for c in xorstrrange:
-    xorstr[c]=(xorstr[c]^xorsec[i])
-    i+=1
+    xorstr[c] = (xorstr[c]^xorsec[i])
+    i += 1
     if i >= xorseclen:
       i = 0
 

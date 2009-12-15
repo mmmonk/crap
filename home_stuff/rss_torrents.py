@@ -14,8 +14,10 @@ import socket
 
 # list of RSS feeds that we are intrested in
 RSSFEEDS = [
-  'http://rss.bt-chat.com/?group=3&cat=9',
-  'http://www.mininova.org/rss.xml?user=MVGroup',
+#  'http://rss.bt-chat.com/?group=3&cat=9',
+#  'http://www.mininova.org/rss.xml?user=MVGroup',
+  'http://www.ezrss.it/search/index.php?show_name=house&show_name_exact=true&date=&quality=&release_group=&mode=rss',
+  'http://www.ezrss.it/search/index.php?show_name=lie+to+me&show_name_exact=true&date=&quality=&release_group=&mode=rss',
   'http://www.ebookshare.net/plus/rss/index.xml'
   ] 
 
@@ -28,12 +30,11 @@ RSSDOWNLOAD = {
 # dictionary of lists of what we are intrested in specific feeds 
 RSSALLOW = {
   'http://www.ebookshare.net/plus/rss/index.xml': ['-lib','ebook-'],
-  'http://rss.bt-chat.com/?group=3&cat=9': ['kings','leverage','lie.to.me','the.unit','mentalist','mythbusters']
   }
 
 # dictionary of lists of what we are not intrested in specific feeds
 RSSDENY = {
-  'http://www.ebookshare.net/plus/rss/index.xml': ['microsoft office','religion','social','history','sharepoint','visual basic','dot net','sql','ado net','active directory','photoshop','adobe','rowman','routledge']
+  'http://www.ebookshare.net/plus/rss/index.xml': ['microsoft office','religion','social','history','sharepoint','visual basic','dot net','sql','ado net','active directory','photoshop','adobe','rowman','routledge','windows 7']
   }
 
 
@@ -153,7 +154,10 @@ def GetFile(url):
 	DbPrint('length of the response is 0')
 	return
 
-  DbPrint('response is "'+repr(http_response.status)+' '+http_response.reason+'" and it is '+http_response.getheader('Content-Type'))
+  try:
+    DbPrint('response is "'+repr(http_response.status)+' '+http_response.reason+'" and it is '+http_response.getheader('Content-Type'))
+  except:
+    pass
 
   if http_response.status != 200:
 	DbPrint('HTTP response not 200, ignoring link',1)
@@ -171,9 +175,12 @@ def GetFile(url):
 	filename = filename+'.torrent'
 
   # then check if the server send us Content-Disposition header with the filename
-  if 'filename' in http_response.getheader('Content-Disposition'):
-	filename = (http_response.getheader('Content-Disposition').rpartition('='))[2]
- 
+  try:
+    if http_response.getheader('Content-Disposition') and 'filename' in http_response.getheader('Content-Disposition'):
+          filename = (http_response.getheader('Content-Disposition').rpartition('='))[2]
+  except:
+    pass 
+
   try:
 	filename = str(filename)
   except UnicodeEncodeError:

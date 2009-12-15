@@ -6,29 +6,39 @@ import struct
 import sys
 import select
 import fcntl
+import time
 
-# main data exchnage function
-def exchange(s):
+def debug(message):
+  sys.stderr.write(time.asctime()+": "+message) 
+
+# main data exchange function
+def exchange(s1,s2):
   # input:
-  # s - socket object
+  # s1 - socket 1 object
+  # s2 - socket 2 object
   # return:
   # nothing :)
 
   # setting every description to be non blocking 
-  fcntl.fcntl(s, fcntl.F_SETFL, os.O_NONBLOCK|os.O_NDELAY) 
-  fcntl.fcntl(0, fcntl.F_SETFL, os.O_NONBLOCK)
+  fcntl.fcntl(s1, fcntl.F_SETFL, os.O_NONBLOCK|os.O_NDELAY) 
+  fcntl.fcntl(s2, fcntl.F_SETFL, os.O_NONBLOCK|os.O_NDELAY)
 
   while 1:
-    toread,towrite,[]=select.select([sys.stdin,s],[s],[],30)
+    toread,towrite,[]=select.select([s1,s2],[s1,s2],[],30)
     
-    if s in toread:
-      data = s.recv(1500)
-      if data:
-          sys.stdout.write(data)
-    if sys.stdin in toread and s in towrite: 
-      data = sys.stdin.read(1500)
-      if data:
-          s.send(data)
+    if s1 in toread and s2 in towrite:
+      data = s1.recv(1500)
+      if len(data) == 0:
+        break
+      else:
+        s2.send(data)
+
+    if s2 in toread and s1 in towrite: 
+      data = s2.recv(1500)
+      if len(data) == 0:
+        break
+      else:
+        s1.send(data)
 
 # preparing a socks4 or socks4a connection
 def socks4(s,host,port):
@@ -67,7 +77,10 @@ def socks5(s,host,port):
   data = struct.pack('!3B',5,1,0)
   s.send(data)
   data = s.recv(1024)
-  auth = struct.unpack('2B',data)[1]
+  try:
+    auth = struct.unpack('2B',data)[1]
+  except:
+    return 0
   if auth != 255:
     nport = struct.pack('!H',port)
     try:
@@ -77,7 +90,10 @@ def socks5(s,host,port):
 
     s.send(data)
     data = s.recv(256)
-    code = struct.unpack('BBH',data[:4])[1]
+    try:
+      code = struct.unpack('BBH',data[:4])[1]
+    except:
+      return 0
 
     if code == 0:
       return 1 
@@ -100,21 +116,55 @@ if __name__ == '__main__':
     else:
       ver = 5
 
+    socks_try = 0
+    socks_limit = 5
+
     while 1:
       socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      try:
-        socks.connect((phost, pport))
-      except socket.error:
-        sys.stderr.write("[-] problem connecting to "+str(phost)+":"+str(pport)+"\n")
-        socks.close()
 
-      if socks:
-        sys.stderr.write("[+] connecting via "+str(phost)+":"+str(pport)+"\n")
+      connected = 1
+      if socks_try < socks_limit:
+        try:
+          socks.connect((phost, pport))
+          debug("[+] connecting via "+str(phost)+":"+str(pport)+"\n")
+        except socket.error:
+          debug("[-] problem connecting to "+str(phost)+":"+str(pport)+"\n")
+          connected = 0
+      else:
+        try:
+          socks.connect((host, port))
+          debug("[+] connecting direct to "+str(host)+":"+str(port)+"\n")
+        except:
+          debug("[-] problem connecting direct to "+str(host)+":"+str(port)+"\n")
+          connected = 0
 
-        if (ver == 5 and socks5(socks,host,port) == 1) or (ver == 4 and socks4(socks,host,port) == 1): 
-          exchange(socks)
+      if connected == 1:
+
+        if (ver == 5 and socks5(socks,host,port) == 1) or (ver == 4 and socks4(socks,host,port) == 1) or (socks_try == socks_limit): 
+
+          ssh = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+          try:
+            ssh.connect(('127.0.0.1',22))
+            exchange(ssh,socks)
+            socks.shutdown(2)
+            ssh.shutdown(2)
+            ssh.close()
+          except:
+            pass
+        
         else:
-          sys.stderr.write("[-] unsupported socks version or the authentication failed")
+          debug("[-] socks server couldn't establish the connection to "+str(host)+":"+str(port)+"\n") 
+        
+        socks.close()
+      
+      else:
+        socks.close()
+        if socks_try >= socks_limit:
+          socks_try = 0
+        socks_try += 1
+         
+      time.sleep(30)
 
   else:
     sys.stderr.write("usage: "+sys.argv[0]+" ip_socks port_socks ip_dest port_dest [socks_ver]\n")
+

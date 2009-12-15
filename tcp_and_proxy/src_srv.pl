@@ -94,7 +94,7 @@ while (1) {
 
 	### AUTHORIZATION
 	my $data;
-        sysread $socks, $data, 86;
+  sysread $socks, $data, 86;
 
 	unless ($data){
 		warn ct,"connected to proxy server ".$pserver.":".$pport." - timeout\n";
@@ -106,18 +106,18 @@ while (1) {
 	}
 
 	$data=$data.$secret;
-        $data=sha512_base64($data);
+  $data=sha512_base64($data);
 
-        syswrite $socks, $data, length($data);
+  syswrite $socks, $data, length($data);
 
 	warn ct,"sending auth data\n";
 
 	my $ssh;
-        socket($ssh,PF_INET,SOCK_STREAM,6);
-        if (! connect($ssh,sockaddr_in($ssh_srv_prt,inet_aton($ssh_server)))){
-                warn ct,"ssh server at ".$ssh_server.":".$ssh_srv_prt." is not responding\n"; 
-                next;
-        }else{
+  socket($ssh,PF_INET,SOCK_STREAM,6);
+  if (! connect($ssh,sockaddr_in($ssh_srv_prt,inet_aton($ssh_server)))){
+          warn ct,"ssh server at ".$ssh_server.":".$ssh_srv_prt." is not responding\n"; 
+          next;
+  }else{
 		warn ct,"connected to SSH server at ".$ssh_server.":".$ssh_srv_prt."\n";
 	}
 

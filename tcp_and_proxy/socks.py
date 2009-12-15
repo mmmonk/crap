@@ -23,8 +23,11 @@ def exchange(s):
     
     if s in toread:
       data = s.recv(1500)
-      if data:
-          sys.stdout.write(data)
+      if len(data) == 0:
+        s.shutdown(2)
+        break
+      else:  
+        sys.stdout.write(data)
     if sys.stdin in toread and s in towrite: 
       data = sys.stdin.read(1500)
       if data:
@@ -77,7 +80,10 @@ def socks5(s,host,port):
 
     s.send(data)
     data = s.recv(256)
-    code = struct.unpack('BBH',data[:4])[1]
+    try:
+      code = struct.unpack('BBH',data[:4])[1]
+    except:
+      return 0
 
     if code == 0:
       return 1 
@@ -108,13 +114,13 @@ if __name__ == '__main__':
       socks.close()
       sys.exit()  
 
-    if socks:
-      sys.stderr.write("[+] connecting via "+str(phost)+":"+str(pport)+"\n")
+    sys.stderr.write("[+] connecting via "+str(phost)+":"+str(pport)+" to "+str(host)+":"+str(port)+"\n")
 
-      if (ver == 5 and socks5(socks,host,port) == 1) or (ver == 4 and socks4(socks,host,port) == 1): 
-        exchange(socks)
-      else:
-        sys.stderr.write("[-] unsupported socks version or the authentication failed")
+    if (ver == 5 and socks5(socks,host,port) == 1) or (ver == 4 and socks4(socks,host,port) == 1): 
+      exchange(socks)
+      socks.close()
+    else:
+      sys.stderr.write("[-] socks server couldn't establish the connection\n")
 
   else:
     sys.stderr.write("usage: "+sys.argv[0]+" ip_socks port_socks ip_dest port_dest [socks_ver]\n")

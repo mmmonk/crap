@@ -2,10 +2,33 @@
 
 import os
 import socket
-import struct
 import sys
 import select
 import fcntl
+
+
+def xor(xorstr,xorsec,i,xorseclen):
+  # input:
+  # xorstr - data
+  # xorsec - xoring secret
+  # i - where are we in the xoring secret
+  # xorseclen - the length of xoring secret
+  # return:
+  # i - where did we finish in the xoring secret
+  # s - xorred data
+
+  xorstr = map (ord, xorstr)
+  xorstrrange = range(len(xorstr))
+
+  for c in xorstrrange:
+    xorstr[c]=(xorstr[c]^xorsec[i])
+    i+=1
+    if i >= xorseclen:
+      i = 0
+
+  s = ""
+  return i,s.join(map(chr, xorstr))
+
 
 # main data exchange function
 def exchange(s):
@@ -18,18 +41,25 @@ def exchange(s):
   fcntl.fcntl(s, fcntl.F_SETFL, os.O_NONBLOCK|os.O_NDELAY) 
   fcntl.fcntl(0, fcntl.F_SETFL, os.O_NONBLOCK)
 
+  secret = map(ord,"testowysecret")
+  secretlen = len(secret)
+  secreti = 0
+  secreto = 0
+
   while 1:
     toread,towrite,[]=select.select([sys.stdin,s],[s],[],30)
     
     if s in toread:
       data = s.recv(1500)
+      secreti,data = xor(data,secret,secreti,secretlen)
       if len(data) == 0:
         s.shutdown(2)
         break
       else:
         sys.stdout.write(data)
-    if sys.stdin in toread and s in towrite: 
+    if sys.stdin in toread and s in towrite:
       data = sys.stdin.read(1500)
+      secreto,data = xor(data,secret,secreto,secretlen)
       if data:
           s.send(data)
 

@@ -11,6 +11,29 @@ import time
 def debug(message):
   sys.stderr.write(time.asctime()+": "+message) 
 
+def xor(xorstr,xorsec,i,xorseclen):
+  # input:
+  # xorstr - data
+  # xorsec - xoring secret
+  # i - where are we in the xoring secret
+  # xorseclen - the length of xoring secret
+  # return:
+  # i - where did we finish in the xoring secret
+  # s - xorred data
+
+  xorstr = map (ord, xorstr)
+  xorstrrange = range(len(xorstr))
+
+  for c in xorstrrange:
+    xorstr[c]=(xorstr[c]^xorsec[i])
+    i+=1
+    if i >= xorseclen:
+      i = 0
+
+  s = ""
+  return i,s.join(map(chr, xorstr))
+
+
 # main data exchange function
 def exchange(s1,s2):
   # input:
@@ -23,11 +46,17 @@ def exchange(s1,s2):
   fcntl.fcntl(s1, fcntl.F_SETFL, os.O_NONBLOCK|os.O_NDELAY) 
   fcntl.fcntl(s2, fcntl.F_SETFL, os.O_NONBLOCK|os.O_NDELAY)
 
+  secret = map(ord,"testowysecret")
+  secretlen = len(secret) 
+  secreti = 0
+  secreto = 0
+
   while 1:
     toread,towrite,[]=select.select([s1,s2],[s1,s2],[],30)
     
     if s1 in toread and s2 in towrite:
       data = s1.recv(1500)
+      secreti,data = xor(data,secret,secreti,secretlen)
       if len(data) == 0:
         break
       else:
@@ -35,6 +64,7 @@ def exchange(s1,s2):
 
     if s2 in toread and s1 in towrite: 
       data = s2.recv(1500)
+      secreto,data = xor(data,secret,secreto,secretlen)
       if len(data) == 0:
         break
       else:
@@ -117,7 +147,7 @@ if __name__ == '__main__':
       ver = 5
 
     socks_try = 0
-    socks_limit = 5
+    socks_limit = 1 
 
     while 1:
       socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -130,6 +160,7 @@ if __name__ == '__main__':
         except socket.error:
           debug("[-] problem connecting to "+str(phost)+":"+str(pport)+"\n")
           connected = 0
+
       else:
         try:
           socks.connect((host, port))
@@ -140,7 +171,7 @@ if __name__ == '__main__':
 
       if connected == 1:
 
-        if (ver == 5 and socks5(socks,host,port) == 1) or (ver == 4 and socks4(socks,host,port) == 1) or (socks_try == socks_limit): 
+        if (ver == 5 and socks5(socks,host,port) == 1) or (ver == 4 and socks4(socks,host,port) == 1) or (socks_try >= socks_limit): 
 
           ssh = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
           try:

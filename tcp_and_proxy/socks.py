@@ -18,20 +18,25 @@ def exchange(s):
   fcntl.fcntl(s, fcntl.F_SETFL, os.O_NONBLOCK|os.O_NDELAY) 
   fcntl.fcntl(0, fcntl.F_SETFL, os.O_NONBLOCK)
 
+  s_recv = s.recv
+  s_send = s.send
+  write  = sys.stdout.write
+  read   = sys.stdin.read  
+
   while 1:
-    toread,towrite,[]=select.select([sys.stdin,s],[s],[],30)
+    toread,towrite,[]=select.select([0,s],[s],[],30)
     
     if s in toread:
-      data = s.recv(1500)
+      data = s_recv(1500)
       if len(data) == 0:
         s.shutdown(2)
         break
       else:  
-        sys.stdout.write(data)
-    if sys.stdin in toread and s in towrite: 
-      data = sys.stdin.read(1500)
+        write(data)
+    if 0 in toread and s in towrite: 
+      data = read(1500)
       if data:
-          s.send(data)
+          s_send(data)
 
 # preparing a socks4 or socks4a connection
 def socks4(s,host,port):

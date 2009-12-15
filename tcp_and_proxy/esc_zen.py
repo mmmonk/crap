@@ -46,22 +46,27 @@ def exchange(s):
   secreti = 0
   secreto = 0
 
+  s_recv = s.recv
+  s_send = s.send
+  write = sys.stdout.write
+  read = sys.stdin.read
+
   while 1:
-    toread,towrite,[]=select.select([sys.stdin,s],[s],[],30)
+    toread,towrite,[]=select.select([0,s],[s],[],30)
     
     if s in toread:
-      data = s.recv(1500)
+      data = s_recv(1500)
       secreti,data = xor(data,secret,secreti,secretlen)
       if len(data) == 0:
         s.shutdown(2)
         break
       else:
-        sys.stdout.write(data)
-    if sys.stdin in toread and s in towrite:
-      data = sys.stdin.read(1500)
+        write(data)
+    if 0 in toread and s in towrite:
+      data = read(1500)
       secreto,data = xor(data,secret,secreto,secretlen)
       if data:
-          s.send(data)
+          s_send(data)
 
 #### main stuff
 if __name__ == '__main__':

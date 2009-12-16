@@ -6,8 +6,7 @@ import sys
 import select
 import fcntl
 
-
-def xor(xorstr,xorsec,i,xorseclen):
+def gxor(xorstr,xorsec,i,xorseclen):
   # input:
   # xorstr - data
   # xorsec - xoring secret
@@ -26,8 +25,7 @@ def xor(xorstr,xorsec,i,xorseclen):
     if i >= xorseclen:
       i = 0
 
-  s = ""
-  return i,s.join(map(chr, xorstr))
+  return i,"".join(map(chr, xorstr))
 
 
 # main data exchange function
@@ -56,7 +54,7 @@ def exchange(s):
     
     if s in toread:
       data = s_recv(1500)
-      secreti,data = xor(data,secret,secreti,secretlen)
+#      secreti,data = gxor(data,secret,secreti,secretlen)
       if len(data) == 0:
         s.shutdown(2)
         break
@@ -64,7 +62,7 @@ def exchange(s):
         write(data)
     if 0 in toread and s in towrite:
       data = read(1500)
-      secreto,data = xor(data,secret,secreto,secretlen)
+#      secreto,data = gxor(data,secret,secreto,secretlen)
       if data:
           s_send(data)
 

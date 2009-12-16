@@ -11,7 +11,7 @@ import time
 def debug(message):
   sys.stderr.write(time.asctime()+": "+message) 
 
-def xor(xorstr,xorsec,i,xorseclen):
+def gxor(xorstr,xorsec,i,xorseclen):
   # input:
   # xorstr - data
   # xorsec - list xoring secret
@@ -30,8 +30,7 @@ def xor(xorstr,xorsec,i,xorseclen):
     if i >= xorseclen:
       i = 0
 
-  s = ""
-  return i,s.join(map(chr, xorstr))
+  return i,"".join(map(chr, xorstr))
 
 
 # main data exchange function
@@ -61,7 +60,7 @@ def exchange(s1,s2):
     
     if s1 in toread and s2 in towrite:
       data = s1_recv(1500)
-      secreti,data = xor(data,secret,secreti,secretlen)
+#      secreti,data = gxor(data,secret,secreti,secretlen)
       if len(data) == 0:
         break
       else:
@@ -69,7 +68,7 @@ def exchange(s1,s2):
 
     if s2 in toread and s1 in towrite: 
       data = s2_recv(1500)
-      secreto,data = xor(data,secret,secreto,secretlen)
+#      secreto,data = gxor(data,secret,secreto,secretlen)
       if len(data) == 0:
         break
       else:
@@ -152,7 +151,7 @@ if __name__ == '__main__':
       ver = 5
 
     socks_try = 0
-    socks_limit = 1 
+    socks_limit = 6
 
     while 1:
       socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -202,7 +201,7 @@ if __name__ == '__main__':
           socks_try = 0
         socks_try += 1
          
-      time.sleep(30)
+      time.sleep(300)
 
   else:
     sys.stderr.write("usage: "+sys.argv[0]+" ip_socks port_socks ip_dest port_dest [socks_ver]\n")

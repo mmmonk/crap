@@ -14,10 +14,12 @@ logfile = "/root/connection_monitor.log"
 WORKDIR = '/'
 UMASK = 0
 REDIRECT_TO = '/dev/null'
+HOSTNAME = os.uname()[1]
 
 ### write log function
 def writelog(text):
   log = open(logfile,'a')
+  message = "%s - %s: %s\n", (HOSTNAME,time.asctime(),text)
   log.write(text)
   log.close()
 
@@ -31,18 +33,18 @@ def main_monitor(hosts):
         s.connect((host, port))
         s.shutdown(2)
         if hosts_state[host] == 0:
-          writelog("%s: connection again possible with connecting to %s\n" % (time.asctime(),host))
+          writelog("connection again possible with connecting to %s" % host)
           hosts_state[host] = 1
       except socket.error:
         if hosts_state[host] == 1:
-          writelog("%s: error connecting to %s\n" % (time.asctime(),host))
+          writelog("error connecting to %s" % host)
           hosts_state[host] = 0
       s.close()
     
     time.sleep(60)
 
 
-writelog("%s: script started\n" % time.asctime())
+writelog("script started")
 
 hosts_state = {}
 
@@ -71,7 +73,7 @@ if pid == 0:
   try:
     main_monitor(hosts_to_watch)
   except:
-    writelog("%s: script stopped\n" % time.asctime())
+    writelog("script stopped")
 
 else:
   os._exit(0)

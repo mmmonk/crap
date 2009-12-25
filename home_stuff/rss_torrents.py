@@ -14,8 +14,6 @@ import socket
 
 # list of RSS feeds that we are intrested in
 RSSFEEDS = [
-#  'http://rss.bt-chat.com/?group=3&cat=9',
-#  'http://www.mininova.org/rss.xml?user=MVGroup',
   'http://www.ezrss.it/search/index.php?show_name=house&show_name_exact=true&date=&quality=&release_group=&mode=rss',
   'http://www.ezrss.it/search/index.php?show_name=lie+to+me&show_name_exact=true&date=&quality=&release_group=&mode=rss',
   'http://www.ebookshare.net/plus/rss/index.xml'
@@ -34,7 +32,8 @@ RSSALLOW = {
 
 # dictionary of lists of what we are not intrested in specific feeds
 RSSDENY = {
-  'http://www.ebookshare.net/plus/rss/index.xml': ['microsoft office','religion','social','history','sharepoint','visual basic','dot net','sql','ado net','active directory','photoshop','adobe','rowman','routledge','windows 7']
+  'http://www.ebookshare.net/plus/rss/index.xml': ['microsoft office','religion','social','history','sharepoint','visual basic','dot net','sql','ado net','active directory','photoshop','adobe','rowman','routledge','windows 7','interface design','corporate power','web technologies','information technologies'],
+  'http://www.ezrss.it/search/index.php?show_name=house&show_name_exact=true&date=&quality=&release_group=&mode=rss' : ['720p - hdtv']
   }
 
 
@@ -42,7 +41,7 @@ TORRENTSDIR = '/home/case/Desktop/torrents/'
 DATAFILE = TORRENTSDIR+'rss_torrents.dat'
 DATATMPFILE = TORRENTSDIR+'rss_torrents.tmp'
 
-# time in minutes
+# time in minutes, not yet used
 HOWOFTENTOCHECK = 45
 
 # global socket timeout in seconds (used in httplib)
@@ -292,7 +291,8 @@ if __name__ == '__main__':
 	DbPrint('CTRL+C pressed, exiting')
  
   try:
-	open(DATATMPFILE,'r')
-	os.rename(DATATMPFILE,DATAFILE)
+	tempfile = open(DATATMPFILE,'r')
+        tempfile.close()
+        os.rename(DATATMPFILE,DATAFILE)
   except:
 	pass

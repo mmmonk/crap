@@ -27,12 +27,12 @@ RSSDOWNLOAD = {
 
 # dictionary of lists of what we are intrested in specific feeds 
 RSSALLOW = {
-  'http://www.ebookshare.net/plus/rss/index.xml': ['-lib','ebook-'],
+  'http://www.ebookshare.net/plus/rss/index.xml': ['-lib','ebook-','scientist','science','popular mechanics'],
   }
 
 # dictionary of lists of what we are not intrested in specific feeds
 RSSDENY = {
-  'http://www.ebookshare.net/plus/rss/index.xml': ['microsoft office','religion','social','history','sharepoint','visual basic','dot net','sql','ado net','active directory','photoshop','adobe','rowman','routledge','windows 7','interface design','corporate power','web technologies','information technologies'],
+  'http://www.ebookshare.net/plus/rss/index.xml': ['microsoft office','religion','social','history','sharepoint','visual basic','dot net','sql','ado net','active directory','photoshop','adobe','rowman','routledge','windows 7','interface design','corporate power','web technologies','information technologies','blender','joomla','xhtml',' mac ','drupal'],
   'http://www.ezrss.it/search/index.php?show_name=house&show_name_exact=true&date=&quality=&release_group=&mode=rss' : ['720p - hdtv']
   }
 
@@ -48,7 +48,7 @@ HOWOFTENTOCHECK = 45
 timeout = 10
 socket.setdefaulttimeout(timeout)
 
-DEBUG=0
+DEBUG=1
 
 HTTPHEADERS = {
   'User-Agent':	'Mozilla/5.0 (Windows; U; Windows NT 5.1; en; rv:1.8.1.3) Gecko/20070309 Firefox/2.0.0.3',

@@ -7,15 +7,17 @@ import time
 ggcmdfile = os.environ['HOME']+"/.gg/cmd"
 
 def ekgcmd(cmd):
-  fcmd = open(ggcmdfile,'w')
-  fcmd.write(cmd+"\n")
-  fcmd.close()
+  try:
+    fcmd = open(ggcmdfile,'w')
+    fcmd.write(cmd+"\n")
+    fcmd.close()
+  except:
+    pass
 
 try:
   name = os.environ['STY']
 except KeyError: 
-  print "not running inside screen, exiting"
-  sys.exit(1)
+  name = "monkey"
 
 state=1
 

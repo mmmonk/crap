@@ -2,7 +2,7 @@
 """
 Author: <m.lukaszuk(at)gmail.com> 2010
 
-Script to news from RSS feeds via email feeds
+Script to send news from RSS feeds via email
 """
 import httplib
 import feedparser

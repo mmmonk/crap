@@ -48,7 +48,7 @@ HOWOFTENTOCHECK = 45
 timeout = 10
 socket.setdefaulttimeout(timeout)
 
-DEBUG=1
+DEBUG=0
 
 HTTPHEADERS = {
   'User-Agent':	'Mozilla/5.0 (Windows; U; Windows NT 5.1; en; rv:1.8.1.3) Gecko/20070309 Firefox/2.0.0.3',
@@ -288,7 +288,7 @@ if __name__ == '__main__':
 	  time.sleep(sleeptime)
 
   except KeyboardInterrupt:
-	DbPrint('CTRL+C pressed, exiting')
+	DbPrint('interupted exiting')
  
   try:
 	tempfile = open(DATATMPFILE,'r')

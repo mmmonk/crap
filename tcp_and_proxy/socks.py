@@ -24,7 +24,7 @@ def exchange(s):
   read   = sys.stdin.read  
 
   while 1:
-    toread,towrite,[]=select.select([0,s],[s],[],30)
+    toread,[],[]=select.select([0,s],[],[],30)
     
     if s in toread:
       data = s_recv(1500)
@@ -33,7 +33,7 @@ def exchange(s):
         break
       else:  
         write(data)
-    if 0 in toread and s in towrite: 
+    if 0 in toread: 
       data = read(1500)
       if data:
           s_send(data)

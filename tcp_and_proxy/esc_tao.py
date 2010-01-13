@@ -56,9 +56,9 @@ def exchange(s1,s2):
   s2_send = s2.send
 
   while 1:
-    toread,towrite,[]=select.select([s1,s2],[s1,s2],[],30)
+    toread,[]=select.select([s1,s2],[],[],30)
     
-    if s1 in toread and s2 in towrite:
+    if s1 in toread: 
       data = s1_recv(1500)
 #      secreti,data = gxor(data,secret,secreti,secretlen)
       if len(data) == 0:
@@ -66,7 +66,7 @@ def exchange(s1,s2):
       else:
         s2_send(data)
 
-    if s2 in toread and s1 in towrite: 
+    if s2 in toread:
       data = s2_recv(1500)
 #      secreto,data = gxor(data,secret,secreto,secretlen)
       if len(data) == 0:

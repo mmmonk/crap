@@ -27,7 +27,7 @@ RSSDOWNLOAD = {
 
 # dictionary of lists of what we are intrested in specific feeds 
 RSSALLOW = {
-  'http://www.ebookshare.net/plus/rss/index.xml': ['-lib','ebook-','scientist','science','popular mechanics'],
+  'http://www.ebookshare.net/plus/rss/index.xml': ['-lib','ebook-','scientist','science','popular mechanics','scientific american'],
   }
 
 # dictionary of lists of what we are not intrested in specific feeds
@@ -79,14 +79,14 @@ def MapNewLineClean(a):
   return a.replace('\n','')
 
 
-def AddToDataFile(url):
+def AddToDataFile(str):
   '''
-  adds url to the temporary data file
-  intput: url of the torrent file that we have already downloaded
+  adds string to the temporary data file
+  intput: string containing the feed url and the link to the torrent file that we have already downloaded
   '''
   try: 
 	datatmpfile = open(DATATMPFILE,'a')
-	datatmpfile.write(url+'\n')
+	datatmpfile.write(str+'\n')
 	datatmpfile.close()
   except:
 	DbPrint('error while writing '+DATATMPFILE,1)
@@ -114,7 +114,7 @@ def LoadDataFile(file):
 
   datafile.close()  
 
-def GetFile(url):
+def GetFile(feed,url):
   '''
   Function - get the file specified by the url (used inside ReadFeed)
   input: url of the file to download
@@ -124,9 +124,9 @@ def GetFile(url):
 	url = url.replace('http://','',1)
 
 
-  if url in SEENTORRENTS:
+  if feed+"|"+url in SEENTORRENTS:
 	DbPrint('already seen torrent ('+url+')')
-	AddToDataFile(url)	
+	AddToDataFile(feed+"|"+url)	
 	return
 
   # url[0] - hostname
@@ -201,7 +201,7 @@ def GetFile(url):
 	torrent.write(data);
 	torrent.close()
 	DbPrint('  completed')
-	AddToDataFile(url[0]+'/'+url[2])
+	AddToDataFile(feed+"|"+url[0]+'/'+url[2])
 
   except:
 	DbPrint('  error while saving',1)
@@ -225,7 +225,7 @@ def ReadFeed(url):
 	DbPrint('Connection problems')
 	for torrentlink in SEENTORRENTS:
 	  if host in torrentlink:
-		AddToDataFile(torrentlink)
+            AddToDataFile(url+"|"+torrentlink)
 	return
 
   for rssentry in rssfeed.entries:
@@ -264,7 +264,7 @@ def ReadFeed(url):
 		rssentry.link = re.sub(RSSDOWNLOAD[host][0],RSSDOWNLOAD[host][1],rssentry.link)
 		DbPrint('  new link '+rssentry.link)
 	  
-	  GetFile(rssentry.link)
+	  GetFile(url,rssentry.link)
 	else:
 	  DbPrint('not intrested in this torrent')
 

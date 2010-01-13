@@ -51,7 +51,8 @@ def exchange(s):
 
   while 1:
     toread,[],[]=select.select([0,s],[],[],30)
-    
+    [],towrite,[]=select.select([],[s],[],30)  
+  
     if s in toread:
       data = s_recv(1500)
 #      secreti,data = gxor(data,secret,secreti,secretlen)
@@ -60,7 +61,7 @@ def exchange(s):
         break
       else:
         write(data)
-    if 0 in toread:
+    if 0 in toread and s in towrite:
       data = read(1500)
 #      secreto,data = gxor(data,secret,secreto,secretlen)
       if data:

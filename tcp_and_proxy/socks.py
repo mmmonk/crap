@@ -28,14 +28,14 @@ def exchange(s):
     [],towrite,[]=select.select([],[s],[],30)
     
     if s in toread:
-      data = s_recv(1500)
+      data = s_recv(4096)
       if len(data) == 0:
         s.shutdown(2)
         break
       else:  
         write(data)
     if 0 in toread and s in towrite: 
-      data = read(1500)
+      data = read(4096)
       if data:
           s_send(data)
 

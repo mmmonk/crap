@@ -1,4 +1,4 @@
-#!/usr/bin/python -u
+#!/usr/bin/python
 
 import os
 import socket
@@ -57,18 +57,19 @@ def exchange(s1,s2):
 
   while 1:
     toread,[]=select.select([s1,s2],[],[],30)
-    [],towrite,[]=select.select([],[s1,s2],[],30)
-    
-    if s1 in toread and s2 in towrite: 
-      data = s1_recv(1500)
+    [],towrite1,[]=select.select([],[s1],[],30)
+    [],towrite2,[]=select.select([],[s2],[],30)   
+ 
+    if s1 in toread and s2 in towrite2: 
+      data = s1_recv(4096)
 #      secreti,data = gxor(data,secret,secreti,secretlen)
       if len(data) == 0:
         break
       else:
         s2_send(data)
 
-    if s2 in toread and s1 in towrite:
-      data = s2_recv(1500)
+    if s2 in toread and s1 in towrite1:
+      data = s2_recv(4096)
 #      secreto,data = gxor(data,secret,secreto,secretlen)
       if len(data) == 0:
         break

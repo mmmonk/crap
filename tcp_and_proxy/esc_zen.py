@@ -35,7 +35,7 @@ def exchange(s):
   # return:
   # nothing :)
 
-  # setting every description to be non blocking 
+  # setting every descriptor to be non blocking 
   fcntl.fcntl(s, fcntl.F_SETFL, os.O_NONBLOCK|os.O_NDELAY) 
   fcntl.fcntl(0, fcntl.F_SETFL, os.O_NONBLOCK)
 
@@ -55,6 +55,7 @@ def exchange(s):
   
     if s in toread:
       data = s_recv(1500)
+      sys.stderr.write("got: %s\n" % data)
 #      secreti,data = gxor(data,secret,secreti,secretlen)
       if len(data) == 0:
         s.shutdown(2)

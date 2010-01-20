@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python 
 
 import os
 import socket
@@ -56,7 +56,7 @@ def exchange(s1,s2):
   s2_send = s2.send
 
   while 1:
-    toread,[]=select.select([s1,s2],[],[],30)
+    toread,[],[]=select.select([s1,s2],[],[],30)
     [],towrite1,[]=select.select([],[s1],[],30)
     [],towrite2,[]=select.select([],[s2],[],30)   
  
@@ -170,9 +170,9 @@ if __name__ == '__main__':
       else:
         try:
           socks.connect((host, port))
-#          debug("[+] connecting direct to "+str(host)+":"+str(port)+"\n")
+  #          debug("[+] connecting direct to "+str(host)+":"+str(port)+"\n")
         except:
-#          debug("[-] problem connecting direct to "+str(host)+":"+str(port)+"\n")
+  #          debug("[-] problem connecting direct to "+str(host)+":"+str(port)+"\n")
           connected = 0
 
       if connected == 1:
@@ -182,15 +182,20 @@ if __name__ == '__main__':
           ssh = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
           debug("[+] connected to "+str(host)+":"+str(port)+"\n")
 
+          sshok=1
           try:
             ssh.connect(('127.0.0.1',22))
+          except:
+            sshok=0
+
+          if sshok == 1:          
             exchange(ssh,socks)
             socks.shutdown(2)
             ssh.shutdown(2)
             ssh.close()
             debug("[+] connection closed\n")
-          except:
-            pass
+          else:
+            debug("[-] ssh connection problems\n")
         
 #        else:
 #          debug("[-] socks server couldn't establish the connection to "+str(host)+":"+str(port)+"\n") 
@@ -203,7 +208,7 @@ if __name__ == '__main__':
           socks_try = 0
         socks_try += 1
          
-      time.sleep(300)
+      time.sleep(3)
 
   else:
     sys.stderr.write("usage: "+sys.argv[0]+" ip_socks port_socks ip_dest port_dest [socks_ver]\n")

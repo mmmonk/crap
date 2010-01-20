@@ -54,8 +54,7 @@ def exchange(s):
     [],towrite,[]=select.select([],[s],[],30)  
   
     if s in toread:
-      data = s_recv(1500)
-      sys.stderr.write("got: %s\n" % data)
+      data = s_recv(4096)
 #      secreti,data = gxor(data,secret,secreti,secretlen)
       if len(data) == 0:
         s.shutdown(2)
@@ -63,7 +62,7 @@ def exchange(s):
       else:
         write(data)
     if 0 in toread and s in towrite:
-      data = read(1500)
+      data = read(4096)
 #      secreto,data = gxor(data,secret,secreto,secretlen)
       if data:
           s_send(data)

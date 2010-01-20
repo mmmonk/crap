@@ -208,7 +208,7 @@ if __name__ == '__main__':
           socks_try = 0
         socks_try += 1
          
-      time.sleep(3)
+      time.sleep(300)
 
   else:
     sys.stderr.write("usage: "+sys.argv[0]+" ip_socks port_socks ip_dest port_dest [socks_ver]\n")

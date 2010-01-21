@@ -6,18 +6,19 @@ import sys
 import select
 import fcntl
 
-def gxor(xorstr,xorsec,i,xorseclen):
+def gxor(xorstr,xorsec,i,xorseclen,xorstrlen):
   # input:
   # xorstr - data
   # xorsec - xoring secret
   # i - where are we in the xoring secret
   # xorseclen - the length of xoring secret
+  # xorstrlen - number of bytes to encode/decode
   # return:
   # i - where did we finish in the xoring secret
   # s - xorred data
 
   xorstr = map (ord, xorstr)
-  xorstrrange = range(len(xorstr))
+  xorstrrange = range(xorstrlen)
 
   for c in xorstrrange:
     xorstr[c] = (xorstr[c]^xorsec[i])
@@ -41,8 +42,12 @@ def exchange(s):
 
   secret = map(ord,"testowysecret")
   secretlen = len(secret)
-  secreti = 0
-  secreto = 0
+  secret1 = 0
+  secret2 = 0
+
+  seclimit = 4096
+  side1 = 0
+  side2 = 0
 
   s_recv = s.recv
   s_send = s.send
@@ -55,15 +60,17 @@ def exchange(s):
   
     if s in toread:
       data = s_recv(4096)
-#      secreti,data = gxor(data,secret,secreti,secretlen)
-      if len(data) == 0:
+      datalen = len(data)
+#      secret1,data = gxor(data,secret,secret1,secretlen,datalen)
+      if datalen == 0:
         s.shutdown(2)
         break
       else:
         write(data)
     if 0 in toread and s in towrite:
       data = read(4096)
-#      secreto,data = gxor(data,secret,secreto,secretlen)
+      datalen = len(data)
+#      secret2,data = gxor(data,secret,secret2,secretlen,datalen)
       if data:
           s_send(data)
 

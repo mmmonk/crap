@@ -12,18 +12,19 @@ import time
 def debug(message):
   sys.stderr.write(time.asctime()+": "+message) 
 
-def gxor(xorstr,xorsec,i,xorseclen):
+def gxor(xorstr,xorsec,i,xorseclen,xorstrlen):
   # input:
   # xorstr - data
   # xorsec - list xoring secret
   # i - where are we in the xoring secret
   # xorseclen - the length of xoring secret
+  # xorstrlen - number of bytes to encode/decode
   # return:
   # i - where did we finish in the xoring secret
   # s - xorred data
 
   xorstr = map (ord, xorstr)
-  xorstrrange = range(len(xorstr))
+  xorstrrange = range(xorstrlen)
 
   for c in xorstrrange:
     xorstr[c] = (xorstr[c]^xorsec[i])
@@ -48,8 +49,12 @@ def exchange(s1,s2):
 
   secret = map(ord,"testowysecret")
   secretlen = len(secret) 
-  secreti = 0
-  secreto = 0
+  secret1 = 0
+  secret2 = 0
+
+  seclimit = 4096
+  side1 = 0
+  side2 = 0
 
   s1_recv = s1.recv
   s1_send = s1.send
@@ -57,30 +62,28 @@ def exchange(s1,s2):
   s2_send = s2.send
 
   while 1:
-    toread,[],[]=select.select([s1,s2],[],[],30)
-    [],towrite1,[]=select.select([],[s1],[],30)
-    [],towrite2,[]=select.select([],[s2],[],30)   
+    toread,[],[]=select.select([s1,s2],[],[],20)
+    [],towrite1,[]=select.select([],[s1],[],20)
+    [],towrite2,[]=select.select([],[s2],[],20)   
 
-    # this is ugly but it is needed to detect dead sockets
-    s1alive,[],[]=select.select([s1],[],[],0)
-    s2alive,[],[]=select.select([s2],[],[],0)
-
-    if (s1 not in s1alive) and (s2 not in s2alive):
-      break
+    if (s1 not in toread) and (s2 not in toread):
+      return 1 
  
     if s1 in toread and s2 in towrite2: 
       data = s1_recv(4096)
-#      secreti,data = gxor(data,secret,secreti,secretlen)
-      if len(data) == 0:
-        break
+      datalen = len(data)
+#      secret1,data = gxor(data,secret,secret1,secretlen,datalen)
+      if datalen == 0:
+        return 0
       else:
         s2_send(data)
 
     if s2 in toread and s1 in towrite1:
       data = s2_recv(4096)
-#      secreto,data = gxor(data,secret,secreto,secretlen)
-      if len(data) == 0:
-        break
+      datalen = len(data)
+#      secret2,data = gxor(data,secret,secret2,secretlen,datalen)
+      if datalen == 0:
+        return 0
       else:
         s1_send(data)
 
@@ -193,11 +196,14 @@ if __name__ == '__main__':
             sshok=0
 
           if sshok == 1:          
-            exchange(ssh,socks)
-            socks.shutdown(2)
+            socketdisc=exchange(ssh,socks)
+            if socketdisc == 0:
+              debug("[+] connection closed\n")
+            else:
+              debug("[-] socket commited sepuku\n")
+            socks.shutdown(2) 
             ssh.shutdown(2)
             ssh.close()
-            debug("[+] connection closed\n")
           else:
             debug("[-] ssh connection problems\n")
         

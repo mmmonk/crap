@@ -8,6 +8,7 @@ import select
 import fcntl
 import time
 
+
 def debug(message):
   sys.stderr.write(time.asctime()+": "+message) 
 
@@ -41,7 +42,7 @@ def exchange(s1,s2):
   # return:
   # nothing :)
 
-  # setting every description to be non blocking 
+  # setting every descriptor to be non blocking 
   fcntl.fcntl(s1, fcntl.F_SETFL, os.O_NONBLOCK|os.O_NDELAY) 
   fcntl.fcntl(s2, fcntl.F_SETFL, os.O_NONBLOCK|os.O_NDELAY)
 
@@ -59,6 +60,13 @@ def exchange(s1,s2):
     toread,[],[]=select.select([s1,s2],[],[],30)
     [],towrite1,[]=select.select([],[s1],[],30)
     [],towrite2,[]=select.select([],[s2],[],30)   
+
+    # this is ugly but it is needed to detect dead sockets
+    s1alive,[],[]=select.select([s1],[],[],0)
+    s2alive,[],[]=select.select([s2],[],[],0)
+
+    if (s1 not in s1alive) and (s2 not in s2alive):
+      break
  
     if s1 in toread and s2 in towrite2: 
       data = s1_recv(4096)
@@ -162,17 +170,13 @@ if __name__ == '__main__':
       if socks_try < socks_limit:
         try:
           socks.connect((phost, pport))
-#          debug("[+] connecting via "+str(phost)+":"+str(pport)+"\n")
         except socket.error:
-#          debug("[-] problem connecting to "+str(phost)+":"+str(pport)+"\n")
           connected = 0
 
       else:
         try:
           socks.connect((host, port))
-  #          debug("[+] connecting direct to "+str(host)+":"+str(port)+"\n")
         except:
-  #          debug("[-] problem connecting direct to "+str(host)+":"+str(port)+"\n")
           connected = 0
 
       if connected == 1:
@@ -196,9 +200,6 @@ if __name__ == '__main__':
             debug("[+] connection closed\n")
           else:
             debug("[-] ssh connection problems\n")
-        
-#        else:
-#          debug("[-] socks server couldn't establish the connection to "+str(host)+":"+str(port)+"\n") 
         
         socks.close()
       

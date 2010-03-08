@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
   curtime = int(strftime('%H%M%S'))
 
-  xg=["1.3","0.5","0.5"]
+  xg=["1","0.7","0.3"]
   if curtime > data[0]:
     xg=["1","0.7","0.7"]
   if curtime > data[1]:
@@ -69,6 +69,6 @@ if __name__ == "__main__":
   if curtime > data[3]:
     xg=["1","0.7","0.7"]
   if curtime > data[4]:
-    xg=["1.3","0.5","0.5"]
+    xg=["1","0.7","0.3"]
 
   execlp("xgamma","xgamma","-d",":0.0","-q","-rgamma",xg[0],"-ggamma",xg[1],"-bgamma",xg[2])

@@ -1,0 +1,56 @@
+#! /bin/sh
+#
+# netscript	script to fire up netscript network configuration system
+#
+#		Written by Miquel van Smoorenburg <miquels@cistron.nl>.
+#		Modified for Debian GNU/Linux
+#		by Ian Murdock <imurdock@gnu.ai.mit.edu>.
+#		Modified from /etc/init.d/skeleton
+#		by Matthew Grant <grantma@anathoth.gen.nz>
+#
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+NAME=iptables
+DESC="iptables"
+
+
+case "$1" in
+	start)
+		/sbin/iptables-restore < /etc/firewall.conf
+#		/sbin/ip6tables-restore < /etc/firewall6.conf 
+#		/sbin/iptables -F DSHIELD
+#		egrep -v '^#|Start|^$|^origin:' /root/dshield_block_list/block.txt | awk '{print $1"/"$3}' | xargs -n 1 iptables -A DSHIELD -j DROP -s
+		/sbin/sysctl -e -q -p 
+		;;
+	stop)
+		/sbin/iptables -F
+		/sbin/iptables -X
+#		/sbin/ip6tables -F
+#		/sbin/ip6tables -X
+		;;
+	reload|restart)	
+		$0 start
+		;;
+	save)
+		/sbin/iptables-save -t filter > /etc/firewall.conf
+		/sbin/iptables-save -t mangle >> /etc/firewall.conf
+#		/sbin/ip6tables-save -t filter > /etc/firewall6.conf
+#		/sbin/ip6tables-save -t mangle >> /etc/firewall6.conf
+		;;
+	pass)
+		$0 stop
+		/sbin/iptables -P INPUT ACCEPT
+		/sbin/iptables -P OUTPUT ACCEPT
+		/sbin/iptables -P FORWARD ACCEPT
+		/sbin/iptables -X
+#		/sbin/ip6tables -P INPUT ACCEPT
+#		/sbin/ip6tables -P OUTPUT ACCEPT
+#		/sbin/ip6tables -P FORWARD ACCEPT
+#		/sbin/ip6tables -X
+
+		;;
+	*)
+		echo "Usage: /etc/init.d/iptables {start|stop|reload|restart|save|pass}"
+		exit 3
+		;;
+esac

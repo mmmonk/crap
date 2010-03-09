@@ -1,0 +1,36 @@
+#!/bin/tcsh
+
+unalias *
+
+where mc > /dev/null    && alias mc mc -b
+where grep > /dev/null  && alias i grep -i
+where egrep > /dev/null && alias i egrep -i
+egrep --color a ~/.aliases >& /dev/null && alias i egrep -i --color
+alias e       i -v
+ls-F -l >& /dev/null && alias ls ls-F
+alias ll      ls -lA
+alias l       ls -lA
+alias mv      mv -i
+alias p       ping
+alias rd	    screen -xRR
+alias realias	source ~/.aliases
+alias s       ssh
+alias t       telnet
+alias h       history 25
+alias j       jobs -l
+where colordiff > /dev/null && alias diff colordiff
+alias difft   diff --strip-trailing-cr -ibBw
+alias tgz     "tar -czvf \!:1 \!:2"
+alias untgz   "tar -xzvf \!:1"
+alias tbz2    "tar -cjvf \!:1 \!:2"
+alias untbz   "tar -xjvf \!:1"
+alias hex     'echo "ibase=16;" `echo \!:1 |tr "[:lower:]" "[:upper:]"` |bc'
+alias dec     'echo "obase=16; \!:1" |bc'
+
+where vim > /dev/null && alias vi  vim
+
+# local aliases specific to this host
+if ( -f ~/.aliases_local) then
+  source ~/.aliases_local
+endif 
+

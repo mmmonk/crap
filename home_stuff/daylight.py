@@ -63,7 +63,7 @@ if __name__ == "__main__":
   if curtime > data[0]:
     xg=["1","0.7","0.7"]
   if curtime > data[1]:
-    xg=["1","1","1.3"]
+    xg=["1","1","1"]
   if curtime > data[2]:
     xg=["1","1","1"]
   if curtime > data[3]:

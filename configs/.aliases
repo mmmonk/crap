@@ -24,8 +24,13 @@ alias tgz     "tar -czvf \!:1 \!:2"
 alias untgz   "tar -xzvf \!:1"
 alias tbz2    "tar -cjvf \!:1 \!:2"
 alias untbz   "tar -xjvf \!:1"
-alias hex     'echo "ibase=16;" `echo \!:1 |tr "[:lower:]" "[:upper:]"` |bc'
-alias dec     'echo "obase=16; \!:1" |bc'
+alias bin2dec 'echo "ibase=2; \!:1" |bc'
+alias bin2hex 'echo "obase=16;ibase=2; \!:1" |bc'
+alias dec2bin 'echo "obase=2; \!:1" |bc'
+alias dec2hex 'echo "obase=16; \!:1" |bc'
+alias hex2bin 'echo "ibase=16;obase=2;" `echo \!:1 |tr "[:lower:]" "[:upper:]"` |bc'
+alias hex2dec 'echo "ibase=16;" `echo \!:1 |tr "[:lower:]" "[:upper:]"` |bc'
+
 
 where vim > /dev/null && alias vi  vim
 

@@ -14,8 +14,8 @@ import socket
 
 # list of RSS feeds that we are intrested in
 RSSFEEDS = [
-  'http://www.ezrss.it/search/index.php?show_name=house&show_name_exact=true&date=&quality=&release_group=&mode=rss',
-  'http://www.ezrss.it/search/index.php?show_name=lie+to+me&show_name_exact=true&date=&quality=&release_group=&mode=rss',
+#  'http://www.ezrss.it/search/index.php?show_name=house&show_name_exact=true&date=&quality=&release_group=&mode=rss',
+#  'http://www.ezrss.it/search/index.php?show_name=lie+to+me&show_name_exact=true&date=&quality=&release_group=&mode=rss',
   'http://www.ebookshare.net/plus/rss/index.xml'
   ] 
 
@@ -27,12 +27,12 @@ RSSDOWNLOAD = {
 
 # dictionary of lists of what we are intrested in specific feeds 
 RSSALLOW = {
-  'http://www.ebookshare.net/plus/rss/index.xml': ['-lib','ebook-','scientist','science','popular mechanics','scientific american'],
+  'http://www.ebookshare.net/plus/rss/index.xml': ['-lib','ebook-'],
   }
 
 # dictionary of lists of what we are not intrested in specific feeds
 RSSDENY = {
-  'http://www.ebookshare.net/plus/rss/index.xml': ['microsoft office','religion','social','history','sharepoint','visual basic','dot net','sql','ado net','active directory','photoshop','adobe','rowman','routledge','windows 7','interface design','corporate power','web technologies','information technologies','blender','joomla','xhtml',' mac ','drupal'],
+  'http://www.ebookshare.net/plus/rss/index.xml': ['microsoft office','religion','social','history','sharepoint','visual basic','dot net','sql','ado net','active directory','photoshop','adobe','rowman','routledge','interface design','corporate power','web technologies','information technologies','blender','joomla','xhtml',' mac ','drupal','css','php','wordpress','wiki','windows'],
   'http://www.ezrss.it/search/index.php?show_name=house&show_name_exact=true&date=&quality=&release_group=&mode=rss' : ['720p - hdtv']
   }
 

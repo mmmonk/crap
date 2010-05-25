@@ -14,6 +14,7 @@ alias hping   sudo hping
 alias vtysh   sudo vtysh
 alias arping  sudo arping
 alias xg      "xgamma -rgamma \!:1 -ggamma \!:2 -bgamma \!:3"
+alias xg1     "xgamma -rgamma \!:1 -ggamma \!:1 -bgamma \!:1"
 
 # aliases to connect to remote systems
 if ( -f ~/.aliases_remote) then

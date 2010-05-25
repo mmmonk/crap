@@ -56,12 +56,10 @@ expect timeout {
 
 } "login*" { 
 	send -s "$user\r" 
-	expect "assword:*" { 
-		send -s "$pass\n"
-	} 
+  exp_continue
 } "assword:*" { 
 	send -s "$pass\r" 
-
+  exp_continue
 } "*-> " { 
 	send -s "\r" 
 
@@ -101,11 +99,10 @@ interact {
 		send -s "\r"		
 		expect  "login*" {
 			send -s "$user\r"
-			expect "assword:*" {
-				send -s "$pass\n"
-			}
-		} "assword:*" {
+		  exp_continue
+    } "assword:*" {
 			send -s "$pass\r"
+      exp_continue
 		} "*-> " {
 			send -s "\r"
 		}

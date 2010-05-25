@@ -16,16 +16,10 @@ set pass "netscreen"
 
 spawn ssh $user@$host
 
-proc talking {} {
-  global pass
-  interact {
-    \001l { send "$pass\r" }
-    \004  { 
-      send_user "\n"
-      exit 
-    } 
-  }
-}
+set time     [ timestamp -format "%Y/%m/%d %H:%M:%S"]
+set filetime [ timestamp -format "%Y%m%d_%H%M%S"]
+
+;#send_user "\033]2;$host $filetime\007"
 
 expect timeout {
   send_user "connection timeout\n"
@@ -41,7 +35,7 @@ expect timeout {
   send -s "$pass\r"
   exp_continue
 } "*# " {
-  talking
+  send -s "\r"  
 }
 
 if { $user == "admin" } {
@@ -64,8 +58,21 @@ if { $user == "admin" } {
     exp_continue
   } "*# " {
     send -s "unset TMOUT\r"
-    talking
   }
 }
 
+expect "*# " {
+  log_file "/home/case/store/work/_archives_worklogs/$host-$filetime.log"
+  send_log "\n---------- log start at $time ----------\n"
+
+  interact {
+    \001l { send "$pass\r" }
+  }
+}
+
+set time     [ timestamp -format "%Y/%m/%d %H:%M:%S"]
+send_log "\n---------- log close at $time ----------\n"
+log_file
+exec /bin/bzip2 /home/case/store/work/_archives_worklogs/$host-$filetime.log
+exit
 

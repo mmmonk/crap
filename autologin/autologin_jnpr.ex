@@ -10,24 +10,18 @@
 set send_slow {10 .01}
 set timeout 60
 
-if { $argc == 3 } {
-	set host [lindex $argv 0]
-	set port [lindex $argv 1]
-	set name [lindex $argv 2]
+if { $argc == 0 } {
+  exit
 } else {
-	if { $argc == 2 } {
-		set host [lindex $argv 0]
-		set port [lindex $argv 1]
-		set name [lindex $argv 0]
-	} else {
-		if { $argc == 1} {
-			set host [lindex $argv 0]
-			set port "23"
-			set name [lindex $argv 0]
-		} else {
-			exit;
-		}
-	}
+  set host [lindex $argv 0]
+  set port "23"
+  set name [lindex $argv 0]
+  if { $argc > 1 } {
+    set port [lindex $argv 1]
+  }
+  if { $argc > 2 } {
+    set name [lindex $argv 2]
+  }
 }
 
 set pass "netscreen"
@@ -40,7 +34,7 @@ send_user "CTRL+a
 c - basic config
 i - show ip address
 l - auto login
-q - quit
+d - quit
 "
 
 ;# we are connecting to the remote host
@@ -53,7 +47,6 @@ expect timeout {
 } eof {
 	send_user "failed to connect\n"
 	exit
-
 } "login*" { 
 	send -s "$user\r" 
   exp_continue
@@ -89,7 +82,9 @@ log_file "/home/case/store/work/_archives_worklogs/$name-$filetime.log"
 send_log "\n---------- log start at $time ----------\n"
 
 interact {
-	\001q {
+	;# so that we don't get logout when idle
+	;# timeout 180 { send " \b"}
+	\001d {
 		send_user "\nbye, bye\n"
 		set pid [exp_pid]
 		system "kill $pid"
@@ -115,7 +110,13 @@ interact {
 		set curtime [ timestamp -format "%m/%d/%Y %H:%M:%S"]
 		send -s "set clock $curtime\r"
 		expect "$prompt"
-		send -s "set hostname $name\r"
+		send -s "set hostname lab-$name\r"
+		expect "$prompt"
+		send -s "set interface mgt ip $ip/23\r"
+		expect "$prompt"
+		send -s "set interface eth0 ip $ip/23\r"
+		expect "$prompt"
+		send -s "set interface eth0/0 ip $ip/23\r"
 		expect "$prompt"
 		foreach cmd {	"set console page 0"
 				"set console timeout 0"
@@ -126,16 +127,77 @@ interact {
 			send -s "$cmd\r"
 			expect "$prompt"
 		}
-		foreach alias {	"sg \"save config to last-known-good\""
-				"ss \"save software from tftp 172.30.73.133\""
+		foreach alias {	"ss \"save software from tftp 172.30.73.133\""
 				"sc \"save config from tftp 172.30.73.133\""
-				"cl \"clear db\""
-				"gd \"get db stream\""
-				"gs \"get sys\""} {
+				"wr \"save\""
+				"reload \"reset no-prompt\""} {
 			send -s "set alias $alias\r"
 			expect "$prompt"
 		}
 	}
+;#++	\0010 {
+;#++		set timeout 3600
+;#++		match_max 10240000
+;#++		send -s "get tech-support\r"
+;#++		expect "$prompt"
+;#++		send -s "get event\r"
+;#++		expect "$prompt"		
+;#++		send -s "get log sys\r"
+;#++		expect "$prompt"		
+;#++		send -s "get nsrp\r"
+;#++		expect "$prompt" 
+;#++		send -s "get nsrp monitor\r"
+;#++		expect "$prompt" 
+;#++		send -s "get interface\r"
+;#++
+;#++		for { set x 1 } { $x<=4 } { incr x } {
+;#++			
+;#++			expect "$prompt"
+;#++			send -s "get nsrp\r"
+;#++			expect "$prompt"
+;#++			send -s "get nsrp counter\r"
+;#++			expect "$prompt"
+;#++			send -s "get nsrp coun packet\r"
+;#++			expect "$prompt"
+;#++			send -s "get interface\r"
+;#++		}
+;#++
+;#++
+;#++		expect "$prompt"
+;#++		send -s "get db stream\r"
+;#++		expect "$prompt"
+;#++		sleep 5
+;#++		match_max -d
+;#++		set timeout 30
+;#++	}
+	\001t {
+		set timeout 3600
+		set prompt "*-> "
+		for { set x 1 } { $x<=130 } { incr x } {
+			send -s "set route 10.0.$x.0/24 interface eth0/0 gateway 172.30.72.1\r"
+			expect "$prompt"
+			sleep 1 
+		}
+		send_user "\ndone\n"
+		send -s "\r"
+		set timeout 30
+	}
+
+
+	\001g {
+		set timeout 3600
+		set prompt "*-> "
+		for { set x 1 } { $x<=2 } { incr x } {
+			send -s "get clock\r"
+			expect "$prompt"
+			sleep 10
+		}
+		send_user "\ndone\n"
+		send -s "\r"
+		set timeout 30
+	}
+
+
 	\177 {
 		send "\010"
 	}

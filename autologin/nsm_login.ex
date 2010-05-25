@@ -5,14 +5,19 @@
 set send_slow {10 .01}
 set timeout 60
 
-if { $argc == 1} {
-  set host [lindex $argv 0]
+if { $argc == 0 } {
+  exit
 } else {
-  exit;
+  set host [lindex $argv 0]
+  set user "root"
+  set pass "netscreen"
+  if { $argc > 1 } {
+    set user [lindex $argv 1]
+    if { $argc > 2 } {
+      set pass [lindex $argv 2]
+    }
+  }
 }
-
-set user "root"
-set pass "netscreen"
 
 spawn ssh $user@$host
 
@@ -28,37 +33,22 @@ expect timeout {
   send_user "got eof\n"
   exit
 } "Permission denied, please try again." {
-  set user "admin"
-  close
-  spawn ssh $user@$host
+  send_user "wrong credentials\n"
+  exit
+} "Are you sure you want to continue connecting (yes/no)?" {
+  send -s "yes\r"
+  exp_continue
 } "assword:" {
   send -s "$pass\r"
   exp_continue
+} "Run NSMXPress system setup" {
+  send -s "n"
+  exp_continue
+} "*$ " {
+  send -s "sudo su -\r"
+  exp_continue
 } "*# " {
-  send -s "\r"  
-}
-
-if { $user == "admin" } {
-  expect timeout {
-    send_user "connection timeout\n"
-    exit
-  } eof {
-    send_user "got eof\n"
-    exit
-  } "Permission denied, please try again." {
-    send_user "can't connect\n"
-  } "assword:" {
-    send -s "$pass\r"
-    exp_continue
-  } "Run NSMXPress system setup" {
-    send -s "n"
-    exp_continue
-  } "*$ " {
-    send -s "sudo su -\r"
-    exp_continue
-  } "*# " {
-    send -s "unset TMOUT\r"
-  }
+  send -s "unset TMOUT\r"
 }
 
 expect "*# " {

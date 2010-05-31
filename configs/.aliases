@@ -31,10 +31,6 @@ alias dec2hex 'echo "obase=16; \!:1" |bc'
 alias hex2bin 'echo "ibase=16;obase=2;" `echo \!:1 |tr "[:lower:]" "[:upper:]"` |bc'
 alias hex2dec 'echo "ibase=16;" `echo \!:1 |tr "[:lower:]" "[:upper:]"` |bc'
 
-setenv PAGER more
-
-where less > /dev/null && setenv PAGER less
-where most > /dev/null && setenv PAGER most
 where vim > /dev/null && alias vi  vim
 
 # local aliases specific to this host

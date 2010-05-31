@@ -7,14 +7,14 @@ endif
 
 set path = (/sbin /bin /usr/sbin /usr/bin /usr/games /usr/local/sbin /usr/local/bin /usr/X11R6/bin $HOME/bin )
 
-#setenv  LC_ALL		  "en_US.ISO8859-1"
-setenv  LC_CTYPE	  "pl_PL.ISO8859-2"
-setenv	LC_MESSAGES	"en_US.ISO8859-1"
-setenv  LC_TIME		  "en_US.ISO8859-1"
+setenv LC_ALL		  "en_US.ISO8859-1"
+setenv LC_CTYPE	  "pl_PL.ISO8859-2"
+#setenv	LC_MESSAGES	"en_US.ISO8859-1"
+#setenv LC_TIME		  "en_US.ISO8859-1"
 
-setenv	EDITOR	vi
-setenv  BLOCKSIZE K
-where more > /dev/null && setenv PAGER more
+setenv EDITOR	vi
+setenv BLOCKSIZE K
+setenv PAGER more
 where less > /dev/null && setenv PAGER less
 where most > /dev/null && setenv PAGER most
 
@@ -66,7 +66,7 @@ if ($?prompt) then
       case "rxvt*":
       case "xterm*":
         alias postcmd 'printf "\033]0;$user@$SHOST \!#:0 \007"'
-        alias precmd  'printf "\033]0;$USER@$SHOST \007"'
+        alias precmd  'printf "\033]0;${USER}@${SHOST} \007"'
         breaksw
       case "screen*":
         alias precmd  'printf "\033k\033\134"'

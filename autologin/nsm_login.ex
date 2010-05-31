@@ -24,7 +24,7 @@ spawn ssh $user@$host
 set time     [ timestamp -format "%Y/%m/%d %H:%M:%S"]
 set filetime [ timestamp -format "%Y%m%d_%H%M%S"]
 
-;#send_user "\033]2;$host $filetime\007"
+send_user "\033]2;$host $filetime\007"
 
 expect timeout {
   send_user "connection timeout\n"

@@ -1,6 +1,9 @@
 #!/bin/tcsh
 
-alias a       'ssh-add /home/case/.ssh/id_rsa'
+setenv SOCKS_SERVER 127.0.0.1:1080
+setenv SOCKS_VERSION 5 
+
+alias a       'ssh-add -t 36000 /home/case/.ssh/id_rsa'
 alias cu      cu.sh
 alias sk      ssh_keep.sh
 alias sp      ssh -o '"ProxyCommand socks.py 127.0.0.1 1080 %h %p"'
@@ -13,6 +16,7 @@ alias nmap    sudo nmap
 alias hping   sudo hping
 alias vtysh   sudo vtysh
 alias arping  sudo arping
+alias findc   'find . -print0 | xargs -0 egrep -n '
 alias xg      "xgamma -rgamma \!:1 -ggamma \!:2 -bgamma \!:3"
 alias xg1     "xgamma -rgamma \!:1 -ggamma \!:1 -bgamma \!:1"
 

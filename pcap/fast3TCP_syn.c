@@ -44,11 +44,9 @@ unsigned short c_sum(unsigned short* data, int nbytes) {
   return ~sum;
 }
 
-unsigned char* buildTCPDatagram(struct sockaddr_in* src_sin, struct sockaddr_in* dst_sin, const unsigned char* msg, unsigned int msgSize);
-unsigned int buildPseudoHdrBuffer(unsigned int src_addr, unsigned int dst_addr, unsigned int protocol,
-const unsigned char* hdrData, unsigned int hdrBytes,
-const unsigned char* msgData, unsigned int msgBytes,
-unsigned short** buffer);
+//unsigned char* buildTCPDatagram(struct sockaddr_in* src_sin, struct sockaddr_in* dst_sin, const unsigned char* msg, unsigned int msgSize);
+unsigned int buildPseudoHdrBuffer(unsigned int src_addr, unsigned int dst_addr, unsigned int protocol, const unsigned char* hdrData, unsigned int hdrBytes,
+const char* msgData, unsigned int msgBytes, unsigned short** buffer);
 
 int main(int argc, char** argv) {
   const char* dest_ip = (argc > 1 ? argv[1] : "127.0.0.1"); // destination IP
@@ -77,36 +75,16 @@ int main(int argc, char** argv) {
   struct sockaddr_in dst_sin;
 
   src_sin.sin_family = PF_INET;
-  src_sin.sin_port = htons(1234);
   src_sin.sin_addr.s_addr = inet_addr("127.0.0.1");
 
   dst_sin.sin_family = PF_INET;
-  dst_sin.sin_port = htons(dest_port);
   dst_sin.sin_addr.s_addr = inet_addr(dest_ip);
 
-  // build our TCP datagram
-  char* msg = "Hello World";
-  unsigned char* datagram = buildTCPDatagram(&src_sin, &dst_sin, (unsigned char*) msg, strlen(msg));
-  unsigned int datagramSize = sizeof(struct ip) + sizeof(struct tcphdr) + strlen(msg);
-
-  for (i = 0; i < 3; ++i) {
-    if (sendto(s, datagram, datagramSize, 0, (struct sockaddr*) &dst_sin, sizeof(dst_sin)) < 0) {
-      printf("Error with sendto() -- %s (%d)\n", strerror(errno), errno);
-      break;
-    }
-  }
-  free(datagram);
-
-  return 0;
-  }
-
-
-unsigned char* buildTCPDatagram(struct sockaddr_in* src_sin, struct sockaddr_in* dst_sin, const unsigned char* msg, unsigned int msgSize) {
-
-  const int ip_len = sizeof(struct ip) + sizeof(struct tcphdr) + msgSize;
-  unsigned char* datagram = calloc(1, ip_len);
-
-  if (!datagram) return 0;
+  const char* msg = "Hello World";
+  const unsigned int msgSize = strlen(msg);
+  const unsigned int datagramSize = sizeof(struct ip) + sizeof(struct tcphdr) + strlen(msg);
+  unsigned char* datagram = calloc(1, datagramSize);
+  const unsigned int hdrBytes = sizeof(struct tcphdr);
 
   // setup useful pointers to locations within the datagram
   struct ip* iph = (struct ip*) datagram;
@@ -114,28 +92,24 @@ unsigned char* buildTCPDatagram(struct sockaddr_in* src_sin, struct sockaddr_in*
   unsigned char* data = datagram + sizeof(struct ip) + sizeof(struct tcphdr);
 
   // build IP header
-  iph->ip_hl = sizeof(struct ip) >> 2;
+  iph->ip_hl = hdrBytes >> 2;
   iph->ip_v = 4;
   iph->ip_tos = 0;
-  iph->ip_len = htons(ip_len);
-  iph->ip_id = htons(123);
+  iph->ip_len = htons(datagramSize);
   iph->ip_off = 0;
   iph->ip_ttl = 64;
   iph->ip_p = IPPROTO_TCP;
   iph->ip_sum = 0;
-  iph->ip_src.s_addr = src_sin->sin_addr.s_addr;
-  iph->ip_dst.s_addr = dst_sin->sin_addr.s_addr;
+  iph->ip_src.s_addr = src_sin.sin_addr.s_addr;
+  iph->ip_dst.s_addr = dst_sin.sin_addr.s_addr;
 
   // now we compute the checksum for the IP header (albeit this is optional)
   // iph->ip_sum = c_sum((unsigned short*) iph, sizeof(struct ip));
 
   // build TCP header
-  tcph->source = src_sin->sin_port;
-  tcph->dest = dst_sin->sin_port;
-  tcph->seq = htonl(0);
   tcph->ack_seq = htonl(0);
   tcph->res1 = 0;
-  tcph->doff = sizeof(struct tcphdr) >> 2;
+  tcph->doff = hdrBytes >> 2;
   tcph->fin = 0;
   tcph->syn = 1;
   tcph->rst = 0;
@@ -146,26 +120,60 @@ unsigned char* buildTCPDatagram(struct sockaddr_in* src_sin, struct sockaddr_in*
   tcph->window = htons(512);
   tcph->check = 0;
   tcph->urg_ptr = htons(0);
+ 
 
-  // now we compute the TCP header checksum, across a pseudo message buffer, not the actual TCP header
-  unsigned short* buffer = 0;
-  unsigned int bufferSize = buildPseudoHdrBuffer(src_sin->sin_addr.s_addr, dst_sin->sin_addr.s_addr, IPPROTO_TCP,
-  (const unsigned char*) tcph, sizeof(struct tcphdr), msg, msgSize, &buffer);
+  struct PseudoHdr pseudoHdr;
 
-  tcph->check = c_sum(buffer, bufferSize);
-  free(buffer);
+  pseudoHdr.saddr = src_sin.sin_addr.s_addr; 
+  pseudoHdr.daddr = dst_sin.sin_addr.s_addr;
+  pseudoHdr.reserved = 0;
+  pseudoHdr.protocol = IPPROTO_TCP;
+  pseudoHdr.length = htons(hdrBytes + msgSize);
 
-  // add message data (if any)
-  if (msgSize > 0) {
-    memcpy(data, msg, msgSize);
+  unsigned int bufSize = sizeof(struct PseudoHdr) + hdrBytes + msgSize;
+
+ for (i = 1025; i < 11025; i++) {
+
+    src_sin.sin_port = htons(i);
+    dst_sin.sin_port = htons(dest_port);
+    tcph->source = src_sin.sin_port;
+    tcph->dest = dst_sin.sin_port;
+
+    iph->ip_id = htons(i);
+    tcph->seq = htonl(i);
+    tcph->check = 0;
+
+
+    unsigned char* buf = calloc(1, bufSize); 
+    int offset = 0;
+    memcpy(buf + offset, &pseudoHdr, sizeof(struct PseudoHdr)); offset += sizeof(struct PseudoHdr);
+    memcpy(buf + offset, tcph, hdrBytes); offset += hdrBytes;
+    memcpy(buf + offset, msg, msgSize);
+
+//    unsigned short* buffer = 0;
+//    unsigned int bufferSize = buildPseudoHdrBuffer(src_sin.sin_addr.s_addr, dst_sin.sin_addr.s_addr, IPPROTO_TCP,
+//    (const unsigned char*) tcph, sizeof(struct tcphdr), msg, msgSize, &buffer);
+
+    tcph->check = c_sum((unsigned short*)buf, bufSize);
+    free(buf);
+
+    if (msgSize > 0) {
+      memcpy(data, msg, msgSize);
+    }
+
+    if (sendto(s, datagram, datagramSize, 0, (struct sockaddr*) &dst_sin, sizeof(dst_sin)) < 0) {
+      printf("Error with sendto() -- %s (%d)\n", strerror(errno), errno);
+      break;
+    }
   }
+  free(datagram);
 
-  return datagram;
+  return 0;
 }
 
 
 unsigned int buildPseudoHdrBuffer(unsigned int src_addr, unsigned int dst_addr, unsigned int protocol, const unsigned char* hdrData, unsigned int hdrBytes,
-const unsigned char* msgData, unsigned int msgBytes, unsigned short** buffer) {
+const char* msgData, unsigned int msgBytes, unsigned short** buffer) {
 
   struct PseudoHdr pseudoHdr;
 

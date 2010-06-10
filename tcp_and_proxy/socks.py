@@ -14,7 +14,7 @@ def exchange(s):
   # return:
   # nothing :)
 
-  # setting every description to be non blocking 
+  # setting every descriptor to be non blocking 
   fcntl.fcntl(s, fcntl.F_SETFL, os.O_NONBLOCK|os.O_NDELAY) 
   fcntl.fcntl(0, fcntl.F_SETFL, os.O_NONBLOCK)
 

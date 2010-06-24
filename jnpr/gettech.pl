@@ -8,6 +8,7 @@ use warnings;
 
 my $file=shift;
 
+# reading the whole file into memory
 open(GT,$file);
 my $gt=join('',<GT>);
 close(GT);
@@ -15,10 +16,12 @@ close(GT);
 # cleaning up the variable
 $gt=~s/(\x08|\x0d|--- more ---              )//g;
 
+# variable used as a temporary storage for each part of get tech
 my $part;
 
+# subroutines prototypes
 sub getoutput;
-sub printerr;
+sub lprint;
 
 # this sorts the task based on runtime
 if (getoutput("get os")==0) {
@@ -71,29 +74,22 @@ if (getoutput("get net-pak")==0) {
     $in1=1 if ($line=~/name\s+memory\s+total\s+bufsize\s+free\s+max\s+hit\s+miss/i);
     $in2=1 if ($line=~/name\s+max\s+cur\s+write\s+read\s+full\s+delay\s+Applications/i);
 
-    if ($err==0){
-      print $line."\n";
-    }else{
-      printerr($line);
-      $err=0;
-    }
+    lprint($err,$line);
+    $err=0;
   }
 }
 
 # checking for half-duplex
 if (getoutput("get system")==0) {
   my $err=0;
+
   foreach my $line (split /\n/, $part){
     if ($line=~/half-duplex/){
       $err=1; 
     }
 
-    if ($err==0){
-      print $line."\n";
-    }else{
-      printerr($line);
-      $err=0;
-    }
+    lprint($err,$line);
+    $err=0;
   }
 }
 
@@ -109,12 +105,8 @@ if (getoutput("get memory")==0) {
       $err=1 if (($1!=0 and $2!=0) and ($3/($1+$2))*100>5);
     }
 
-    if ($err==0){
-      print $line."\n";
-    }else{
-      printerr($line);
-      $err=0;
-    }
+    lprint($err,$line);
+    $err=0;
   }
 }
 
@@ -139,12 +131,8 @@ if (getoutput("get chassis")==0) {
       $err=1 if ($temp>65);
     }
 
-    if ($err==0){
-      print $line."\n";
-    }else{
-      printerr($line);
-      $err=0;
-    }
+    lprint($err,$line);
+    $err=0;
   }
 }
 
@@ -176,15 +164,12 @@ if (getoutput("get tcp")==0) {
       }
     }
 
-    if ($err==0){
-      print $line."\n";
-    }else{
-      printerr($line);
-      $err=0;
-    }
+    lprint($err,$line);
+    $err=0;
   }
 }
 
+# checking counters
 # all the counters except those in the %ignore >0
 if (getoutput("get counter")==0) {
   my $err=0;
@@ -215,36 +200,61 @@ if (getoutput("get counter")==0) {
       }
     }
 
-    if ($err==0){
-      print $line."\n";
-    }else{
-      printerr($line);
-      $err=0;
+    lprint($err,$line);
+    $err=0;
+  }
+}
+
+# checking sessions
+# session alloc > 90% max
+# alloc failed > 0
+if (getoutput("get session")==0) {
+  my $err=0;
+  
+  foreach my $line (split /\n/, $part){
+    if ($line=~/alloc (\d+)\/max (\d+)/){
+      $err=1 if ($1>($2*0.9));
     }
+
+    if ($line=~/alloc failed (\d+).+di alloc failed (\d+)/){
+      $err=1 if ($1>0 or $2>0);
+    } 
+
+    lprint($err,$line);
+    $err=0;
   }
 }
 
 
 
-###################################### small stuff
 
+##################################################
+### subroutines
+##################################################
+
+# this gets the output from global variable $gt
+# which holds the whole get tech inside
 sub getoutput{
   my $text=shift;
 
   if ($gt=~/$text/){
-    
     print "\n$text";
-   
     ($part=$gt)=~s/.*?$text(.+?)get.*/$1/s;
-  
     return 0;
   }else{
     return 1;
   }
 }
 
-sub printerr{
+# this prints a line from the gettech, either
+# in color or not, depending if error was found
+sub lprint{
+  my $err=shift;
   my $text=shift;
 
-  print "\e[0;30;41m$text\e[0;0;0m\n";
+  if ($err==0){
+    print $text."\n";
+  }else{
+    print "\e[0;30;41m$text\e[0;0;0m\n";
+  }    
 }

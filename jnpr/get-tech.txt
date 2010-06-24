@@ -626,7 +626,7 @@ get chassis
 
 Chassis Environment:
   Power Supply: Good
-  Fan Status: Good
+  Fan Status: Go1od
   Battery Status: Good
   CPU Temperature: 123'F (51'C)
 Slot Information:

@@ -8,6 +8,10 @@ use warnings;
 
 my $file=shift;
 
+unless (defined($file)){
+  die "\nusage: $0 get_tech.txt\n\nquestions/suggestions/patches email: m.lukaszuk\@gmail.com\n\n";
+}
+
 # reading the whole file into memory
 open(GT,$file);
 my $gt=join('',<GT>);
@@ -22,6 +26,14 @@ my $part;
 # subroutines prototypes
 sub getoutput;
 sub lprint;
+
+
+print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+print "         > > > > D I S C L A I M E R < < < <\n";
+print " The things highlighted by this script are just hints\n";
+print "     before suggesting something USE YOUR BRAIN\n";
+print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+
 
 # this sorts the task based on runtime
 if (getoutput("get os")==0) {
@@ -225,6 +237,28 @@ if (getoutput("get session")==0) {
   }
 }
 
+# checking ASIC counters
+if (getoutput("get sat")==0) {
+  my $err=0;
+
+  foreach my $line (split /\n/, $part){
+    if ($line=~/^.?\d{1,2}\s\s(.{10})([a-z0-9]{4})\s{4}([a-z0-9]{4})\s{4}\d+\s+\d+\s+[a-z0-9]{4}\s+(\d+)/){
+      $err=1 if ($4>0);
+      $err=1 if ($3 ne $2 and $1!~/frq/);
+    }
+
+    if ($line=~/^tcp[a-z_]+_err:\s+(\d+)\s+/){
+      $err=1 if ($1>0);
+    }
+
+    if ($line=~/^saturn free buffer reinit count:\s+(\d+)\s*/){
+      $err=1 if ($1>0);
+    }
+
+    lprint($err,$line);
+    $err=0;
+  }
+}
 
 
 

@@ -75,7 +75,7 @@ if (getoutput("get net-pak")==0) {
     
     if ($in1==1){
       my $tmp = (split(" ",$line))[7];
-      $err=1 if (defined($tmp) and $tmp=~/^\d+$/ and not $tmp == 0);
+      $err=1 if (defined($tmp) and $tmp=~/^\d+$/ and $tmp != 0);
     }
 
     if($in2==1){

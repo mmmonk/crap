@@ -14,14 +14,14 @@ unless (defined($file)){
 
 # reading the whole file into memory
 open(GT,$file);
-my $gt=join('',<GT>);
+our $gt=join('',<GT>);
 close(GT);
 
 # cleaning up the variable
 $gt=~s/(\x08|\x0d|--- more ---              )//g;
 
 # variable used as a temporary storage for each part of get tech
-my $part;
+our $part;
 
 # subroutines prototypes
 sub getoutput;

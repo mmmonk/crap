@@ -13,7 +13,9 @@ alias l       ls -lA
 alias mv      mv -i
 alias p       ping
 alias rd	    screen -xRR
+where tmux > /dev/null && alias rd tmux attach
 alias realias	source ~/.aliases
+alias ressh   source ~/.ssh_agent
 alias s       ssh
 alias t       telnet
 alias h       history 25

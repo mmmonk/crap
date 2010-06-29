@@ -7,7 +7,7 @@ endif
 
 set path = (/sbin /bin /usr/sbin /usr/bin /usr/games /usr/local/sbin /usr/local/bin /usr/X11R6/bin $HOME/bin )
 
-setenv LC_ALL		  "en_US.ISO8859-1"
+#setenv LC_ALL		  "en_US.ISO8859-1"
 setenv LC_CTYPE	  "pl_PL.ISO8859-2"
 #setenv	LC_MESSAGES	"en_US.ISO8859-1"
 #setenv LC_TIME		  "en_US.ISO8859-1"
@@ -56,9 +56,24 @@ if ($?prompt) then
 		bindkey -k down history-search-forward
 	endif
 
+  # ssh-agent
+  if ( -f ~/.ssh/ssh_agent ) then
+    source ~/.ssh/ssh_agent
+
+    if ($?SSH_AGENT_PID) then
+      if ( { kill -s 0 $SSH_AGENT_PID > /dev/null } == 0 ) then
+        ssh-agent -c | grep SSH >! ~/.ssh/ssh_agent
+        source ~/.ssh/ssh_agent
+      endif
+    else
+      ssh-agent -c | grep SSH >! ~/.ssh/ssh_agent
+      source ~/.ssh/ssh_agent
+    endif
+  endif
+
   # alias file
   if ( -f ~/.aliases ) then
-          source ~/.aliases
+    source ~/.aliases
   endif
 
   if ($?TERM) then

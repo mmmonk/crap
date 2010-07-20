@@ -134,31 +134,17 @@ while(<>){
 	print;
 	chomp;
 #       id 173184/s0*,vsys 0,flag 10200440/0000/0003,policy 39,time 5556, dip 0 module 0
-	if (/^id \d+.+?vsys.+?flag.+?policy.+?time.+?dip/){
-		s/^id (\d+\/.+?),\s*vsys (\d+),\s*flag (.+?),\s*policy (\d+),\s*time (\d+),\s*dip (.+?)/$1;$2;$3;$4;$5;$6/;
-		# index
-		# 0 - session id
-		# 1 - vsys
-		# 2 - flag
-		# 3 - policy id
-		# 4 - time
-		# 5 - dip + rest
+	if (/^id \d+.+flag.+policy.+time/){
+		($sess=$_)=~s/^id (\d+).*/$1/;
+		(my $natflags=$_)=~s/^.*?flag (.+?),\s*policy.*/$1/;
 		
-		my @a=split(';',$_);
-		
-		($sess=$a[0])=~s/(\d+)\/.*/$1/;
-		
-		$a[0]=~s/\d+\/(.+)/$1/;
-		print "---------------------------------\n";
-    print $sess,": ".$a[0].", vsys ".$a[1].", flag ".$a[2].", policy ".$a[3].", time ".($a[4]*2)." sec, dip ".$a[5]."\n";
-		print $sess,": natflag ".$a[2]." = ";		
-
+		print "<b>session ".$sess." flag: ";
+			
 		# http://kb.juniper.net/KB8349
 
-		my @natflag=split '/',$a[2];
+		my @natflag=split('/',$natflags);
 
 		# nat flag 1
-
 		my @nfchars=split '',$natflag[0]; 
 		for (my $i=0;$i<8;$i++){
 			if ($nfchars[$i] =~ /^[fca98]$/i ){
@@ -177,7 +163,6 @@ while(<>){
 		print "/ ";
 
 		# nat flag 2
-		
 		@nfchars=split '',$natflag[1]; 
 		for (my $i=0;$i<4;$i++){
 			if ($nfchars[$i] =~ /^[fca98]$/i ){
@@ -196,7 +181,6 @@ while(<>){
 		print "/ ";
 
 		# nat flag 3
-
 		@nfchars=split '',$natflag[2]; 
 		for (my $i=0;$i<4;$i++){
 			if ($nfchars[$i] =~ /^[fca98]$/i ){
@@ -212,33 +196,18 @@ while(<>){
 				print $natflag3[$i+12]," ";
 			}
 		}	
-		print "\n";
+		print "</b>\n";
 	}
 	
 	if (/^ if \d+\(nspflag /){
-		s/^ if (\d+)\(nspflag (.+?)\):(.+?),(\d+),(.+?),sess token (\d+),vlan (\d+),tun (\d+),vsd (\d+),route (\d+)/$1;$2;$3;$4;$5;$6;$7;$8;$9;$10/;
+		
+		(my $nspflags=$_)=~s/^ if \d+\(nspflag (.+?)\):.*/$1/;
 	
-		# index:
-		# 0 - interface id
-		# 1 - nspflag 
-		# 2 - IP addresses and ports
-		# 3 - protocol number
-		# 4 - mac address
-		# 5 - session token
-		# 6 - vlan id
-		# 7 - tunnel id
-		# 8 - vsd id
-		# 9 - route id
-		# 10 - wsf 
-	
-		my @a=split ';',$_;
-	
-		print $sess,": $_\n"; 
-		print $sess,": nspflag ".$a[1]." = ";
+		my @nspfchars=split('',$nspflags);
 
-		my @nspfchars=split '',$a[1];
+		print "<b>session ".$sess." nspflags: ";
 
-		my $i=length($a[1])-1;
+		my $i=length($nspflags)-1;
 		foreach my $nspchar (@nspfchars){
 			if ($nspchar =~ /^[fca98]$/i ){
 				print $nspflag[$i]," ";
@@ -254,6 +223,6 @@ while(<>){
 			}
 			$i--;	
 		}
-		print "\n";
+		print "</b>\n";
 	}
 }

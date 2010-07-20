@@ -1,15 +1,12 @@
 #!/usr/bin/perl
 
-#### <m.lukaszuk@gmail.com>
-#### @2010 
-
 use strict;
 use warnings;
 
 my $file=shift;
 
 unless (defined($file)){
-  die "\nusage: $0 get_tech.txt\n\nquestions/suggestions/patches email: m.lukaszuk\@gmail.com\n\n";
+  die "\nusage: $0 get_tech.txt\n\n";
 }
 
 # reading the whole file into memory
@@ -28,11 +25,11 @@ sub getoutput;
 sub lprint;
 
 
-print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+print "<font color=\"red\">!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
 print "         > > > > D I S C L A I M E R < < < <\n";
 print " The things highlighted by this script are just hints\n";
-print "     before suggesting something USE YOUR BRAIN\n";
-print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+print "                   USE YOUR BRAIN\n";
+print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</font>\n";
 
 
 # this sorts the task based on runtime
@@ -289,6 +286,7 @@ sub lprint{
   if ($err==0){
     print $text."\n";
   }else{
-    print "\e[0;30;41m$text\e[0;0;0m\n";
+#    print "\e[0;30;41m$text\e[0;0;0m\n";
+    print "<font color=\"red\"><b>$text</b></font>\n";
   }    
 }

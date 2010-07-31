@@ -1,0 +1,37 @@
+[app] (name=fbrun)
+  [Position]	(CENTER)	{0 0}
+  [Layer]	{2}
+[end]
+[app] (name=mrxvt) (class=XTerm)
+  [Maximized]	{yes}
+[end]
+[app] (name=Navigator) (class=Firefox) (role=browser)
+  [Workspace]	{2}
+  [Maximized]	{yes}
+  [Jump]	{yes}
+[end]
+[app] (name=deluge) (class=Deluge)
+  [Workspace]	{3}
+  [Maximized]	{yes}
+  [Jump]	{yes}
+[end]
+[app] (name=evince) (class=Evince)
+  [Maximized]	{yes}
+[end]
+[app] (name=skype) (class=Skype) (role=CallWindowForm)
+  [Workspace]	{3}
+  [Layer]	{2}
+[end]
+[group]
+  [app] (name=Pidgin) (class=Pidgin) (role=conversation)
+    [Workspace]	{3}
+    [Jump]	{yes}
+    [Layer]	{2}
+  [end]
+  [app] (name=Pidgin) (class=Pidgin) (role=buddy_list)
+    [Layer]	{2}
+  [end]
+[end]
+[app] (name=skype) (class=Skype) (role=MainWindow)
+  [Layer]	{2}
+[end]

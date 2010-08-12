@@ -57,6 +57,21 @@ expect "*# " {
 
   interact {
     \001l { send "$pass\r" }
+    \001u { 
+      send "ifconfig | perl -nle'/dr:(172.30.\\S+)/&&print\$1'\r"
+      expect "*# " { set ourip [regexp -inline -- {172\.30\.\d+\.\d+} $expect_out(buffer)]
+                     send "\r" }
+      expect "*# " { send "/etc/init.d/guiSvr stop\r"}
+      expect "*# " { send "/etc/init.d/haSvr stop\r"}
+      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb admin 1 0 /__/password \"glee/aW9bOYEewkD/6Ri8sHh2mU=\"\r"}
+      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb server 0 0 /__/ip \"$ourip\"\r"}
+      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb server 1 0 /__/ip \"$ourip\"\r"} 
+;#      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb shadow_server 1 0 /__/ourRsaPrivateKey \"-\"\r"}
+;#      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb shadow_server 1 0 /__/theirRsaPublicKey \"-\"\r"}
+      expect "*# " { send "/etc/init.d/haSvr restart\r"}
+      expect "*# " { send "/etc/init.d/guiSvr restart\r"}
+;#      expect "*# " { send "/etc/init.d/devSvr restart\r"}
+    }
   }
 }
 

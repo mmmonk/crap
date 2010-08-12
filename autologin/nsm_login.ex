@@ -65,9 +65,9 @@ expect "*# " {
       expect "*# " { send "/etc/init.d/haSvr stop\r"}
       expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb admin 1 0 /__/password \"glee/aW9bOYEewkD/6Ri8sHh2mU=\"\r"}
       expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb server 0 0 /__/ip \"$ourip\"\r"}
-      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb server 1 0 /__/ip \"$ourip\"\r"} 
-;#      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb shadow_server 1 0 /__/ourRsaPrivateKey \"-\"\r"}
-;#      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb shadow_server 1 0 /__/theirRsaPublicKey \"-\"\r"}
+      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb server 0 1 /__/ip \"$ourip\"\r"} 
+;#      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb shadow_server 0 1 /__/ourRsaPrivateKey \"-\"\r"}
+;#      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb shadow_server 0 1 /__/theirRsaPublicKey \"-\"\r"}
       expect "*# " { send "/etc/init.d/haSvr restart\r"}
       expect "*# " { send "/etc/init.d/guiSvr restart\r"}
 ;#      expect "*# " { send "/etc/init.d/devSvr restart\r"}

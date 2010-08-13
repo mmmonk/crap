@@ -51,17 +51,90 @@ expect timeout {
   send -s "unset TMOUT\r"
 }
 
+expect "*#" {
+  send "ifconfig | perl -nle'/dr:(172.30.\\S+)/&&print\$1'\r"
+}
+
+expect "*#" {
+  set ourip [regexp -inline -- {172\.30\.\d+\.\d+} $expect_out(buffer)]
+  send "\r"
+}
+
 expect "*# " {
   log_file "/home/case/store/work/_archives_worklogs/$host-$filetime.log"
   send_log "\n---------- log start at $time ----------\n"
 
+  send_user "
+--- Key shortcuts ---
+Ctrl+A l - types \"netscreen\\r\"
+Ctrl+A p - types \"rpm -qa | grep netscreen | xargs -r rpm -e ; rm -rf /var/netscreen/*/*\" <- noticed no \\r
+Ctrl+A i - can be entered during the nsm installtion will answer all the questions (clean install Gui+Dev/refresh)
+Ctrl+A u - correct the customer db
+
+Have fun :)\n"
+
+  send "\r"
+
   interact {
+
     \001l { send "$pass\r" }
+
+    \001p { send "rpm -qa | grep netscreen | xargs -r rpm -e ; rm -rf /var/netscreen/*/*" }
+
+    \001i { 
+        send  "\r"
+        expect timeout {
+          send_user " "
+        } "Do you want to do NSM installation with base license? (y/n) *>" {
+          send "y\r" 
+          exp_continue
+        } "Enter selection (1-2)*>" {
+          send "2\r"
+          exp_continue
+        } "Will server(s) need to be reconfigured during the refresh? (y/n) *>" {
+          send "n\r"
+          exp_continue 
+        } "Enter selection (1-3)*>" {
+          send "3\r" 
+          exp_continue
+        } "Enable FIPS Support? (y/n)*>" {
+          send "n\r"
+          exp_continue
+        } "Enter database log directory location *>" {
+          send "\r"
+          exp_continue
+        } "Enter the management IP address of this server *>" {
+          send "$ourip\r"
+          exp_continue
+        } "Enter the https port for NBI service *>" {
+          send "\r"
+          exp_continue
+        } "Enter password (password will not display as you type)>" {
+          send "$pass\r"
+          exp_continue
+        } "Will a Statistical Report Server be used with this GUI Server? (y/n) *>" {
+          send "n\r"
+          exp_continue
+        } "UNIX password: " {
+          send "$pass\r"
+          exp_continue
+        } "Enter Postgres DevSvr Db port *> " {
+          send "\r"
+          exp_continue
+        } "Enter Postgres DevSvr Db super user *> " {
+          send "\r"
+          exp_continue
+        } "Start server(s) when finished? (y/n) *> " {
+          send "y\r"
+          exp_continue
+        } "Are the above actions correct? (y/n)> " {
+          send "y\r"
+          exp_continue
+        }
+    }
+
     \001u { 
-      send "ifconfig | perl -nle'/dr:(172.30.\\S+)/&&print\$1'\r"
-      expect "*# " { set ourip [regexp -inline -- {172\.30\.\d+\.\d+} $expect_out(buffer)]
-                     send "\r" }
-      expect "*# " { send "/etc/init.d/guiSvr stop\r"}
+      send "/etc/init.d/guiSvr stop\r"
       expect "*# " { send "/etc/init.d/haSvr stop\r"}
       expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb admin 1 0 /__/password \"glee/aW9bOYEewkD/6Ri8sHh2mU=\"\r"}
       expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb server 0 0 /__/ip \"$ourip\"\r"}

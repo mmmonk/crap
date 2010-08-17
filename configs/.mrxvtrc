@@ -1,31 +1,35 @@
+Mrxvt.noSysConfig:              True
 Mrxvt.background:               black
-Mrxvt.bottomTabbar:             false
-Mrxvt.cursorBlink:              false
+Mrxvt.bottomTabbar:             False
+Mrxvt.cursorBlink:              False
 Mrxvt.cursorColor:              red
 Mrxvt.fading:                   70
 Mrxvt.font:                     terminus-iso8859-2-14
 Mrxvt.foreground:               green
-Mrxvt.maximized:                true
-Mrxvt.hideButtons:              true
-Mrxvt.highlightColor:           green
+Mrxvt.maximized:                True
+Mrxvt.hideButtons:              True
+Mrxvt.highlightColor:           darkorange
 Mrxvt.highlightTabOnBell:       True
 Mrxvt.itabForeground:           darkgreen
-Mrxvt.loginShell:               false
-Mrxvt.meta8:                    true
+Mrxvt.itabBackground:           black
+Mrxvt.tabBackground:            black
+Mrxvt.loginShell:               False
+Mrxvt.meta8:                    True
 Mrxvt.multichar_encoding:       terminus-iso8859-2-14
 Mrxvt.saveLines:                500
-Mrxvt.scrollBar:                false
+Mrxvt.scrollBar:                False
 Mrxvt.shading:                  50
-Mrxvt.showMenu:                 false
+Mrxvt.showMenu:                 False
 Mrxvt.tabForeground:            green
-Mrxvt.termName:                 xterm
+#Mrxvt.termName:                 xterm
 Mrxvt.textShadowMode:           none
 Mrxvt.title:                    term
-Mrxvt.transparent:              true
+Mrxvt.transparent:              True
 Mrxvt.transparentMenubar:       True
 Mrxvt.transparentTabbar:        True
-Mrxvt.visualBell:               true
-Mrxvt.syncTabTitle:             true
+Mrxvt.visualBell:               True
+#Mrxvt.vBellDuration:            5000
+Mrxvt.syncTabTitle:             True
 Mrxvt.color0:                   #000000
 Mrxvt.color1:                   #A80000
 Mrxvt.color2:                   #00A800
@@ -42,4 +46,7 @@ Mrxvt.color12:                  #5555FF
 Mrxvt.color13:                  #FF00FF
 Mrxvt.color14:                  #00FFFF
 Mrxvt.color15:                  #FFFFFF
+Mrxvt.macro.Ctrl+Shift+Left:    GotoTab -1
+Mrxvt.macro.Ctrl+Shift+Right:   GotoTab +1
+Mrxvt.macro.Ctrl+Shift+t:       NewTab
 

@@ -7,7 +7,7 @@ set timeout 60
 
 if { $argc == 0 } {
   puts "
-Usage: $argv0 host <username> <password>
+Usage: $argv0 <username@>host <password>
 
 If not specified username defaults to \"root\" and password to \"netscreen\".
 
@@ -19,11 +19,12 @@ My suggestion is to use ~/.ssh/config for any non standard options.
   set host [lindex $argv 0]
   set user "root"
   set pass "netscreen"
+  if { [regexp @ $host] } {
+    regexp {(\S+?)@} $host match user
+    regexp {@(\S+)} $host match host
+  }
   if { $argc > 1 } {
-    set user [lindex $argv 1]
-    if { $argc > 2 } {
-      set pass [lindex $argv 2]
-    }
+    set pass [lindex $argv 1]
   }
 }
 

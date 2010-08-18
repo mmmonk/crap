@@ -112,7 +112,7 @@ Have fun :)\n"
         } "Enable FIPS Support? (y/n)*>" {
           send "n\r"
           exp_continue
-        } "Will this machine participate in an HA cluster? (y/n) *> "{
+        } "Will this machine participate in an HA cluster? (y/n) *>" {
           send "n\r"
           exp_continue 
         } "Enter database log directory location *>" {

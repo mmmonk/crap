@@ -1,8 +1,10 @@
 #!/usr/bin/perl
 
-# Author: Marek Lukaszuk <m.lukaszuk<at>gmail.com>
-# Copyright (c) 2008, Marek £ukaszuk 
-# BSD License at http://monkey.geeks.pl/bsd/
+# $Id$
+
+
+
+
 
 use warnings;
 use strict;

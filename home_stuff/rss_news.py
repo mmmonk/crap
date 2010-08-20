@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+# $Id$
 """
 Author: <m.lukaszuk(at)gmail.com> 2010
 

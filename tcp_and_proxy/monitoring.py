@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+# $Id$
+
 import socket
 import time
 import os

@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+# $Id$
+
 import httplib
 import os
 import time

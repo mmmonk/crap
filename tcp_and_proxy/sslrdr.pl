@@ -1,8 +1,10 @@
 #!/usr/bin/perl
 
-# Author: Marek Lukaszuk <m.lukaszuk<at>gmail.com>
-# Copyright (c) 2007, Marek £ukaszuk 
-# BSD License at http://monkey.geeks.pl/bsd/
+# $Id$
+
+
+
+
 
 my $basedir="/usr/home/case/store/priv/rdr/";
 my $logfile=$basedir."sslrdr.log";

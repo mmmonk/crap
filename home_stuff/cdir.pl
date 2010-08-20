@@ -1,5 +1,7 @@
 #!/usr/bin/perl -W
 
+# $Id$
+
 #use strict;
 
 use Digest::MD5;

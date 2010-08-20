@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+# $Id$
+
 # idea from: http://www.marksdailyapple.com/how-light-affects-our-sleep/
 
 # http://en.wikipedia.org/wiki/Julian_Day

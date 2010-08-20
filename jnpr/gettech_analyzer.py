@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# $Id$
+
 import sys
 import string
 import re

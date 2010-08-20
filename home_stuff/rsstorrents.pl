@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+# $Id$
+
 use strict;
 use XML::RSS;
 use LWP::UserAgent;

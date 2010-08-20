@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+# $Id$
+
 from OpenSSL import SSL
 import socket
 

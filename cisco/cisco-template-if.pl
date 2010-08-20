@@ -1,8 +1,10 @@
 #!/usr/bin/perl
 
-# Author: Marek Lukaszuk <m.lukaszuk<at>gmail.com>
-# Copyright (c) 2005, Marek £ukaszuk 
-# BSD License at http://monkey.geeks.pl/bsd/
+# $Id$
+
+
+
+
 
 use Net::Telnet::Cisco;
 use MIME::Base64;

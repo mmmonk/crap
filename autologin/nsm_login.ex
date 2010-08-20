@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
 
-;# Author: Marek Lukaszuk <m.lukaszuk<at>gmail.com>
 ;# $Id$
+
 set send_slow {10 .01}
 set timeout 60
 

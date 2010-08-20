@@ -1,5 +1,7 @@
 #!/usr/bin/python 
 
+# $Id$
+
 import os
 import socket
 import struct

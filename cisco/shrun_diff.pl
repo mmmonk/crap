@@ -1,5 +1,7 @@
 #!/usr/bin/perl -W
 
+# $Id$
+
 use Net::Telnet::Cisco;
 use MIME::Base64;
 use Rcs;

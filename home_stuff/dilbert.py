@@ -1,8 +1,10 @@
 #!/usr/local/bin/python
 
-# Author: Marek Lukaszuk <m.lukaszuk<at>gmail.com>
-# Copyright (c) 2006, Marek £ukaszuk 
-# BSD License at http://monkey.geeks.pl/bsd/
+# $Id$
+
+
+
+
 
 import smtplib
 from email.MIMEImage import MIMEImage

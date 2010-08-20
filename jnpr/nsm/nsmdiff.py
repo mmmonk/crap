@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# $Id$
+
 from ftplib import FTP
 import os
 import time

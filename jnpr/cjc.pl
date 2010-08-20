@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+# $Id$
+
 # mlukaszuk@juniper.net
 # clearing a bit the output of "get tech"
 # 

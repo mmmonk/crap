@@ -1,8 +1,6 @@
 #!/usr/local/bin/expect --
 
-;# Author: Marek Lukaszuk <m.lukaszuk<at>gmail.com>
-;# Copyright (c) 2007, Marek £ukaszuk 
-;# BSD License at http://monkey.geeks.pl/bsd/
+;# $Id$
 
 package require base64
 

@@ -1,7 +1,9 @@
 #!/usr/bin/perl
 
+# $Id$
+
 #
-# Author: m.lukaszuk@gmail.com
+
 #
 
 use strict;

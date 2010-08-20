@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+# $Id$
+
 import socket
 
 HOST = '10.0.1.1'    # The remote host

@@ -2,7 +2,7 @@
 
 # Active Network Discovery Tool Over SNMP
 # Author <m.lukaszuk@gmail.com> 2005
-# $Id: $
+# $Id$
 
 require v5.6.1;
 

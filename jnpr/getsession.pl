@@ -5,6 +5,7 @@
 use strict;
 use warnings;
 use integer;
+use Env;
 
 my $file=shift;
 
@@ -140,8 +141,11 @@ while(<>){
 	if (/^id \d+.+flag.+policy.+time/){
 		($sess=$_)=~s/^id (\d+).*/$1/;
 		(my $natflags=$_)=~s/^.*?flag (.+?),\s*policy.*/$1/;
-		
-		print "<b>session ".$sess." flag: ";
+	  
+    if (exists($ENV{"APACHE_PID_FILE"})){
+      print "<b>";
+    }	
+    print "session ".$sess." flag: ";
 			
 		# http://kb.juniper.net/KB8349
 
@@ -198,9 +202,13 @@ while(<>){
 			if ($nfchars[$i] =~ /^[f9531]$/i ) {
 				print $natflag3[$i+12]," ";
 			}
-		}	
-		print "</b>\n";
-	}
+		}
+    if (exists($ENV{"APACHE_PID_FILE"})){	
+      print "</b>\n";
+	  }else{
+      print "\n";
+    }
+  }
 	
 	if (/^ if \d+\(nspflag /){
 		
@@ -208,7 +216,11 @@ while(<>){
 	
 		my @nspfchars=split('',$nspflags);
 
-		print "<b>session ".$sess." nspflags: ";
+    if (exists($ENV{"APACHE_PID_FILE"})){
+      print "<b>";
+    }
+
+		print "session ".$sess." nspflags: ";
 
 		my $i=length($nspflags)-1;
 		foreach my $nspchar (@nspfchars){
@@ -226,6 +238,10 @@ while(<>){
 			}
 			$i--;	
 		}
-		print "</b>\n";
+    if (exists($ENV{"APACHE_PID_FILE"})){
+  		print "</b>\n";
+    }else{
+      print "\n";
+    }
 	}
 }

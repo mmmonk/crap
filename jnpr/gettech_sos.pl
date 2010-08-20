@@ -5,6 +5,7 @@
 use strict;
 use warnings;
 use integer;
+use Env;
 
 my $file=shift;
 
@@ -27,12 +28,18 @@ our $part;
 sub getoutput;
 sub lprint;
 
-
-print "<font color=\"red\">!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+if (exists($ENV{"APACHE_PID_FILE"})){ 
+  print "<font color=\"red\">"; 
+}
+print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
 print "         > > > > D I S C L A I M E R < < < <\n";
 print " The things highlighted by this script are just hints\n";
 print "                   USE YOUR BRAIN\n";
-print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</font>\n";
+print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+
+if (exists($ENV{"APACHE_PID_FILE"})){
+  print "</font>\n";
+}
 
 
 # this sorts the task based on runtime
@@ -289,7 +296,10 @@ sub lprint{
   if ($err==0){
     print $text."\n";
   }else{
-#    print "\e[0;30;41m$text\e[0;0;0m\n";
-    print "<font color=\"red\"><b>$text</b></font>\n";
+    if (exists($ENV{"APACHE_PID_FILE"})){ 
+      print "<font color=\"red\"><b>$text</b></font>\n";
+    }else{
+      print "\e[0;30;41m$text\e[0;0;0m\n";
+    }
   }    
 }

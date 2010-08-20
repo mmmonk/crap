@@ -1,9 +1,8 @@
 #!/usr/bin/perl -wW
 
-# Active Network Discovery Tool Over SNMP (ANDTOS ver. 0.2) 
+# Active Network Discovery Tool Over SNMP
 # Author <m.lukaszuk@gmail.com> 2005
-# License: BSD 
-
+# $Id: $
 
 require v5.6.1;
 

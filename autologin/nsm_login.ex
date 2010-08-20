@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
 
 ;# Author: Marek Lukaszuk <m.lukaszuk<at>gmail.com>
-
+;# $Id$
 set send_slow {10 .01}
 set timeout 60
 
@@ -159,13 +159,19 @@ Have fun :)\n"
       expect "*# " { send "/etc/init.d/haSvr stop\r"}
       expect "*# " { send "/usr/netscreen/GuiSvr/utils/setperms.sh GuiSvr\r"}
       expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb admin 1 0 /__/password \"glee/aW9bOYEewkD/6Ri8sHh2mU=\"\r"}
+      sleep 1
       expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb server 0 0 /__/ip \"$ourip\"\r"}
-      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb server 0 1 /__/ip \"$ourip\"\r"} 
+      sleep 1
+      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb server 0 1 /__/ip \"$ourip\"\r"}
+      sleep 1
+      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb shadow_server 0 1 /__/clientOneTimePassword \"dk2003ns\"\r"} 
+      set backuptime [ timestamp -format "%Y%m%d_%H%M%S"]
+      expect "*# " { send "perl -npi\".old_$backuptime\" -e 's/(clientOneTimePassword\s+)\S*/\$1dk2003ns/;s/(default.printLevel\s+)\S*/\$1debug/;s/(ourRsaPrivateKey|theirRsaPublicKey)/#\$1/' /var/netscreen/*Svr/*Svr.cfg\r"}
 ;#      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb shadow_server 0 1 /__/ourRsaPrivateKey \"-\"\r"}
 ;#      expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb shadow_server 0 1 /__/theirRsaPublicKey \"-\"\r"}
       expect "*# " { send "/etc/init.d/haSvr restart\r"}
       expect "*# " { send "/etc/init.d/guiSvr restart\r"}
-;#      expect "*# " { send "/etc/init.d/devSvr restart\r"}
+      expect "*# " { send "/etc/init.d/devSvr restart\r"}
     }
   }
 }

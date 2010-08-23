@@ -1,6 +1,6 @@
 #!/usr/bin/expect
 
-;# $Id:$
+;# $Id$
 
 set send_slow {10 .01}
 set timeout 60
@@ -14,8 +14,9 @@ if { $argc < 1 } {
   exit
 } 
 
-
 match_max 50000000
+
+log_user 0
 
 set filelist [lindex $argv 0]
 set fp [open $filelist r]
@@ -23,18 +24,21 @@ while { [gets $fp host] >=0} {
 
   set error 0
 
-  spawn ssh -o "LogLevel ERROR" -o "TCPKeepAlive no" $username@$host
- 
+  send_user "\[+\] $host - "
 
+
+  spawn ssh -oControlMaster=auto -oLoglevel=ERROR $username@$host
+ 
   expect timeout {
-    send_user " connection timeout\n"
-    break
+    send_user "connection timeout\n"
+    close
+    continue 
   } eof {
-    send_user " connection interrupted\n"
-    break
+    send_user "connection interrupted\n"
+    continue
   } "Permission denied, please try again." {
     send_user " wrong credentials\n"
-    break
+    continue 
   } "assword:" {
     send -s "$password\r"
     exp_continue
@@ -55,26 +59,28 @@ while { [gets $fp host] >=0} {
     send -s "\r" 
   }
 
-
-
   if { $result != "test" } {
 
     match_max 50000000
 
-    expect timeout {                                                                                                                                                  send_user " connection timeout\n"
-      break
+    expect timeout {
+      send_user "connection timeout\n"
+      close
+      continue
     } eof {
-      send_user " connection interrupted\n"
-      break
+      send_user "connection interrupted\n"
+      continue
     } "*-> " {
       send -s "exec vfs ls /kav_db\n"
     }
 
-    expect timeout {                                                                                                                                                  send_user " connection timeout\n"
-      break
+    expect timeout {
+      send_user "connection timeout\n"
+      close
+      continue
     } eof {
-      send_user " connection interrupted\n"
-      break
+      send_user "connection interrupted\n"
+      continue
     } "*-> " {
       set data [split $expect_out(buffer) "\n"]
       foreach line $data {
@@ -84,7 +90,7 @@ while { [gets $fp host] >=0} {
           expect "*->"
         }
       }
-      sleep 20
+      sleep 10
       send -s "exec av scan-mgr pattern-update\r"
     }
 
@@ -92,10 +98,11 @@ while { [gets $fp host] >=0} {
   }
 
   expect timeout {
-    send_user " connection timeout\n"
-    break
+    send_user "connection timeout\n"
+    close
+    continue
   } eof {
-    send_user " done\n"
+    send_user "done\n"
   } "*-> " {
     send -s "exit\r"
     exp_continue

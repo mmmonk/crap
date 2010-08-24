@@ -113,7 +113,7 @@ while { [gets $fp host] >=0} {
           expect "*->"
         }
       }
-      sleep 10
+      sleep 5
       send -s "exec av scan-mgr pattern-update\r"
     }
 

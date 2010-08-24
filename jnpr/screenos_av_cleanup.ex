@@ -86,6 +86,8 @@ while { [gets $fp host] >=0} {
 
     match_max 50000000
 
+    send_user " freeing space"
+
     expect timeout {
       send_user "connection timeout\n"
       close

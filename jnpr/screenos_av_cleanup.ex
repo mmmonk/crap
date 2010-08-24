@@ -22,6 +22,7 @@
 set send_slow {10 .01}
 set timeout 60
 
+;# default username and password
 set username "netscreen"
 set password "netscreen"
 
@@ -37,9 +38,7 @@ if { $argc > 1 } {
   }
 }
 
-
-match_max 50000000
-
+;# to enable debug please change this value below to 1
 log_user 0
 
 set filelist [lindex $argv 0]
@@ -51,7 +50,7 @@ while { [gets $fp host] >=0} {
   send_user "\[+\] $host - "
 
 
-  spawn ssh -oControlMaster=auto -oLoglevel=ERROR $username@$host
+  spawn ssh -oControlMaster=auto -oLoglevel=ERROR -oTCPkeepalive=no $username@$host
  
   expect timeout {
     send_user "connection timeout\n"
@@ -83,7 +82,7 @@ while { [gets $fp host] >=0} {
     send -s "\r" 
   }
 
-  if { $result != "test" } {
+  if { [regexp "signature files copy to disk failed" $result] } {
 
     match_max 50000000
 

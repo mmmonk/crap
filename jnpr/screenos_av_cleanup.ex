@@ -45,10 +45,7 @@ set filelist [lindex $argv 0]
 set fp [open $filelist r]
 while { [gets $fp host] >=0} {
 
-  set error 0
-
   send_user "\[+\] $host - "
-
 
   spawn ssh -oControlMaster=auto -oLoglevel=ERROR -oTCPkeepalive=no $username@$host
  

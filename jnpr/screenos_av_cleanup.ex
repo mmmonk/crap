@@ -39,7 +39,7 @@ if { $argc > 1 } {
 }
 
 ;# to enable debug please change this value below to 1
-log_user 0
+log_user 0 
 
 set filelist [lindex $argv 0]
 set fp [open $filelist r]
@@ -79,7 +79,7 @@ while { [gets $fp host] >=0} {
     send -s "\r" 
   }
 
-  if { [regexp "signature files copy to disk failed" $result] } {
+  if { [ regexp {signature files copy to disk failed} $result ] } {
 
     match_max 50000000
 
@@ -96,6 +96,8 @@ while { [gets $fp host] >=0} {
       send -s "exec vfs ls /kav_db\n"
     }
 
+    set data ""
+
     expect timeout {
       send_user "connection timeout\n"
       close
@@ -103,13 +105,17 @@ while { [gets $fp host] >=0} {
     } eof {
       send_user "connection interrupted\n"
       continue
+    } -- "--- more ---" {
+      send -s " "
+      set data [concat $data [split $expect_out(buffer) "\n"]]
+      exp_continue
     } "*-> " {
-      set data [split $expect_out(buffer) "\n"]
+      set data [concat $data [split $expect_out(buffer) "\n"]]
       foreach line $data {
-        if { ! [ regexp {( on disk|.+->|exec vfs ls)} $line ] } {  
+        if { ! [ regexp {( on disk|.+->|exec vfs ls|\-\-\-|\b+)} $line ] } {  
           regexp {\s*(\S+)\s+} $line devnull filename
           send -s "exec vfs unlink flash:/kav_db/$filename\r"
-          expect "*->"
+         expect "*->"
         }
       }
       sleep 5
@@ -117,7 +123,7 @@ while { [gets $fp host] >=0} {
     }
 
     match_max 2000
-  }
+  } 
 
   expect timeout {
     send_user "connection timeout\n"

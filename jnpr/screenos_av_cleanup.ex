@@ -25,16 +25,19 @@ set timeout 60
 ;# default username and password
 set username "netscreen"
 set password "netscreen"
+set mode "check"
 
-if { $argc < 1 } {
-  puts "\nUsage: $argv0 hosts_list_file.txt <password> <username>\n"
+if { $argc < 2 } {
+  puts "\nUsage: $argv0 hosts_list_file.txt \[mode\] <password> <username>\n\nmode has to be:\n\tupdate - forces AV update each time\n\tcheck - only updates the devices that have problems\n"
   exit
 } 
 
-if { $argc > 1 } {
-  set password [lindex $argv 1]
-  if { $argc > 2 } {
-    set username [lindex $argv 2]
+set mode [lindex $argv 1]
+
+if { $argc > 2 } {
+  set password [lindex $argv 2]
+  if { $argc > 3 } {
+    set username [lindex $argv 3]
   }
 }
 
@@ -43,7 +46,7 @@ log_user 0
 
 set filelist [lindex $argv 0]
 set fp [open $filelist r]
-while { [gets $fp host] >=0} {
+while { [gets $fp host] >= 0 } {
 
   send_user "\[+\] $host - "
 
@@ -123,7 +126,22 @@ while { [gets $fp host] >=0} {
     }
 
     match_max 2000
-  } 
+
+  } else {
+
+    if { $mode == "update" } {
+      expect timeout {
+        send_user "connection timeout\n"
+        close
+        continue
+      } eof {
+        send_user "connection interrupted\n"
+        continue
+      } "*-> " {
+        send -s "exec av scan-mgr pattern-update\r"
+      }
+    }
+  }
 
   expect timeout {
     send_user "connection timeout\n"

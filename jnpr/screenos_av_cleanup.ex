@@ -28,11 +28,11 @@ set password "netscreen"
 set mode "check"
 
 if { $argc < 2 } {
-  puts "\nUsage: $argv0 hosts_list_file.txt \[mode\] <password> <username>\n\nmode has to be:\n\tupdate - forces AV update each time\n\tcheck - only updates the devices that have problems\n"
+  puts "\nUsage: $argv0 \[mode\] hosts_list_file.txt <password> <username>\n\nmode has to be:\n\tupdate - forces AV update each time\n\tcheck - only updates the devices that have problems\n"
   exit
 } 
 
-set mode [lindex $argv 1]
+set mode [lindex $argv 0]
 
 if { $argc > 2 } {
   set password [lindex $argv 2]
@@ -44,7 +44,7 @@ if { $argc > 2 } {
 ;# to enable debug please change this value below to 1
 log_user 0 
 
-set filelist [lindex $argv 0]
+set filelist [lindex $argv 1]
 set fp [open $filelist r]
 while { [gets $fp host] >= 0 } {
 
@@ -139,6 +139,7 @@ while { [gets $fp host] >= 0 } {
         continue
       } "*-> " {
         send -s "exec av scan-mgr pattern-update\r"
+        send_user "updating "
       }
     }
   }

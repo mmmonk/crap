@@ -4,34 +4,52 @@
 
 use strict;
 use warnings;
-#use integer;
-use POSIX ":sys_wait_h";
+use integer;
 
-srand(time());
-#use Expect;
-
+use Expect;
+use POSIX qw(:termios_h);
 
 my $maxkids=5;
 
-my $pids=0; 
-my $i=0;
+my $hostsfile=shift;
+my $cmdsfile=shift;
+my @cmds;
 
-while ($i<1000){
+# reading commands for per host execution
+open(FD,$cmdsfile) or die "$!\n";
+while(<FD>){
+  next if (/^\s+$/);
+  chomp;
+  push(@cmds,$_);  
+}
+close(FD);
 
-  $pids++;
-  $i++;
+
+# reading file with hosts to connect to
+open(FD,$hostsfile) or die "$!\n";
+
+$|=1;
+my $kids=0; 
+
+while (<FD>){
+
+  $kids++;
   if (fork == 0){
-    my $sleeptime = int(rand($i%10))+1;  
-    sleep $sleeptime; 
-    print "[k] $i ($pids) - slept for $sleeptime \n";
+    chomp;
+
+    my $exp = Expect->new();
+
+    foreach my $cmd (@cmds){
+      print "$_ - $cmd\n";
+    }
+
     exit;
 
   }else{
-    if ($pids>=$maxkids){
+    if ($kids>=$maxkids){
       wait();
-      $pids--;
+      $kids--;
     }
-    print "[p] $i - $pids\n";
   }
 
 }

@@ -4,7 +4,7 @@
 
 use strict;
 use warnings;
-use integer;
+#use integer;
 
 use Expect;
 use POSIX qw(:termios_h);
@@ -33,7 +33,10 @@ my $kids=0;
 
 while (<FD>){
 
+  next unless ($_);
+
   $kids++;
+
   if (fork == 0){
     chomp;
 
@@ -41,16 +44,16 @@ while (<FD>){
 
     foreach my $cmd (@cmds){
       print "$_ - $cmd\n";
+      sleep 3;
     }
-
     exit;
 
   }else{
     if ($kids>=$maxkids){
-      wait();
+      my $pid=wait();
       $kids--;
     }
   }
-
 }
-
+while(wait>0){
+}

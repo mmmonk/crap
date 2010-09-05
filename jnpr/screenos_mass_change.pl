@@ -9,38 +9,59 @@ use integer;
 use Expect;
 use POSIX qw(:termios_h);
 
-# max children running around
-my $maxkids=64;
+## max children running around
+my $maxkids = 64;
 
-# timeout for the spawn in expect process
-my $timeout=30;
+## timeout for the spawn in expect process
+my $timeout = 30;
 
-my $username="netscreen";
-my $password="netscreen";
+## default username and password
+my $username = "netscreen";
+my $password = "netscreen";
 
-my $hostsfile=shift;
-my $cmdsfile=shift;
-my @cmds;
+## prompt on the device
+my $prompt = "\\S+-> ";
+
+my $hostsfile = shift;
+my $cmdsfile = shift;
+
+die "Usage:
+$0 <file_with_list_of_hosts> <file_with_lists_of_commands>
+
+Host file example:
+172.30.72.87
+user1\@password2:172.30.72.88
+telnet://junos\@qwerty:172.30.72.89
+
+Commands file example:
+get clock
+get sys
+get tech\n\n" unless ($cmdsfile);
+
+
+######## fun begins from here 
 
 sub timer;
 
-my $starttime=timer();
+my @cmds;
 
-# reading commands for per host execution
+## reading commands into an array for per host execution
 open(FD,$cmdsfile) or die "$!\n";
 while(<FD>){
-  next if (/^\s+$/);
+  next unless ($_);
   chomp;
   push(@cmds,$_);  
 }
 close(FD);
 
 
-# reading file with hosts to connect to
+## reading file with hosts to connect to
 open(FD,$hostsfile) or die "$!\n";
 
-$|=1;
-my $kids=0; 
+$| = 1;
+my $kids = 0; 
+
+my $starttime = timer();
 
 while (<FD>){
 
@@ -48,29 +69,37 @@ while (<FD>){
 
   $kids++;
 
+  # making kids 
   if (fork == 0){
+
+    ######## this is inside the kid
     chomp;
 
-    my $host=$_;
+    my $host = $_;
 
-    if (/^(.+?)@(.?):(.+?)$/) {
-      $username=$1;
-      $password=$2;
-      $host=$3;
+    if (/^(.+?\:\/\/)?(.+?)\@(.+?)\:(.+?)$/) {
+      $username = $2;
+      $password = $3;
+      $host = $4;
     }
 
     my $exp = Expect->new();
 
     $exp->raw_pty(1);
-    $exp = Expect->spawn("ssh -t -oControlMaster=auto -oLoglevel=ERROR -oTCPkeepalive=no -l $username $host");
+  
+    if (/^telnet\:\/\//i){
+      $exp->spawn("telnet $host");
+    } else {
+      $exp->spawn("ssh -t -oControlMaster=auto -oLoglevel=ERROR -oTCPkeepalive=no -l $username $host");
+    }
 
-    # no output from the expect session
+    ### no output to stdout from the expect session
     $exp->log_user(0);
 
-    # logging everything to a file
+    ### logging everything to file
     $exp->log_file($starttime."_".$host.".log");
 
-    # logging process
+    ##### login into device
     $exp->expect($timeout,
       ['eof' => sub { print "$host - problem with connecting to the device\n";
                       exit;}],
@@ -79,21 +108,21 @@ while (<FD>){
       [qr/you sure you want to continue connecting/ => sub {  my $e=shift;
                                                               $e->send("yes\n");
                                                               exp_continue;}],
-      [qr/RSA modulus too small: \d+ < minimum 768 bits/ => sub {print "$host - too small RSA key.\n";
-                                                                exit;}],
-      [qr/Permission denied, please try again/ => sub { print "$host - wrong credentials\n";
-                                                        exit;}],
-      [qr/login:/ => sub {  my $e=shift;
-                            $e->send("$username\r");
-                            exp_continue;}],
+      [qr/RSA modulus too small: \d+ < minimum 768 bits/ => sub { print "$host - too small RSA key.\n";
+                                                                  exit;}],
+      [qr/(Permission denied, please try again|Login failed)/ => sub {  print "$host - wrong credentials\n";
+                                                                        exit;}],
+      [qr/(login:|user)/i => sub {  my $e=shift;
+                                    $e->send("$username\r");
+                                    exp_continue;}],
       [qr/assword:/ => sub {  my $e=shift;
                               $e->send("$password\r");
                               exp_continue;}],
-      [qr/.*?-> / => sub {  my $e=shift;
+      [qr/$prompt/ => sub { my $e=shift;
                             $e->send("\r");}]
     );
 
-    # running commands
+    ##### running commands
     foreach my $cmd (@cmds){
       $exp->expect($timeout,
         ['eof' => sub { print "$host - connection interrupted\n";
@@ -103,12 +132,12 @@ while (<FD>){
         [qr/--- more ---/ => sub {  my $e=shift;
                                     $e->send(" ");
                                     exp_continue;}],
-        [qr/.*?-> / => sub {  my $e=shift;
+        [qr/$prompt/ => sub { my $e=shift;
                               $e->send("$cmd\r");}]
       ); 
     }
     
-    # exiting
+    ##### logout from the device - if we survived that long ;) 
     $exp->expect($timeout,
       ['eof' => sub { print "$host - done\n";
                       exit;}],
@@ -117,7 +146,7 @@ while (<FD>){
       [qr/--- more ---/ => sub {  my $e=shift;
                                   $e->send(" ");
                                   exp_continue;}],
-      [qr/.*?-> / => sub {  my $e=shift;
+      [qr/$prompt/ => sub { my $e=shift;
                             $e->send("exit\r");
                             exp_continue;}],
       [qr/Configuration modified, save\?/ => sub {  my $e=shift;
@@ -125,25 +154,27 @@ while (<FD>){
                                                     exp_continue;}]
     ); 
     
+    ######## this is the end of the kid
     exit;
 
   }else{
 
-    # birth control ;) 
-    # making sure that we don't have too many kids
-    if ($kids>=$maxkids){
-      my $pid=wait();
+    ## birth control ;) 
+    ## making sure that we don't have too many kids
+    if ($kids >= $maxkids){
+      wait();
       $kids--;
     }
   }
 }
 close(FD);
 
-# waiting before exit for all the kids running around 
+### waiting before exit for all the kids running around 
 while(wait>0){ }
 
 ######### end of main
 
+## this is for pretty printing time ;)
 sub timer {
   my ($sec, $min, $hour, $mday, $mon, $year);
   ( $sec, $min, $hour, $mday, $mon, $year, undef, undef, undef ) = localtime(time);
@@ -154,7 +185,5 @@ sub timer {
   $mon  = "0$mon"  if $mon < 10;
   $min  = "0$min"  if $min < 10;
   $sec  = "0$sec"  if $sec < 10;
-  my $ret = $year . "-" . $mon . "-" . $mday . "_" . $hour . "-" . $min . "-" . $sec;
-  return $ret;
+  return $year . "-" . $mon . "-" . $mday . "_" . $hour . "-" . $min . "-" . $sec;
 }
-

@@ -30,8 +30,9 @@ $0 <file_with_list_of_hosts> <file_with_lists_of_commands>
 
 Host file example:
 172.30.72.87
-user1\@password2:172.30.72.88
-telnet://junos\@qwerty:172.30.72.89
+username1|password2@172.30.72.88
+telnet://junos|qwerty@172.30.72.89
+telnet://test@172.30.72.90
 
 Commands file example:
 get clock
@@ -76,12 +77,25 @@ while (<FD>){
     chomp;
 
     my $host = $_;
+  
+    if (/^(telnet\:\/\/)(.+?)$/) {
+      $host = $2;
+    }
 
-    if (/^(.+?\:\/\/)?(.+?)\@(.+?)\:(.+?)$/) {
+    if (/^(telnet\:\/\/)?(.+?)\@(.+?)$/) {
+      $username = $2;
+      $host = $3;
+    }
+
+    if (/^(telnet\:\/\/)?(.+?)\|(.+?)\@(.+?)$/) {
       $username = $2;
       $password = $3;
       $host = $4;
     }
+
+    print "$_ = $username|$password|$host\n";
+
+    exit;
 
     my $exp = Expect->new();
 

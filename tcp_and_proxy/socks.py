@@ -17,8 +17,7 @@ def exchange(s):
   # nothing :)
 
   # setting every descriptor to be non blocking
-  fcntl.fcntl(s, fcntl.F_SETFL, os.O_NONBLOCK)
-#  fcntl.fcntl(s, fcntl.F_SETFL, os.O_NONBLOCK|os.O_NDELAY)
+  fcntl.fcntl(s, fcntl.F_SETFL, os.O_NONBLOCK|os.O_NDELAY)
   fcntl.fcntl(0, fcntl.F_SETFL, os.O_NONBLOCK)
 
   s_recv = s.recv

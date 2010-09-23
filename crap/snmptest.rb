@@ -1,5 +1,7 @@
 #!/usr/bin/ruby
 
+# $Id$
+
 require 'rubygems'
 require 'snmp'
 
@@ -24,7 +26,7 @@ hosts.push(ARGV[0])
 
 hosts.each do |host| 
   gotanswer = 0
-  snmpcommh.each do |comm,value|
+  snmpcommh.sort{|a,b| b[1]<=>a[1]}.each do |comm,value|
     puts "[+] host #{host} community #{comm}\n"
     
     begin
@@ -37,7 +39,7 @@ hosts.each do |host|
             data.push(ans)
           end
           gotanswer = 1 
-          snmpcommh[comm]+=1
+          snmpcommh[comm] += 1
         end
       end
     rescue
@@ -50,8 +52,8 @@ hosts.each do |host|
   if gotanswer == 1 
 #    1.upto(query.length) do |i|
 #      puts "#{query[i-1]} - #{data[i-1]}\n"
-    data.each do |i|
-      puts "#{i}\n"
+    data.each do |val|
+      puts "#{val}\n"
     end
   end
 end

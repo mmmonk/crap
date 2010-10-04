@@ -26,15 +26,27 @@ def dowalk(mngr,query)
     start_oid = SNMP::ObjectId.new(oid)
     next_oid = start_oid
     while next_oid.subtree_of?(start_oid)
-      response = mngr.get_next(next_oid)
-      varbind = response.varbind_list.first
+      begin
+        response = mngr.get_next(next_oid)
+        varbind = response.varbind_list.first
+      rescue
+        puts "[-] error while quering for #{next_oid}"
+        break
+      end
       break if not varbind.oid.subtree_of?(start_oid)
       next_oid = varbind.oid
       count += 1
-      # need to make this as a variable
+      # need to make below values as variables
+      # we don't want to cause high CPU on the devices
       rows.push(varbind.value)
-      sleep 0.1 if count >= 100
-      break if count >= 1000
+      if count >= 100
+        sleep 0.1
+        puts "[ ] query count reached first limit" if count == 100
+      end
+      if count >= 1000
+        puts "[-] query count reached second limit - stoping"
+        break
+      end
     end
   end
 
@@ -82,7 +94,7 @@ hosts.each do |host|
         end
         list = response.varbind_list
       rescue
-        puts "[-] problem while connecting to host #{host}: #{$!}\n"
+        puts "[-] problem while connecting to host #{host}: #{$!}"
       end
 
       if not list.empty? 
@@ -97,10 +109,10 @@ hosts.each do |host|
       if gotanswer == 1 
 
         data.each do |item|
-          puts "#{item.oid} - #{item.value}\n"
+          puts "#{item.value}"
         end
 
-        puts "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n"
+        puts "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
 
         # next-hops and type of the route from the routing table
         query = ["1.3.6.1.2.1.4.24.4.1.4","1.3.6.1.2.1.4.24.4.1.7"]
@@ -108,7 +120,7 @@ hosts.each do |host|
 
         # we have two collums here, we are checking if any value 
         # in the second collumn is bigger or equal 3
-        j=(data.length/2).to_i 
+        j = (data.length/2).to_i 
         (data.length/2).to_i.times { |i| puts data[i] if data[i+j] >=3 }
   
         # IP addresses from the ARP table

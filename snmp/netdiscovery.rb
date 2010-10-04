@@ -2,6 +2,7 @@
 
 # $Id$
 
+require 'digest/md5'
 require 'rubygems'
 require 'snmp'
 
@@ -41,10 +42,10 @@ def dowalk(mngr,query)
       rows.push(varbind.value)
       if count >= 100
         sleep 0.1
-        puts "[ ] query count reached first limit" if count == 100
+        puts "[ ] query count reached first limit - slowing down" if count == 100
       end
       if count >= 1000
-        puts "[-] query count reached second limit - stoping"
+        puts "[-] query count reached second limit - stopping"
         break
       end
     end
@@ -108,9 +109,23 @@ hosts.each do |host|
 
       if gotanswer == 1 
 
+        puts "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+
         data.each do |item|
           puts "#{item.value}"
         end
+
+        puts "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+
+        # my ips
+        query = ["1.3.6.1.2.1.3.1.1.3"]
+        data = dowalk(manager,query)
+        data.each {|item| puts "#{item}" }    
+
+        # md5 fingerprint of this host
+        # so we will not add it again
+        md5 = Digest::MD5.hexdigest(data.to_s)
+        puts md5   
 
         puts "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
 
@@ -122,17 +137,14 @@ hosts.each do |host|
         # in the second collumn is bigger or equal 3
         j = (data.length/2).to_i 
         (data.length/2).to_i.times { |i| puts data[i] if data[i+j] >=3 }
-  
+ 
+        puts "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+ 
         # IP addresses from the ARP table
         query = ["1.3.6.1.2.1.4.22.1.3"]
         data = dowalk(manager,query)
         data.each {|item| puts "#{item}" }
   
-        # my ips
-        query = ["1.3.6.1.2.1.3.1.1.3"]
-        data = dowalk(manager,query)
-        data.each {|item| puts "#{item}" }    
-   
         break if gotanswer == 1
       end
     end

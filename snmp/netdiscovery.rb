@@ -16,7 +16,6 @@ snmpcomma = ["public","private"]
 
 # SNMP walking routine, with some added features
 # delay after higher number of queries
-
 def dowalk(mngr,query)
 
   rows = Array.new
@@ -37,15 +36,16 @@ def dowalk(mngr,query)
       break if not varbind.oid.subtree_of?(start_oid)
       next_oid = varbind.oid
       count += 1
+
       # need to make below values as variables
       # we don't want to cause high CPU on the devices
       rows.push(varbind.value)
       if count >= 100
         sleep 0.1
-        puts "[ ] query count reached first limit - slowing down" if count == 100
+        puts "[!] query count reached first limit - slowing down" if count == 100
       end
-      if count >= 1000
-        puts "[-] query count reached second limit - stopping"
+      if count >= 1000 
+        puts "[!] query count reached second limit - stopping"
         break
       end
     end
@@ -54,17 +54,10 @@ def dowalk(mngr,query)
   rows
 end
 
-# rewriting array to hash to allow sorting of the community strings
-# based on the hits we will have in the network
-snmpcommh = Hash.new
-snmpcomma.each { |comm| snmpcommh[comm] = 0 } 
-snmpver = { "v1" => 0, "v2c" => 0 }
-data = Array.new
-hosts = Array.new
+def hostquery(found,snmpcommh,snmpver,host) 
 
-hosts.push(ARGV[0])
-
-hosts.each do |host|
+  data = Array.new
+  neighbours = Hash.new
 
   query = ["1.3.6.1.2.1.1.1","1.3.6.1.2.1.1.2","1.3.6.1.2.1.1.3","1.3.6.1.2.1.1.4","1.3.6.1.2.1.1.5","1.3.6.1.2.1.1.6","1.3.6.1.2.1.1.7",]
  
@@ -120,10 +113,13 @@ hosts.each do |host|
         # my ips
         query = ["1.3.6.1.2.1.3.1.1.3"]
         data = dowalk(manager,query)
-        data.each {|item| puts "#{item}" }    
+        data.each do |item| 
+          puts "#{item}"
+          found[item] = 1
+        end    
 
-        # md5 fingerprint of this host
-        # so we will not add it again
+        # md5 fingerprint of this host 
+        # anyone has a better idea for filename ?
         md5 = Digest::MD5.hexdigest(data.to_s)
         puts md5   
 
@@ -136,17 +132,43 @@ hosts.each do |host|
         # we have two collums here, we are checking if any value 
         # in the second collumn is bigger or equal 3
         j = (data.length/2).to_i 
-        (data.length/2).to_i.times { |i| puts data[i] if data[i+j] >=3 }
+        (data.length/2).to_i.times do |i|
+          if data[i+j] >= 3
+            puts data[i]
+            neighbours[data[i]] = 1
+          end
+        end
  
         puts "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
  
         # IP addresses from the ARP table
         query = ["1.3.6.1.2.1.4.22.1.3"]
         data = dowalk(manager,query)
-        data.each {|item| puts "#{item}" }
+        data.each do |item| 
+          puts "#{item}"
+          neighbours[item] = 1
+        end
   
         break if gotanswer == 1
       end
     end
   end
+
+  # now we will query neighbours
+  # 
+  neighbours.each do |neigh,val|
+    next if (found.key?(neigh))
+    hostquery(found,snmpcommh,snmpver,neigh)
+  end 
 end
+
+
+# rewriting array to hash to allow sorting of the community strings
+# based on the hits we will have in the network
+snmpcommh = Hash.new
+snmpcomma.each { |comm| snmpcommh[comm] = 0 } 
+snmpver = { "v1" => 0, "v2c" => 0 }
+found = Hash.new
+
+hostquery(found,snmpcommh,snmpver,ARGV[0])
+

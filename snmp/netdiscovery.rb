@@ -57,7 +57,7 @@ end
 def hostquery(found,snmpcommh,snmpver,host) 
 
   data = Array.new
-  neighbours = Hash.new
+  neighbors = Hash.new
 
   query = ["1.3.6.1.2.1.1.1","1.3.6.1.2.1.1.2","1.3.6.1.2.1.1.3","1.3.6.1.2.1.1.4","1.3.6.1.2.1.1.5","1.3.6.1.2.1.1.6","1.3.6.1.2.1.1.7",]
  
@@ -129,13 +129,13 @@ def hostquery(found,snmpcommh,snmpver,host)
         query = ["1.3.6.1.2.1.4.24.4.1.4","1.3.6.1.2.1.4.24.4.1.7"]
         data = dowalk(manager,query)
 
-        # we have two collums here, we are checking if any value 
-        # in the second collumn is bigger or equal 3
+        # we have two columns here, we are checking if any value 
+        # in the second column is bigger or equal 3
         j = (data.length/2).to_i 
         (data.length/2).to_i.times do |i|
           if data[i+j] >= 3
             puts data[i]
-            neighbours[data[i]] = 1
+            neighbors[data[i]] = 1
           end
         end
  
@@ -146,7 +146,7 @@ def hostquery(found,snmpcommh,snmpver,host)
         data = dowalk(manager,query)
         data.each do |item| 
           puts "#{item}"
-          neighbours[item] = 1
+          neighbors[item] = 1
         end
   
         break if gotanswer == 1
@@ -154,9 +154,9 @@ def hostquery(found,snmpcommh,snmpver,host)
     end
   end
 
-  # now we will query neighbours
+  # now we will query neighbors
   # 
-  neighbours.each do |neigh,val|
+  neighbors.each do |neigh,val|
     next if (found.key?(neigh))
     hostquery(found,snmpcommh,snmpver,neigh)
   end 

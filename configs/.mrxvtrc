@@ -10,9 +10,8 @@ Mrxvt.maximized:                True
 Mrxvt.hideButtons:              True
 Mrxvt.highlightColor:           darkorange
 Mrxvt.highlightTabOnBell:       True
-Mrxvt.itabForeground:           darkgreen
+Mrxvt.itabForeground:           cyan
 Mrxvt.itabBackground:           black
-Mrxvt.tabBackground:            black
 Mrxvt.loginShell:               False
 Mrxvt.meta8:                    True
 Mrxvt.multichar_encoding:       terminus-iso8859-2-14
@@ -20,6 +19,7 @@ Mrxvt.saveLines:                500
 Mrxvt.scrollBar:                False
 Mrxvt.shading:                  50
 Mrxvt.showMenu:                 False
+Mrxvt.tabBackground:            black
 Mrxvt.tabForeground:            green
 #Mrxvt.termName:                 xterm
 Mrxvt.textShadowMode:           none
@@ -28,7 +28,6 @@ Mrxvt.transparent:              True
 Mrxvt.transparentMenubar:       True
 Mrxvt.transparentTabbar:        True
 Mrxvt.visualBell:               True
-#Mrxvt.vBellDuration:            5000
 Mrxvt.syncTabTitle:             True
 Mrxvt.color0:                   #000000
 Mrxvt.color1:                   #A80000
@@ -49,5 +48,5 @@ Mrxvt.color15:                  #FFFFFF
 Mrxvt.macro.Ctrl+Shift+Left:    GotoTab -1
 Mrxvt.macro.Ctrl+Shift+Right:   GotoTab +1
 Mrxvt.macro.Ctrl+Shift+t:       NewTab
-Mrxvt.macro.Ctrl+Shift+s:       Str tmux_start.sh 0\n 
+Mrxvt.macro.Ctrl+Shift+s:       Str tmux_start.sh 0 \n 
 Mrxvt.macro.Add+Ctrl+Shift+s:   NewTab tmux_start.sh 1 

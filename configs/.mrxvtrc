@@ -49,4 +49,5 @@ Mrxvt.color15:                  #FFFFFF
 Mrxvt.macro.Ctrl+Shift+Left:    GotoTab -1
 Mrxvt.macro.Ctrl+Shift+Right:   GotoTab +1
 Mrxvt.macro.Ctrl+Shift+t:       NewTab
-
+Mrxvt.macro.Ctrl+Shift+s:       Str tmux_start.sh 0\n 
+Mrxvt.macro.Add+Ctrl+Shift+s:   NewTab tmux_start.sh 1 

@@ -32,13 +32,16 @@ def exchange(s):
       data = s_recv(4096)
       if len(data) == 0:
         s.shutdown(2)
+        sys.exit()
         break
       else:
         write(data)
 
     elif 0 in toread and s in towrite: 
       data = read(4096)
-      if data: 
+      if len(data) == 0:
+        sys.exit()
+      else: 
         s_send(data)
 
 #### main stuff ####

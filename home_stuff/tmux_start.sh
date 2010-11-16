@@ -14,7 +14,8 @@ else
       new-window -d -n xls -t 3 'ssh_keep.sh x' \; \
       new-window -d -n logs -t 4 'sudo tail --follow=name /var/log/messages' \; \
       split-window -d -h -t 4 'sudo tail --follow=name /var/log/auth.log | grep -v CRON' \; \
-      new-window -d -t 5
+      new-window -d -t 5 \; \
+      setw -t 4 monitor-activity on
   else
     tmux new-session -n $1
   fi

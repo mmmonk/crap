@@ -2,11 +2,11 @@
 
 # $Id$
 
-import os
-import socket
+from os import O_NONBLOCK 
+from socket import socket,AF_INET,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,error
 import sys
-import select
-import fcntl
+from select import select
+from fcntl import fcntl,F_SETFL
 
 # main data exchnage function
 def exchange(s):
@@ -16,8 +16,8 @@ def exchange(s):
   # nothing :)
 
   # setting every descriptor to be non blocking 
-  fcntl.fcntl(s, fcntl.F_SETFL, os.O_NONBLOCK) 
-  fcntl.fcntl(0, fcntl.F_SETFL, os.O_NONBLOCK)
+  fcntl(s, F_SETFL, O_NONBLOCK) 
+  fcntl(0, F_SETFL, O_NONBLOCK)
 
   s_recv = s.recv
   s_send = s.send
@@ -25,8 +25,8 @@ def exchange(s):
   read   = sys.stdin.read  
 
   while 1:
-    toread,[],[] = select.select([0,s],[],[],30)
-    [],towrite,[] = select.select([],[1,s],[],30)
+    toread,[],[] = select([0,s],[],[],30)
+    [],towrite,[] = select([],[1,s],[],30)
     
     if 1 in towrite and s in toread:
       data = s_recv(4096)
@@ -51,11 +51,11 @@ if __name__ == '__main__':
     host = sys.argv[1]
     port = int(sys.argv[2])
 
-    tcpcork = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcpcork.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK,1)
+    tcpcork = socket(AF_INET, SOCK_STREAM)
+    tcpcork.setsockopt(IPPROTO_TCP, TCP_CORK,1)
     try:
       tcpcork.connect((host, port))
-    except socket.error:
+    except error:
       sys.stderr.write("[-] problem connecting to "+str(host)+":"+str(port)+"\n")
       tcpcork.close()
       sys.exit()  

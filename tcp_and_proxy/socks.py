@@ -2,12 +2,12 @@
 
 # $Id$
 
-import os
+from fcntl import fcntl, F_SETFL 
+from os import O_NONBLOCK
+from select import select
+from struct import pack,unpack 
 import socket
-import struct
 import sys
-import select
-import fcntl
 
 # main data exchnage function
 def exchange(s):
@@ -17,8 +17,8 @@ def exchange(s):
   # nothing :)
 
   # setting every descriptor to be non blocking
-  fcntl.fcntl(s, fcntl.F_SETFL, os.O_NONBLOCK)
-  fcntl.fcntl(0, fcntl.F_SETFL, os.O_NONBLOCK)
+  fcntl(s, F_SETFL, O_NONBLOCK)
+  fcntl(0, F_SETFL, O_NONBLOCK)
 
   s_recv = s.recv
   s_send = s.send
@@ -26,8 +26,8 @@ def exchange(s):
   read   = sys.stdin.read
 
   while 1:
-    toread,[],[] = select.select([0,s],[],[],30)
-    [],towrite,[] = select.select([],[1,s],[],30)
+    toread,[],[] = select([0,s],[],[],30)
+    [],towrite,[] = select([],[1,s],[],30)
 
     if 1 in towrite and s in toread:
       data = s_recv(4096)
@@ -55,13 +55,13 @@ def socks4(s,host,port):
   # 0 - if needs authentication 
 
   try:
-    data = struct.pack('!2BH',4,1,port)+socket.inet_aton(host)+chr(0)
+    data = pack('!2BH',4,1,port)+socket.inet_aton(host)+chr(0)
   except socket.error:
-    data = struct.pack('!2BH',4,1,port)+socket.inet_aton('0.0.0.1')+chr(0)+host+chr(0)
+    data = pack('!2BH',4,1,port)+socket.inet_aton('0.0.0.1')+chr(0)+host+chr(0)
 
   s.send(data)
   data = s.recv(256)
-  code = struct.unpack('BBH',data[:4])[1]
+  code = unpack('BBH',data[:4])[1]
 
   if code == 90:
     return 1 
@@ -78,21 +78,21 @@ def socks5(s,host,port):
   # 1 - if ready
   # 0 - if needs authentication 
 
-  data = struct.pack('!3B',5,1,0)
+  data = pack('!3B',5,1,0)
   s.send(data)
   data = s.recv(1024)
-  auth = struct.unpack('2B',data)[1]
+  auth = unpack('2B',data)[1]
   if auth != 255:
-    nport = struct.pack('!H',port)
+    nport = pack('!H',port)
     try:
-      data = struct.pack('!4B',5,1,0,1)+socket.inet_aton(host)+nport
+      data = pack('!4B',5,1,0,1)+socket.inet_aton(host)+nport
     except socket.error:
-      data = struct.pack('!5B',5,1,0,3,len(host))+host+nport
+      data = pack('!5B',5,1,0,3,len(host))+host+nport
 
     s.send(data)
     data = s.recv(256)
     try:
-      code = struct.unpack('BBH',data[:4])[1]
+      code = unpack('BBH',data[:4])[1]
     except:
       return 0
 

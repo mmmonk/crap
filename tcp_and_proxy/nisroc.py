@@ -60,25 +60,46 @@ def exchange(s):
 #### main stuff ####
 if __name__ == '__main__':
 
-
   if len(sys.argv) >= 2:
+ 
     host = sys.argv[1]
     port = int(sys.argv[2])
+ 
+    if len(sys.argv) >= 4:
+      phost = sys.argv[3]
+      pport = int(sys.argv[4]) 
 
     ctx = SSL.Context(SSL.SSLv3_METHOD)
     #ctx.set_verify(SSL.VERIFY_NONE,verifycallback)
    
     proxy = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     proxy.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK,1)  
-   
-    try:
-      proxy.connect((host,port))
-    except socket.error:
-      sys.stderr.write("[-] problem connecting to "+str(host)+":"+str(port)+"\n")
-      proxy.close()
-      sys.exit()
+  
+    if len(sys.argv) >= 4:
+      try:
+        proxy.connect((phost,pport))
+        proxy.send("CONNECT "+str(host)+":"+str(port)+" HTTP/1.0\r\r")
+        data = proxy.recv(128)
+        if "200 Connection established" in data:
+          sys.stderr.write("[+] connecting to "+str(host)+":"+str(port)+" via proxy "+str(phost)+":"+str(pport)+"\n")
+        else:
+          sys.stderr.write("[-] problem connecting to "+str(host)+":"+str(port)+" via proxy "+str(phost)+":"+str(pport)+" - maybe not allowed\n")
+          proxy.close()
+          sys.exit()
 
-    sys.stderr.write("[+] connecting to "+str(host)+":"+str(port)+"\n")
+      except socket.error:
+        sys.stderr.write("[-] problem connecting to proxy "+str(phost)+":"+str(pport)+"\n")
+        proxy.close()
+        sys.exit()
+    else: 
+      try:
+        proxy.connect((host,port))
+        sys.stderr.write("[+] connecting to "+str(host)+":"+str(port)+"\n")
+      except socket.error:
+        sys.stderr.write("[-] problem connecting to "+str(host)+":"+str(port)+"\n")
+        proxy.close()
+        sys.exit()
+
     ssl = SSL.Connection(ctx,proxy)
     ssl.setblocking(True)
     ssl.set_connect_state()

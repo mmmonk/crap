@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# $Id: tcp_half_closed_srv.py 143 2010-08-20 09:15:53Z m.lukaszuk $
+# $Id$
 from fcntl import fcntl,F_SETFL
 from OpenSSL import SSL
 from select import select

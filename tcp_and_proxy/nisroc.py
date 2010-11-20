@@ -65,8 +65,11 @@ if __name__ == '__main__':
     host = sys.argv[1]
     port = int(sys.argv[2])
  
-    if len(sys.argv) >= 4:
+    if len(sys.argv) >= 3:
       phost = sys.argv[3]
+      pport = 8080
+
+    if len(sys.argv) >= 4:
       pport = int(sys.argv[4]) 
 
     ctx = SSL.Context(SSL.SSLv3_METHOD)
@@ -75,7 +78,7 @@ if __name__ == '__main__':
     proxy = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     proxy.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK,1)  
   
-    if len(sys.argv) >= 4:
+    if len(sys.argv) >= 3:
       try:
         proxy.connect((phost,pport))
         proxy.send("CONNECT "+str(host)+":"+str(port)+" HTTP/1.0\r\r")
@@ -117,7 +120,7 @@ if __name__ == '__main__':
     proxy.close()
 
   else:
-    sys.stderr.write("usage: "+sys.argv[0]+" ip_dest port_dest\n")
+    sys.stderr.write("usage: "+sys.argv[0]+" ip_dest port_dest <proxy_ip> <proxy_port>\n")
 
 
 

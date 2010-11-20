@@ -62,7 +62,7 @@ def exchange(s,c):
         data = s_recv(4096)
       except SSL.WantReadError:
         data = ''
-      except SSL.SysCallError:
+      except SSL.SysCallError,SSL.ZeroReturnError:
         s.sock_shutdown(socket.SHUT_RDWR)
         c.shutdown(socket.SHUT_RDWR)
         break

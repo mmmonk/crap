@@ -4,7 +4,7 @@
 
 from os import O_NONBLOCK 
 from socket import socket,AF_INET,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,error
-import sys
+from sys import stdin, stdout, stderr, exit, argv
 from select import select
 from fcntl import fcntl,F_SETFL
 
@@ -21,8 +21,8 @@ def exchange(s):
 
   s_recv = s.recv
   s_send = s.send
-  write  = sys.stdout.write
-  read   = sys.stdin.read  
+  write  = stdout.write
+  read   = stdin.read  
 
   while 1:
     toread,[],[] = select([0,s],[],[],30)
@@ -32,7 +32,7 @@ def exchange(s):
       data = s_recv(4096)
       if len(data) == 0:
         s.shutdown(2)
-        sys.exit()
+        exit()
         break
       else:
         write(data)
@@ -40,25 +40,25 @@ def exchange(s):
     elif 0 in toread and s in towrite: 
       data = read(4096)
       if len(data) == 0:
-        sys.exit()
+        exit()
       else: 
         s_send(data)
 
 #### main stuff ####
 if __name__ == '__main__':
 
-  if len(sys.argv) >= 3:
-    host = sys.argv[1]
-    port = int(sys.argv[2])
+  if len(argv) >= 3:
+    host = argv[1]
+    port = int(argv[2])
 
     tcpcork = socket(AF_INET, SOCK_STREAM)
     tcpcork.setsockopt(IPPROTO_TCP, TCP_CORK,1)
     try:
       tcpcork.connect((host, port))
     except error:
-      sys.stderr.write("[-] problem connecting to "+str(host)+":"+str(port)+"\n")
+      stderr.write("[-] problem connecting to "+str(host)+":"+str(port)+"\n")
       tcpcork.close()
-      sys.exit()  
+      exit()  
 
     try:
       exchange(tcpcork)
@@ -68,4 +68,4 @@ if __name__ == '__main__':
     tcpcork.close()
   
   else:
-    sys.stderr.write("usage: "+sys.argv[0]+" ip_dest port_dest\n")
+    stderr.write("usage: "+argv[0]+" ip_dest port_dest\n")

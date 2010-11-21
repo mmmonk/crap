@@ -2,12 +2,12 @@
 
 # $Id$
 
-from fcntl import fcntl,F_SETFL
 from OpenSSL import SSL
+from fcntl import fcntl,F_SETFL
 from os import O_NONBLOCK,fork,environ
 from select import select
+from sys import stdin, stdout, stderr, exit, argv
 import socket
-import sys
 
 #def verifycallback(a1,a2,a3,a4,a5):
 #  return 1 
@@ -23,7 +23,7 @@ def loadconfig():
   try:
     cfg = open(configfile,'r')
   except:
-    sys.stderr.write("[-] config file not found - will not check digest\n")
+    stderr.write("[-] config file not found - will not check digest\n")
     return
 
   for line in cfg.readlines():
@@ -41,7 +41,7 @@ def appconfig(host,port,digest,key):
     cfg.write(str(host)+";"+str(port)+";"+str(digest)+";"+str(key)+"\n")
     cfg.close()
   except:
-    sys.stderr.write("[-] error adding host to config file\n")
+    stderr.write("[-] error adding host to config file\n")
 
 # main data exchnage function
 def exchange(s):
@@ -58,8 +58,8 @@ def exchange(s):
 
   s_recv = s.recv
   s_send = s.send
-  c_recv = sys.stdin.read
-  c_send = sys.stdout.write
+  c_recv = stdin.read
+  c_send = stdout.write
 
   while 1:
     toread,[],[] = select([0,s],[],[],30)
@@ -91,17 +91,17 @@ def exchange(s):
 #### main stuff ####
 if __name__ == '__main__':
 
-  if len(sys.argv) >= 3:
+  if len(argv) >= 3:
  
-    host = sys.argv[1]
-    port = int(sys.argv[2])
+    host = argv[1]
+    port = int(argv[2])
  
-    if len(sys.argv) >= 4:
-      phost = sys.argv[3]
+    if len(argv) >= 4:
+      phost = argv[3]
       pport = 8080
 
-    if len(sys.argv) >= 5:
-      pport = int(sys.argv[4]) 
+    if len(argv) >= 5:
+      pport = int(argv[4]) 
 
     loadconfig()
 
@@ -111,24 +111,24 @@ if __name__ == '__main__':
     proxy = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     proxy.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK,1)  
   
-    if len(sys.argv) >= 4:
+    if len(argv) >= 4:
       try:
         proxy.connect((phost,pport))
         proxy.send("CONNECT "+str(host)+":"+str(port)+" HTTP/1.0\r\r")
         data = proxy.recv(128)
         if "200 Connection established" not in data:
           proxy.close()
-          sys.exit("[-] problem connecting to "+str(host)+":"+str(port)+" via proxy "+str(phost)+":"+str(pport)+" - maybe not allowed?")
+          exit("[-] problem connecting to "+str(host)+":"+str(port)+" via proxy "+str(phost)+":"+str(pport)+" - maybe not allowed?")
 
       except socket.error:
         proxy.close()
-        sys.exit("[-] problem connecting to proxy "+str(phost)+":"+str(pport))
+        exit("[-] problem connecting to proxy "+str(phost)+":"+str(pport))
     else: 
       try:
         proxy.connect((host,port))
       except socket.error:
         proxy.close()
-        sys.exit("[-] problem connecting to "+str(host)+":"+str(port))
+        exit("[-] problem connecting to "+str(host)+":"+str(port))
 
     ssl = SSL.Connection(ctx,proxy)
     ssl.setblocking(True)
@@ -136,7 +136,7 @@ if __name__ == '__main__':
       ssl.set_connect_state()
       ssl.do_handshake()
     except:
-      sys.exit("[-] ssl handshake error")
+      exit("[-] ssl handshake error")
 
     if str(host)+":"+str(port) in hostdata:
       digest_save,key = hostdata[str(host)+":"+str(port)].split(';')
@@ -148,26 +148,26 @@ if __name__ == '__main__':
 
     if digest_save != 0:
       if digest_save not in digest:
-        sys.stderr.write("[-] cert digest wrong, possible MITM, exiting\n") 
+        stderr.write("[-] cert digest wrong, possible MITM, exiting\n") 
     else:
-      sys.stderr.write("[?] cert digest "+str(digest)+" - not verifed\n")
+      stderr.write("[?] cert digest "+str(digest)+" - not verifed\n")
 
     if key != 0:
       ssl.send(key)
     elif 'nisroc' in environ:
       ssl.send(environ['nisroc'])
     else:
-      sys.exit("[-] no key either in config file or in the env variable (nisroc) - exiting")
+      exit("[-] no key either in config file or in the env variable (nisroc) - exiting")
 
     data = ssl.recv(1024)
     if data and 'OpenSSH' not in data:
-      sys.exit("[-] wrong key")      
+      exit("[-] wrong key")      
 
     if key == 0:
-      sys.stderr.write("[+] adding host information to config file "+str(configfile)+"\n")
+      stderr.write("[+] adding host information to config file "+str(configfile)+"\n")
       appconfig(host,port,digest,environ['nisroc']) 
 
-    sys.stdout.write(data)
+    stdout.write(data)
 
     ssl.setblocking(False)
 
@@ -179,7 +179,7 @@ if __name__ == '__main__':
     proxy.close()
 
   else:
-    sys.stderr.write("usage: "+sys.argv[0]+" ip_dest port_dest <proxy_ip> <proxy_port>\n")
+    stderr.write("usage: "+argv[0]+" ip_dest port_dest <proxy_ip> <proxy_port>\n")
 
 
 

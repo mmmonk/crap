@@ -24,21 +24,21 @@ def loadconfig():
     cfg = open(configfile,'r')
   except:
     sys.stderr.write("[-] config file not found - will not check digest\n")
+    return
 
-  if cfg:
-    for line in cfg.readlines():
-      if line[0] != '#':
-        line = line.strip()
-        val = line.split(';')
-        if len(val) == 4:
-          hostdata[str(val[0])+":"+str(val[1])] = str(val[2])+";"+str(val[3])
+  for line in cfg.readlines():
+    if line[0] != '#':
+      line = line.strip()
+      val = line.split(';')
+      if len(val) == 4:
+        hostdata[str(val[0])+":"+str(val[1])] = str(val[2])+";"+str(val[3])
 
 
 def appconfig(host,port,digest,key):
 
   try:
     cfg = open(configfile,'a')
-    cfg.write(str(host)+";"+str(port)+";"+str(digest)+";"+str(key))
+    cfg.write(str(host)+";"+str(port)+";"+str(digest)+";"+str(key)+"\n")
     cfg.close()
   except:
     sys.stderr.write("[-] error adding host to config file\n")
@@ -116,9 +116,7 @@ if __name__ == '__main__':
         proxy.connect((phost,pport))
         proxy.send("CONNECT "+str(host)+":"+str(port)+" HTTP/1.0\r\r")
         data = proxy.recv(128)
-        if "200 Connection established" in data:
-          sys.stderr.write("[+] connecting to "+str(host)+":"+str(port)+" via proxy "+str(phost)+":"+str(pport)+"\n")
-        else:
+        if "200 Connection established" not in data:
           sys.stderr.write("[-] problem connecting to "+str(host)+":"+str(port)+" via proxy "+str(phost)+":"+str(pport)+" - maybe not allowed?\n")
           proxy.close()
           sys.exit()
@@ -130,7 +128,6 @@ if __name__ == '__main__':
     else: 
       try:
         proxy.connect((host,port))
-        sys.stderr.write("[+] connecting to "+str(host)+":"+str(port)+"\n")
       except socket.error:
         sys.stderr.write("[-] problem connecting to "+str(host)+":"+str(port)+"\n")
         proxy.close()
@@ -138,10 +135,12 @@ if __name__ == '__main__':
 
     ssl = SSL.Connection(ctx,proxy)
     ssl.setblocking(True)
-    ssl.set_connect_state()
-    ssl.do_handshake()
-
-    sys.stderr.write("[+] ssl handshake done\n")
+    try:
+      ssl.set_connect_state()
+      ssl.do_handshake()
+    except:
+      sys.stderr.write("[+] ssl handshake error\n")
+      sys.exit()
 
     if str(host)+":"+str(port) in hostdata:
       digest_save,key = hostdata[str(host)+":"+str(port)].split(';')
@@ -152,29 +151,26 @@ if __name__ == '__main__':
     digest = ssl.get_peer_certificate().digest('sha256')
 
     if digest_save != 0:
-      if digest_save in digest:
-        sys.stderr.write("[+] cert digest verified\n")
-      else:
+      if digest_save not in digest:
         sys.stderr.write("[-] cert digest wrong, possible MITM, exiting\n") 
     else:
-      sys.stderr.write("[+] cert digest "+str(digest)+" - not verifed\n")
+      sys.stderr.write("[?] cert digest "+str(digest)+" - not verifed\n")
 
     if key != 0:
       ssl.send(key)
     elif 'nisroc' in environ:
       ssl.send(environ['nisroc'])
     else:
-      sys.stderr.write("[-] no key either in config file or in the evn variable (nisroc) - exiting\n")
+      sys.stderr.write("[-] no key either in config file or in the env variable (nisroc) - exiting\n")
       sys.exit()
 
     data = ssl.recv(1024)
-    if data and 'OpenSSH' in data:
-      sys.stderr.write("[+] correct key\n")
-    else:
+    if data and 'OpenSSH' not in data:
       sys.stderr.write("[-] wrong key\n")
       sys.exit()      
 
     if key == 0:
+      sys.stderr.write("[+] adding host information to config file "+str(configfile)+"\n")
       appconfig(host,port,digest,environ['nisroc']) 
 
     sys.stdout.write(data)

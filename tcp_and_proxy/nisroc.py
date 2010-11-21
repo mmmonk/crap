@@ -117,21 +117,18 @@ if __name__ == '__main__':
         proxy.send("CONNECT "+str(host)+":"+str(port)+" HTTP/1.0\r\r")
         data = proxy.recv(128)
         if "200 Connection established" not in data:
-          sys.stderr.write("[-] problem connecting to "+str(host)+":"+str(port)+" via proxy "+str(phost)+":"+str(pport)+" - maybe not allowed?\n")
           proxy.close()
-          sys.exit()
+          sys.exit("[-] problem connecting to "+str(host)+":"+str(port)+" via proxy "+str(phost)+":"+str(pport)+" - maybe not allowed?")
 
       except socket.error:
-        sys.stderr.write("[-] problem connecting to proxy "+str(phost)+":"+str(pport)+"\n")
         proxy.close()
-        sys.exit()
+        sys.exit("[-] problem connecting to proxy "+str(phost)+":"+str(pport))
     else: 
       try:
         proxy.connect((host,port))
       except socket.error:
-        sys.stderr.write("[-] problem connecting to "+str(host)+":"+str(port)+"\n")
         proxy.close()
-        sys.exit()
+        sys.exit("[-] problem connecting to "+str(host)+":"+str(port))
 
     ssl = SSL.Connection(ctx,proxy)
     ssl.setblocking(True)
@@ -139,8 +136,7 @@ if __name__ == '__main__':
       ssl.set_connect_state()
       ssl.do_handshake()
     except:
-      sys.stderr.write("[+] ssl handshake error\n")
-      sys.exit()
+      sys.exit("[-] ssl handshake error")
 
     if str(host)+":"+str(port) in hostdata:
       digest_save,key = hostdata[str(host)+":"+str(port)].split(';')
@@ -161,13 +157,11 @@ if __name__ == '__main__':
     elif 'nisroc' in environ:
       ssl.send(environ['nisroc'])
     else:
-      sys.stderr.write("[-] no key either in config file or in the env variable (nisroc) - exiting\n")
-      sys.exit()
+      sys.exit("[-] no key either in config file or in the env variable (nisroc) - exiting")
 
     data = ssl.recv(1024)
     if data and 'OpenSSH' not in data:
-      sys.stderr.write("[-] wrong key\n")
-      sys.exit()      
+      sys.exit("[-] wrong key")      
 
     if key == 0:
       sys.stderr.write("[+] adding host information to config file "+str(configfile)+"\n")

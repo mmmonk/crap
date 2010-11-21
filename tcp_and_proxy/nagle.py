@@ -3,7 +3,7 @@
 # $Id$
 
 from os import O_NONBLOCK 
-from socket import socket,AF_INET,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,error
+from socket import socket,AF_INET,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,error as sock_error
 from sys import stdin, stdout, stderr, exit, argv
 from select import select
 from fcntl import fcntl,F_SETFL
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     tcpcork.setsockopt(IPPROTO_TCP, TCP_CORK,1)
     try:
       tcpcork.connect((host, port))
-    except error:
+    except sock_error:
       stderr.write("[-] problem connecting to "+str(host)+":"+str(port)+"\n")
       tcpcork.close()
       exit()  

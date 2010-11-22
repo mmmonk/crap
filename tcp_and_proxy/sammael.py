@@ -6,7 +6,7 @@ from fcntl import fcntl,F_SETFL
 from OpenSSL.SSL import WantReadError as SSL_WantReadError,SysCallError as SSL_SysCallError,ZeroReturnError as SSL_ZeroReturnError,Context as SSL_Context,SSLv3_METHOD,Connection as SSL_Connection
 from select import select
 from socket import socket,SHUT_RDWR,AF_INET,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,SOL_SOCKET,SO_REUSEADDR,error as socket_error 
-from os import chdir,getuid,setgid,setuid,umask,O_NONBLOCK,WNOHANG,fork,waitpid
+from os import chdir,getuid,setgid,setuid,umask,O_NONBLOCK,WNOHANG,fork,waitpid,getpid,getppid
 from sys import exit 
 import pwd, grp
 
@@ -16,7 +16,17 @@ dhost = '127.0.0.1'
 dport = 80
 ver = "$Rev$"
 
+def plog(msg, child = 0):
+  
+  if child == 0:
+    print "["+str(mainpid)+"] "+str(msg)
+  else:
+    print "["+str(mainpid)+"->"+str(childpid)+"] "+str(msg)
+
+
 def deamonsetup(uid_name='nobody', gid_name='nogroup'):
+
+#  chroot("/usr/local/certs/")
 
   chdir("/")
 
@@ -37,9 +47,6 @@ def deamonsetup(uid_name='nobody', gid_name='nogroup'):
 
   # Ensure a very conservative umask
   umask(077)
-
-#  os.chroot("/usr/local/certs/")
-
 
 
 # main data exchnage function
@@ -63,7 +70,6 @@ def exchange(s,c):
   while 1:
     toread,[],[] = select([c,s],[],[],30)
     [],towrite,[] = select([],[c,s],[],30)
-
 
     if c in towrite and s in toread:
       try:
@@ -91,7 +97,9 @@ def exchange(s,c):
 
 ##### main crap
 
-print "[p] sammael ("+str(ver)+") - daemon starting"
+mainpid = getpid()
+
+plog("sammael ("+str(ver)+") - daemon starting")
 
 s = socket(AF_INET, SOCK_STREAM)
 s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
@@ -99,11 +107,11 @@ s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 s.bind((phost, pport))
 s.listen(1)
 
-print "[p] bound to socket - "+str(phost)+":"+str(pport)
+plog("bound to socket - "+str(phost)+":"+str(pport))
 
 deamonsetup()
 
-print "[p] dropped privs and chrooted"
+plog("dropped privs")
 
 ### SSL context
 ctx = SSL_Context(SSLv3_METHOD)
@@ -111,8 +119,8 @@ ctx.use_privatekey_file('/usr/local/certs/server.key')
 ctx.use_certificate_file('/usr/local/certs/server.crt')
 ctx.set_cipher_list('HIGH')
 
-print "[p] SSL context ready"
-print "[p] starting to listen for connections"
+plog("SSL context ready")
+plog("starting to listen for connections")
 
 while (True):
     conn, addr = s.accept()
@@ -126,6 +134,7 @@ while (True):
  
     if pid == 0:
 
+      childpid = getpid()
       # let's add SSL to this socket 
       ssl = SSL_Connection(ctx,conn)
       ssl.setblocking(True)
@@ -139,7 +148,7 @@ while (True):
       if data and 'qwerty' in data:
         dport = 22 
    
-      print "[c] connecting to "+str(dhost)+":"+str(dport)+" from "+str(addr)
+      plog("connecting to "+str(dhost)+":"+str(dport)+" from "+str(addr),1)
       proxy = socket(AF_INET, SOCK_STREAM)
       proxy.setsockopt(IPPROTO_TCP, TCP_CORK,1)
 
@@ -150,17 +159,17 @@ while (True):
         conn.close()
         exit()
 
-      print "[c] connected to "+str(dhost)+":"+str(dport)+" from "+str(addr)
+      plog("connected to "+str(dhost)+":"+str(dport)+" from "+str(addr),1)
       
       if dport == 80:
         proxy.send(data)
     
       fcntl(proxy, F_SETFL, O_NONBLOCK)
 
-      print "[c] going into exchange between "+str(dhost)+":"+str(dport)+" and "+str(addr)
+      plog("going into exchange between "+str(dhost)+":"+str(dport)+" and "+str(addr),1)
 
       exchange(ssl,proxy)
       break
 
     else:
-      print "[p] Child forked "+str(pid)
+      plog("child forked "+str(pid))

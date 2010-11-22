@@ -16,9 +16,9 @@ dhost = '127.0.0.1'
 dport = 80
 ver = "$Rev$"
 
-def plog(msg, child = 0):
+def plog(msg, childpid = 0):
   
-  if child == 0:
+  if childpid == 0:
     print "["+str(mainpid)+"] "+str(msg)
   else:
     print "["+str(mainpid)+"->"+str(childpid)+"] "+str(msg)
@@ -120,7 +120,7 @@ ctx.use_certificate_file('/usr/local/certs/server.crt')
 ctx.set_cipher_list('HIGH')
 
 plog("SSL context ready")
-plog("starting to listen for connections")
+plog("listening for connections")
 
 while (True):
     conn, addr = s.accept()
@@ -134,7 +134,7 @@ while (True):
  
     if pid == 0:
 
-      childpid = getpid()
+      chpid = getpid()
       # let's add SSL to this socket 
       ssl = SSL_Connection(ctx,conn)
       ssl.setblocking(True)
@@ -148,7 +148,7 @@ while (True):
       if data and 'qwerty' in data:
         dport = 22 
    
-      plog("connecting to "+str(dhost)+":"+str(dport)+" from "+str(addr),1)
+      plog("connecting to "+str(dhost)+":"+str(dport)+" from "+str(addr),chpid)
       proxy = socket(AF_INET, SOCK_STREAM)
       proxy.setsockopt(IPPROTO_TCP, TCP_CORK,1)
 
@@ -159,14 +159,14 @@ while (True):
         conn.close()
         exit()
 
-      plog("connected to "+str(dhost)+":"+str(dport)+" from "+str(addr),1)
+      plog("connected to "+str(dhost)+":"+str(dport)+" from "+str(addr),chpid)
       
       if dport == 80:
         proxy.send(data)
     
       fcntl(proxy, F_SETFL, O_NONBLOCK)
 
-      plog("going into exchange between "+str(dhost)+":"+str(dport)+" and "+str(addr),1)
+      plog("going into exchange between "+str(dhost)+":"+str(dport)+" and "+str(addr),chpid)
 
       exchange(ssl,proxy)
       break

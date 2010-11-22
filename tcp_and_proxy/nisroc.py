@@ -1,18 +1,16 @@
 #!/usr/bin/python -u
 
-# $Id$
+# $Id: nisroc.py 193 2010-11-21 18:02:24Z m.lukaszuk $
 
-from OpenSSL import SSL
+from OpenSSL.SSL import WantReadError as SSL_WantReadError,SysCallError as SSL_SysCallError,Context as SSL_Context,SSLv3_METHOD,Connection as SSL_Connection
 from fcntl import fcntl,F_SETFL
 from os import O_NONBLOCK,fork,environ
 from select import select
 from sys import stdin, stdout, stderr, exit, argv
-import socket
+from socket import socket,AF_INET,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,error as socket_error
 
-#def verifycallback(a1,a2,a3,a4,a5):
-#  return 1 
-
-configfile = environ['HOME']+"/.nisroc.rc"
+configfile = environ['HOME']+"/.nisrocrc"
+version = "$Rev$"
 
 def loadconfig():
   
@@ -68,9 +66,9 @@ def exchange(s):
     if 1 in towrite and s in toread:
       try:
         data = s_recv(4096)
-      except SSL.WantReadError:
+      except SSL_WantReadError:
         data = ''
-      except SSL.SysCallError:
+      except SSL_SysCallError:
         s.sock_shutdown(0)
         break
 
@@ -105,11 +103,10 @@ if __name__ == '__main__':
 
     loadconfig()
 
-    ctx = SSL.Context(SSL.SSLv3_METHOD)
-    #ctx.set_verify(SSL.VERIFY_NONE,verifycallback)
+    ctx = SSL_Context(SSLv3_METHOD)
    
-    proxy = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    proxy.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK,1)  
+    proxy = socket(AF_INET, SOCK_STREAM)
+    proxy.setsockopt(IPPROTO_TCP, TCP_CORK,1)  
   
     if len(argv) >= 4:
       try:
@@ -120,17 +117,17 @@ if __name__ == '__main__':
           proxy.close()
           exit("[-] problem connecting to "+str(host)+":"+str(port)+" via proxy "+str(phost)+":"+str(pport)+" - maybe not allowed?")
 
-      except socket.error:
+      except socket_error:
         proxy.close()
         exit("[-] problem connecting to proxy "+str(phost)+":"+str(pport))
     else: 
       try:
         proxy.connect((host,port))
-      except socket.error:
+      except socket_error:
         proxy.close()
         exit("[-] problem connecting to "+str(host)+":"+str(port))
 
-    ssl = SSL.Connection(ctx,proxy)
+    ssl = SSL_Connection(ctx,proxy)
     ssl.setblocking(True)
     try:
       ssl.set_connect_state()
@@ -160,7 +157,9 @@ if __name__ == '__main__':
       exit("[-] no key either in config file or in the env variable (nisroc) - exiting")
 
     data = ssl.recv(1024)
-    if data and 'OpenSSH' not in data:
+    if data and 'OpenSSH' in data:
+      stderr.write("[+] connected succesfully - nisroc ("+str(version)+")\n")
+    else:
       exit("[-] wrong key")      
 
     if key == 0:

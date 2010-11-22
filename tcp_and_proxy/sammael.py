@@ -14,7 +14,7 @@ phost = ''
 pport = 443
 dhost = '127.0.0.1'
 dport = 80
-ver = "$Rev$"
+ver = " $Rev$ "
 
 def deamonsetup(uid_name='nobody', gid_name='nogroup'):
 

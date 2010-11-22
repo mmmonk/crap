@@ -1,6 +1,6 @@
 #!/usr/bin/python -u
 
-# $Id: nisroc.py 193 2010-11-21 18:02:24Z m.lukaszuk $
+# $Id$
 
 from OpenSSL.SSL import WantReadError as SSL_WantReadError,SysCallError as SSL_SysCallError,Context as SSL_Context,SSLv3_METHOD,Connection as SSL_Connection
 from fcntl import fcntl,F_SETFL
@@ -109,11 +109,19 @@ if __name__ == '__main__':
     proxy.setsockopt(IPPROTO_TCP, TCP_CORK,1)  
   
     if len(argv) >= 4:
+      
+      proxy_str = "CONNECT "+str(host)+":"+str(port)+" HTTP/1.0\r"
+      
+      if len(argv) >= 5:
+        proxy_str = proxy_str + "Proxy-Authorization: Basic " + str(argv[5]) + "\r" 
+
       try:
         proxy.connect((phost,pport))
-        proxy.send("CONNECT "+str(host)+":"+str(port)+" HTTP/1.0\r\r")
+        proxy.send(proxy_str+"\r")
         data = proxy.recv(128)
-        if "200 Connection established" not in data:
+        if "200 Connection established" in data:
+          pass
+        else:
           proxy.close()
           exit("[-] problem connecting to "+str(host)+":"+str(port)+" via proxy "+str(phost)+":"+str(pport)+" - maybe not allowed?")
 
@@ -178,7 +186,7 @@ if __name__ == '__main__':
     proxy.close()
 
   else:
-    stderr.write("usage: "+argv[0]+" ip_dest port_dest <proxy_ip> <proxy_port>\n")
+    stderr.write("usage: "+argv[0]+" ip_dest port_dest <proxy_ip> <proxy_port> <base64 encoded string user:pass for proxy auth\n")
 
 
 

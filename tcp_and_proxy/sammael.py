@@ -1,7 +1,6 @@
 #!/usr/bin/python -u
 
-# $Id: sammael.py 187 2010-11-20 00:21:51Z m.lukaszuk $
-# $Rev$
+# $Id$
 
 from fcntl import fcntl,F_SETFL
 from OpenSSL.SSL import WantReadError as SSL_WantReadError,SysCallError as SSL_SysCallError,ZeroReturnError as SSL_ZeroReturnError,Context as SSL_Context,SSLv3_METHOD,Connection as SSL_Connection
@@ -15,7 +14,7 @@ phost = ''
 pport = 443
 dhost = '127.0.0.1'
 dport = 80
-ver = " $Rev$ "
+ver = "$Rev$"
 
 def deamonsetup(uid_name='nobody', gid_name='nogroup'):
 

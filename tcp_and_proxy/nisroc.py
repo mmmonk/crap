@@ -186,7 +186,7 @@ if __name__ == '__main__':
     proxy.close()
 
   else:
-    stderr.write("usage: "+argv[0]+" ip_dest port_dest <proxy_ip> <proxy_port> <base64 encoded string user:pass for proxy auth\n")
+    stderr.write("usage: "+argv[0]+" ip_dest port_dest <proxy_ip> <proxy_port> <base64 encoded string user:pass for proxy auth>\n")
 
 
 

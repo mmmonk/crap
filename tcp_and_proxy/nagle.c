@@ -29,8 +29,7 @@ int main (int argc, char **argv) {
   struct timeval tv;
   fd_set rfds, wfds; 
   char* buff[BUFFSIZE];
-  int one = 1;
-  const int *val = &one;
+  int state = 1;
 
   if (argc != 3) {
     fprintf(stderr, "usage: %s <server_ip> <port>\n",argv[0]);
@@ -42,7 +41,6 @@ int main (int argc, char **argv) {
   hints.ai_socktype = SOCK_STREAM; 
   hints.ai_flags = 0;
   hints.ai_protocol = 0; 
- 
 
   if (getaddrinfo(argv[1],argv[2],&hints,&rp) != 0)
     die("getaddrinfo()");
@@ -50,7 +48,7 @@ int main (int argc, char **argv) {
   if ((sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol)) < 0) 
     die("socket()");
   
-  if (setsockopt(sock,IPPROTO_TCP, TCP_CORK,val,sizeof(one)) <0)
+  if (setsockopt(sock,IPPROTO_TCP, TCP_CORK,&state,sizeof(state)) <0)
     die("setsockopt()");
  
   if (connect(sock,rp->ai_addr,rp->ai_addrlen) == -1)
@@ -71,10 +69,10 @@ int main (int argc, char **argv) {
     FD_ZERO(&wfds);
     FD_SET(0, &rfds);
     FD_SET(sock, &rfds);
-    FD_SET(1, &wfds);
+//    FD_SET(1, &wfds);
     FD_SET(sock, &wfds);
     
-    retval = select(sock+1, &rfds, NULL, NULL, &tv);
+    retval = select(sock+1, &rfds, &wfds, NULL, &tv);
 
     if (retval == -1) {
 
@@ -82,7 +80,7 @@ int main (int argc, char **argv) {
 
     } else if (retval) {
 
-      if (FD_ISSET(0,&rfds)) { // && FD_ISSET(sock,&wfds)) {
+      if (FD_ISSET(0,&rfds) && FD_ISSET(sock,&wfds)) {
 
         len = read(0,buff,sizeof(buff));
 

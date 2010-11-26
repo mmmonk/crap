@@ -47,7 +47,9 @@ if { $state == "ok" } {
 
   fconfigure $sock -blocking on
 
-  set client_hello "160300005d0100005903003d7d24fa8873270c0104687df7dc99547a04b314d277301874824318eb445ff2201b483eeaf33bfc4207e4ee6d9a97194cfac3bf363baa5f6ab6e8b545e684f4df00120004feff000afefe000900640062000300060100"
+  # to get value bellow do: openssl s_client -debug -msg -ssl3 -connect google.com:443 | head -n 20
+  
+  set client_hello "16030000540100005003004cf033aeb88cf0efec4a0b0f68eaaa666f2b65d06654dfdcd1ad9bd3bd1b507f00002800390038003500160013000a00330032002f000500040015001200090014001100080006000300ff0201"
 
   set hello_length  [ string length $client_hello ]
   puts -nonewline $sock [ binary format "H${hello_length}" $client_hello ]
@@ -59,10 +61,16 @@ if { $state == "ok" } {
 
     puts "ssl failed"
 
-  } else {
+  } else { 
+    if { $res == "150300" } {
+    
+      puts "got correct ssl server handshake"
 
-    puts $res 
+    } else {
 
+      puts "I don't understand the answer from the server"
+
+    }
   }
 }
 

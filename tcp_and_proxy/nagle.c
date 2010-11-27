@@ -14,7 +14,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define BUFFSIZE 102400 
+#define BUFFSIZE 4096 
 
 void die (char *mesg){
   perror(mesg);

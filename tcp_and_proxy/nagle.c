@@ -23,7 +23,7 @@ void die (char *mesg){
 
 int main (int argc, char **argv) {
 
-  int sock,retval,len;
+  int sock,retrd,retwr,len;
   struct addrinfo hints;
   struct addrinfo *rp;
   struct timeval tv;
@@ -72,15 +72,16 @@ int main (int argc, char **argv) {
 //    FD_SET(1, &wfds);
     FD_SET(sock, &wfds);
     
-    retval = select(sock+1, &rfds, &wfds, NULL, &tv);
+    retrd = select(sock+1, &rfds, NULL, NULL, &tv);
+    retwr = select(sock+1, NULL, &wfds, NULL, &tv); 
 
-    if (retval == -1) {
+    if (retrd == -1 || retwr == -1) {
 
       perror("select()");
 
-    } else if (retval) {
+    } else if (retrd && retwr) {
 
-      if (FD_ISSET(0,&rfds) && FD_ISSET(sock,&wfds)) {
+      if (FD_ISSET(0,&rfds) && (FD_ISSET(sock,&wfds))) {
 
         len = read(0,buff,sizeof(buff));
 

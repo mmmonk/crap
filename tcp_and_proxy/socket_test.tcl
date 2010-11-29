@@ -22,12 +22,13 @@ set sslhello_length  [ string length $sslclient_hello ]
 #
 proc stok {sock} {
   
-  # we could get here because of the error
+  # we could get here because of an error
   set resp [fconfigure $sock -error]
 
   if {$resp == "" } { 
     return "tcp:ok" 
-  } 
+  }
+ 
   return "tcp:closed" 
 }
 
@@ -78,13 +79,13 @@ if { $tcpstate == "tcp:ok" } {
   puts -nonewline $sock [ binary format "H${sslhello_length}" $sslclient_hello ]
   flush $sock
 
-  after $sockettimeout set sslstate "ssl:timeout" 
+  after $sockettimeout set sslstate "tcp:ok, ssl:timeout" 
   
   fileevent $sock readable { set sslstate [sslok $sock ] }
 
   vwait sslstate
 
-  after cancel set sslstate "ssl:timeout" 
+  after cancel set sslstate "tcp:ok, ssl:timeout" 
 
   set state $sslstate
 }

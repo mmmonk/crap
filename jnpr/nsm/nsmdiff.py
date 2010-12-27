@@ -1,28 +1,49 @@
 #!/usr/bin/env python
 
-# $Id$
-
 from ftplib import FTP
 import os
 import errno
 import time
 import sys
 
-MAINDIR = '/home/case/store/juniper/nsmdiff'
-EMAIL = MAINDIR+"/"+".tosend"
 SERVERRETRY = 5
 SERVERRETRYTIME = 300
 
+conffile='/home/case/.nsmauth.conf'
+
+def LoadConf(filename):
+
+  global confvar
+  confvar = {}
+  try:
+    conf=open(filename,'r')
+  except:
+    print "error during conf read"
+    sys.exit(1)
+
+  line = conf.readline()
+
+  while line:
+    conft = line.replace('\n','').split("=")
+    confvar[conft[0]]=conft[1]
+    line = conf.readline()
+
+
 if __name__ == '__main__':
+
+  LoadConf(conffile)
+
+  MAINDIR = confvar['nsmdiffdir']
+  EMAIL = MAINDIR+"/"+".tosend" 
 
   serverretrycount = 0
   serverok = 0
   
   while serverok == 0:
     try:
-      nsm = FTP('ftp.company.gov')
-      nsm.login('user','pass')
-      nsm.cwd('/tftpboot/ims')
+      nsm = FTP(confvar['nsmdiffftp'])
+      nsm.login(confvar['nsmdiffuser'],confvar['nsmdiffpass'])
+      nsm.cwd(confvar['nsmdiffremotedir'])
       lst = nsm.nlst()
       serverok = 1
     except:
@@ -31,20 +52,19 @@ if __name__ == '__main__':
       if serverretrycount >= SERVERRETRY:
         print "There were errors with the connection to the server\n"
         sys.exit(1)
-  
-
-  # creating the dirs needed for the script
+ 
+  # creating the dirs needed for the script 
   try:
     os.makedirs(EMAIL)
   except OSError as exc:
     if exc.errno == errno.EEXIST:
-      pass
+        pass
     else: raise
 
   somethingnew = 0
 
-  difftext = "From: <mlukaszuk@comapny.net> \n\
-To: <mlukaszuk@comapny.net> \n\
+  difftext = "From: "+confvar['emailfrom']+" \n\
+To: "+confvar['emailto']+" \n\
 Subject: [NSMDIFF] update from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localtime()))+"\n" 
 
   for ver in lst:
@@ -54,17 +74,16 @@ Subject: [NSMDIFF] update from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localti
         for diff in vlst:
           if '_filediff' in diff:
             rsize = nsm.size(diff)
-            if ( rsize > 0):
+            if ( rsize > 0 ):
               os.mkdir(MAINDIR+"/"+ver)
-              lsize = 0
-              r1size = 0
-              while not ((lsize == rsize)and(rsize == r1size)):
+              try:
                 nsm.retrbinary("RETR "+diff, open(MAINDIR+"/"+diff,'wb').write)
-                r1size = nsm.size(diff)
-                lsize = os.stat(MAINDIR+"/"+diff).st_size
-                if not (r1size == rsize):
-                  time.sleep(30)
-
+              except:
+                warn("problem with the ftp server")
+                os.remove(MAINDIR+"/"+diff)
+                os.rmdir(MAINDIR+"/"+ver)
+                sys.exit(1)              
+    
               difftext += "\n\nFixes in "+ver+"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
               difftext += open(MAINDIR+"/"+diff,'r').read()
               somethingnew = 1

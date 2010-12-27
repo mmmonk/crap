@@ -2,11 +2,16 @@
 
 # $Id$
 
+import time
 import cookielib
 import urllib
 import urllib2 
 import sgmllib 
 import sys
+import os
+import re
+from subprocess import Popen,PIPE 
+from stat import *
 
 conffile='/home/case/.nsmauth.conf'
 
@@ -62,6 +67,8 @@ class FormParser(sgmllib.SGMLParser):
 LoadConf(conffile)
 
 url=confvar['schemalink']
+maindir=confvar['nsmdiffdir']+'/schema'
+email=confvar['nsmdiffdir']+"/.tosend"
 
 cj = cookielib.CookieJar()
 opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
@@ -77,4 +84,85 @@ form['PASSWORD']=confvar['schemapass']
 params = urllib.urlencode(form)
 dat2 = urllib2.urlopen(dat.geturl(),params)
 dat3 = urllib2.urlopen(dat2.geturl()) 
-print dat3.info()['Last-Modified']+"\n"+dat3.info()['Content-Length']
+
+mdate = dat3.info()['Last-Modified']
+size = int(dat3.info()['Content-Length'])
+
+newschema = 0
+
+try:
+  timestampfile = open(maindir+'/schemainfo.txt','r')
+  mdate_s = timestampfile.readline()
+  if mdate != mdate_s.replace('\n',''):
+    newschema = 1
+
+  size_s = timestampfile.readline()
+  if size != int(size_s.replace('\n','')):
+    if newschema == 0:
+      print "same timestamp different size - please check"
+  else:
+    if newschema == 1:
+      print "same size different timestamp - please check"
+except:
+  newschema = 1
+
+if newschema == 1:
+
+  # below converts the time format we get from the Last-Modified field to a nicer looking string
+  # Thu, 25 Nov 2010 03:21:25 GMT
+  asctime = time.strftime("%Y%m%d_%H%M%S",time.strptime(mdate,"%a, %d %b %Y %H:%M:%S %Z"))
+
+  schamefilename = maindir+"/schema_"+asctime+".tgz"
+
+  chunk = 512000 
+
+  try:
+    schema = open(schamefilename,'r')
+    print "file: "+schamefilename+" already exists"
+    sys.exit(1)
+  except:
+    pass
+
+  try:
+    schema = open(schamefilename,'w')
+
+    while 1:
+      data = dat3.read(chunk)
+      if not data:
+        break
+      schema.write(data)
+  except:
+    os.unlink(schamefilename)
+    print "error while downloading schema"
+    sys.exit(1)
+
+  schema.close()
+
+  timestampfile = open(maindir+'/schemainfo.txt','w')
+  timestampfile.write(mdate+'\n'+str(size)+'\n')
+  timestampfile.close()
+
+  pipe = Popen("/bin/tar -zxOf "+maindir+"/schema_"+asctime+".tgz svn.log | /bin/grep 'revision='",shell=True, bufsize=512, stdout=PIPE).stdout
+  revpattern = re.compile("\"[0-9]+\"")
+  version = re.findall(revpattern,pipe.readline())[0]
+  pipe.close()
+
+  version = version.replace('"','')
+
+  try:
+    os.rename(maindir+"/schema_"+asctime+".tgz", maindir+"/schema_"+version+".tgz")
+    os.chmod(maindir+"/schema_"+version+".tgz",S_IROTH|S_IRGRP|S_IWUSR|S_IRUSR) 
+  except:
+    print "rename from "+maindir+"/schema_"+asctime+".tgz to "+ maindir+"/schema_"+version+".tgz\n or chmod  failed" 
+    sys.exit(1)
+
+  emailtxt = "From: "+confvar['emailfrom']+" \n\
+To: "+confvar['emailto']+" \n\
+Subject: [schemamonitor] New schema version "+version+" from "+mdate+" \n\n\n\
+You can download it from here: ftp://172.30.73.133/nsmdiff_and_stuff/schema/schema_"+version+".tgz \n\n\
+--\nYour friendly automatic servant\nAll flames/complaints will go to /dev/null\n"
+
+  try:
+    open(email+"/schema_"+str(int(time.time())),'w').write(emailtxt)
+  except:
+    print emailtxt 

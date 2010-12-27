@@ -34,7 +34,7 @@ if __name__ == '__main__':
   LoadConf(conffile)
 
   MAINDIR = confvar['nsmdiffdir']
-  EMAIL = MAINDIR+"/"+".tosend" 
+  EMAIL = MAINDIR+"/.tosend" 
 
   serverretrycount = 0
   serverok = 0

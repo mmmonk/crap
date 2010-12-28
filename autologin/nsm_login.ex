@@ -167,7 +167,7 @@ Have fun :)\n"
       expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb shadow_server 0 1 /__/clientOneTimePassword \"dk2003ns\" > /dev/null\r"} 
       sleep 1
       set backuptime [ timestamp -format "%Y%m%d_%H%M%S"]
-      expect "*# " { send "perl -npi\".old_$backuptime\" -e 's/(clientOneTimePassword\\s+)\\S*/\$1 dk2003ns/i;s/(default.printLevel\\s+)\\S*/\$1 debug/i;s/(ourRsaPrivateKey|theirRsaPublicKey)/#\$1/i;s/(guiSvrDirectiveHandler.max.heap|devSvrDirectiveHandler.max.heap\\s+)\\S*/\$1 1536000000/i' /var/netscreen/*Svr/*Svr.cfg > /dev/null\r"}
+      expect "*# " { send "perl -npi\".old_$backuptime\" -e 's/ +/ /g;s/(clientOneTimePassword\\s+)\\S*/\$1 dk2003ns/i;s/(default.printLevel\\s+)\\S*/\$1 debug/i;s/(ourRsaPrivateKey|theirRsaPublicKey)/#\$1/i;s/(guiSvrDirectiveHandler.max.heap|devSvrDirectiveHandler.max.heap\\s+)\\d+/\$1 1536000000/i' /var/netscreen/*Svr/*Svr.cfg > /dev/null\r"}
       expect "*# " { send "/etc/init.d/haSvr restart\r"}
       expect "*# " { send "/etc/init.d/guiSvr restart\r"}
       expect "*# " { send "/etc/init.d/devSvr restart\r"}

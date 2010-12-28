@@ -69,7 +69,7 @@ int main (int argc, char **argv) {
     FD_ZERO(&wfds);
     FD_SET(0, &rfds);
     FD_SET(sock, &rfds);
-//    FD_SET(1, &wfds);
+    FD_SET(1, &wfds);
     FD_SET(sock, &wfds);
     
     retrd = select(sock+1, &rfds, NULL, NULL, &tv);
@@ -81,7 +81,7 @@ int main (int argc, char **argv) {
 
     } else if (retrd && retwr) {
 
-      if (FD_ISSET(0,&rfds) && (FD_ISSET(sock,&wfds))) {
+      if (FD_ISSET(0,&rfds) && FD_ISSET(sock,&wfds)) {
 
         len = read(0,buff,sizeof(buff));
 
@@ -94,7 +94,7 @@ int main (int argc, char **argv) {
 
       } 
       
-      if (FD_ISSET(sock,&rfds)) {
+      if (FD_ISSET(sock,&rfds) && FD_ISSET(1,&wfds)) {
 
         len = recv(sock,buff,sizeof(buff),0);
 

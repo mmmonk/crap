@@ -160,7 +160,7 @@ if newschema == 1:
 To: "+confvar['emailto']+" \n\
 Subject: [schemamonitor] New schema version "+version+" from "+mdate+" \n\n\n\
 You can download it from here: ftp://172.30.73.133/nsmdiff_and_stuff/schema/schema_"+version+".tgz \n\n\
---\nYour friendly automatic servant\nAll flames/complaints will go to /dev/null\n"
+--\nThis email was created by a very intelligent script\nAll flames/complaints will go to /dev/null\n"
 
   try:
     open(email+"/schema_"+str(int(time.time())),'w').write(emailtxt)

@@ -91,7 +91,7 @@ Subject: [NSMDIFF] update from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localti
   nsm.quit()
 
   if somethingnew == 1:
-    difftext += "--\nYour friendly automatic servant\nAll flames/complaints will go to /dev/null\n"
+    difftext += "--\nThis email was created by a very intelligent script\nAll flames/complaints will go to /dev/null\n"
     try:
       open(EMAIL+"/diff"+str(int(time.time())),'w').write(difftext)
     except:

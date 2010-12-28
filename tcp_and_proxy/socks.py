@@ -118,7 +118,7 @@ if __name__ == '__main__':
       ver = 5
 
     socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    socks.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK,1)
+    #socks.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK,1)
 
     try:
       socks.connect((phost, pport))

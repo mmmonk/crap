@@ -98,7 +98,7 @@ int main (int argc, char **argv) {
 
         len = recv(sock,buff,sizeof(buff),0);
 
-        if (len <= 0){
+        if (len < 1){
           shutdown(sock,SHUT_RDWR);
           exit(0);
         }

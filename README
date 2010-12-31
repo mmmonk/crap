@@ -1,0 +1,14 @@
+autologin/ - automatic login script in expect
+cable_modems/ - quering cable modems in DOCSIS standard
+cisco/ - scripts for cisco devices/software 
+cisco_tcl/ - cisco tcl scripts
+configs/ - configurations for various things
+dsbl_cleanup/ - dsbl cleanup - doesn't work anymore
+home_stuff/ - some scripts that I use at home
+jnpr/ - scripts for juniper devices/software
+other/ - other 
+pcap/ - playing with pcaps
+scapy/ - some scripts based on scapy
+snmp/ - playing with snmp
+swatch/ - scripts and configuration for swatch
+tcp_and_proxy/ - scripts and programs that play with TCP/IP and that use HTTP/SOCKS proxy

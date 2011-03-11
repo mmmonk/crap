@@ -90,6 +90,12 @@ Have fun :)\n"
 
     \001p { send "rpm -qa | grep netscreen | xargs -r rpm -e ; rm -rf /var/netscreen/*/* /usr/netscreen/*" }
 
+    \001n {
+        puts "\nPlease enter the version to install: "
+        set test [gets stdin]
+        puts "you entered: $test"
+    }
+
     \001i { 
         send  "\r"
         expect timeout {

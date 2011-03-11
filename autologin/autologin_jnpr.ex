@@ -127,6 +127,7 @@ interact {
 		}
 		foreach alias {	"ss \"save software from tftp 172.30.73.133\""
 				"sc \"save config from tftp 172.30.73.133\""
+        "sh \"get\""
 				"wr \"save\""
 				"reload \"reset no-prompt\""} {
 			send -s "set alias $alias\r"

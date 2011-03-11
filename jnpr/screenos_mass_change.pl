@@ -33,6 +33,7 @@ Host file example:
 username1|password2@172.30.72.88
 telnet://junos|qwerty@172.30.72.89
 telnet://test@172.30.72.90
+telnet://junos|qwerty@172.30.72.89:2323
 
 Commands file example:
 get clock

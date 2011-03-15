@@ -70,7 +70,10 @@ Subject: [NSMDIFF] update from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localti
   for ver in lst:
     if 'LGB' in ver:
       if not os.path.isdir(MAINDIR+"/"+ver):
-        vlst=nsm.nlst(ver)
+        try:
+          vlst=nsm.nlst(ver)
+        except:
+          sys.exit(1)
         for diff in vlst:
           if '_filediff' in diff:
             rsize = nsm.size(diff)

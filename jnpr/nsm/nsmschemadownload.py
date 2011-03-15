@@ -85,8 +85,14 @@ params = urllib.urlencode(form)
 dat2 = urllib2.urlopen(dat.geturl(),params)
 dat3 = urllib2.urlopen(dat2.geturl()) 
 
-mdate = dat3.info()['Last-Modified']
-size = int(dat3.info()['Content-Length'])
+
+# this was hit when there was a problem with the backend connection
+httpok = 1
+try:
+  mdate = dat3.info()['Last-Modified']
+  size = int(dat3.info()['Content-Length'])
+except:
+  httpok = 0
 
 newschema = 0
 
@@ -106,7 +112,7 @@ try:
 except:
   newschema = 1
 
-if newschema == 1:
+if newschema == 1 and httpok == 1:
 
   # below converts the time format we get from the Last-Modified field to a nicer looking string
   # Thu, 25 Nov 2010 03:21:25 GMT
@@ -159,9 +165,9 @@ if newschema == 1:
   emailtxt = "From: "+confvar['emailfrom']+" \n\
 To: "+confvar['emailto']+" \n\
 Subject: [schemamonitor] New schema version "+version+" from "+mdate+" \n\n\n\
-You can download it from here:\
-ftp://172.30.73.133/nsmdiff_and_stuff/schema/schema_"+version+".tgz\
-The release notes information can be probably downloaded from here:\
+You can download it from here:\n\
+ftp://172.30.73.133/nsmdiff_and_stuff/schema/schema_"+version+".tgz\n\
+The release notes information can be probably downloaded from here:\n\
 http://kb.juniper.net/library/CUSTOMERSERVICE/GLOBAL_JTAC/technotes/DMI_Schema_v"+version+".pdf\n\n\
 --\nThis email was created by a very intelligent script\nAll flames/complaints will go to /dev/null\n"
 

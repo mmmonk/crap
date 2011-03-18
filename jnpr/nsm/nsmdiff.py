@@ -80,7 +80,7 @@ Subject: [NSMDIFF] update from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localti
             rsize = nsm.size(diff)
             if ( rsize > 0 ):
               os.mkdir(MAINDIR+"/"+ver)
-              os.chmod(MAINDIR+"/"+ver,755)
+              os.chmod(MAINDIR+"/"+ver,0755)
               try:
                 nsm.retrbinary("RETR "+diff, open(MAINDIR+"/"+diff,'wb').write)
               except:
@@ -96,7 +96,7 @@ Subject: [NSMDIFF] update from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localti
           
         if filediff == 0:    
           os.mkdir(MAINDIR+"/"+ver)
-          os.chmod(MAINDIR+"/"+ver,755)
+          os.chmod(MAINDIR+"/"+ver,0755)
           difftext += "\n\nNo information about fixes in "+ver+"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
           somethingnew = 1
 

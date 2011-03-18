@@ -54,7 +54,7 @@ my %params=map{my($name,$value)=split/\=/;$name => $value} map{split /\&/} $ENV{
 my @nsmverl=();
 opendir(DIR,$homedir);
 while(my $nsmver=readdir(DIR)){
-  next unless ($nsmver=~/^LGB/);
+  next unless ($nsmver=~/^LGB/ and -d $homedir."/".$nsmver);
   if (exists($params{'q'}) and $params{'q'} ne ""){
     if (exists($params{'m'}) and $params{'m'}==1){
       push(@nsmverl,$nsmver) if ($nsmver=~/^$params{'q'}$/);
@@ -83,7 +83,7 @@ foreach my $nsmver (@nsmverl) {
           $f=~s/-.+?//;
           $currentpr=$f;
           next if (exists($all{"$nsmver#$currentpr"}));
-          $all{"$nsmver#$currentpr"}=" " unless (exists($params{'prt'}));
+          $all{"$nsmver#$currentpr"}=" " unless (exists($params{'prt'}) and $params{'prt'} ne "");
           next;
         }
         next if (exists($params{'prn'}) and $params{'prn'} ne "" and $currentpr!~/$params{'prn'}/);

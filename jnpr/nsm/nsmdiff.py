@@ -70,6 +70,7 @@ Subject: [NSMDIFF] update from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localti
   for ver in lst:
     if 'LGB' in ver:
       if not os.path.isdir(MAINDIR+"/"+ver):
+        filediff = 0
         try:
           vlst=nsm.nlst(ver)
         except:
@@ -79,6 +80,7 @@ Subject: [NSMDIFF] update from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localti
             rsize = nsm.size(diff)
             if ( rsize > 0 ):
               os.mkdir(MAINDIR+"/"+ver)
+              os.chmod(MAINDIR+"/"+ver,755)
               try:
                 nsm.retrbinary("RETR "+diff, open(MAINDIR+"/"+diff,'wb').write)
               except:
@@ -86,10 +88,17 @@ Subject: [NSMDIFF] update from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localti
                 os.remove(MAINDIR+"/"+diff)
                 os.rmdir(MAINDIR+"/"+ver)
                 sys.exit(1)              
-    
+
               difftext += "\n\nFixes in "+ver+"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
               difftext += open(MAINDIR+"/"+diff,'r').read()
               somethingnew = 1
+              filediff = 1
+          
+        if filediff == 0:    
+          os.mkdir(MAINDIR+"/"+ver)
+          os.chmod(MAINDIR+"/"+ver,755)
+          difftext += "\n\nNo information about fixes in "+ver+"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
+          somethingnew = 1
 
   nsm.quit()
 

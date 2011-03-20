@@ -5,30 +5,15 @@
 use strict;
 use warnings;
 
-my %nsm = (
-'LGB7z1' => '2007.1r1',
-'LGB7z2' => '2007.1r2',
-'LGB7z3' => '2007.1r3',
-'LGB8z1' => '2007.2r1',
-'LGB8z1' => '2007.2r1',
-'LGB8z2' => '2007.2r2',
-'LGB8z2' => '2007.2r2',
-'LGB9z1' => '2007.3r1',
-'LGB9z2' => '2007.3r2',
-'LGB9z3' => '2007.3r3',
-'LGB9z4' => '2007.3r4',
-'LGB9z5' => '2007.3r5',
-'LGB10z1' => '2008.1r1',
-'LGB10z2' => '2008.1r2',
-'LGB11z1' => '2008.2r1',
-'LGB11z2' => '2008.2r2',
-'LGB12z1' => '2009.1r1',
-'LGB12z2' => '2010.1r1',
-'LGB13z1' => '2010.2r1',
-'LGB14z1' => '2010.3r1',
-'LGB14z2' => '2010.4r1',
-'LGB14z3' => '2011.1r1'
-);
+my %nsm;
+#loading NSM naming file
+open(FD,"/home/www/perl/nsm_naming.txt") or die "can't load file\n";
+while(<FD>){
+  next unless ($_);
+  chomp;
+  my ($a,$b)=split(" ");
+  $nsm{$a}=$b;                                                                                                                                                            }
+close(FD);
 
 # NSM version sorting
 sub sorting {
@@ -57,9 +42,9 @@ while(my $nsmver=readdir(DIR)){
   next unless ($nsmver=~/^LGB/ and -d $homedir."/".$nsmver);
   if (exists($params{'q'}) and $params{'q'} ne ""){
     if (exists($params{'m'}) and $params{'m'}==1){
-      push(@nsmverl,$nsmver) if ($nsmver=~/^$params{'q'}$/);
+      push(@nsmverl,$nsmver) if ($nsmver=~/^$params{'q'}$/i);
     }else {
-      push(@nsmverl,$nsmver) if ($nsmver=~/$params{'q'}/);
+      push(@nsmverl,$nsmver) if ($nsmver=~/$params{'q'}/i);
     }
   } else {
     push(@nsmverl,$nsmver);

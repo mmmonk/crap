@@ -57,7 +57,9 @@ foreach my $nsmver (@nsmverl) {
   opendir(DIFF,$homedir."/".$nsmver);
   while(my $diff=readdir(DIFF)){
     next unless ($diff=~/filediff/);
-    my $currentpr="";
+    my $currprn=0;
+    my $prevprn=0;
+    my $currprt=" ";
     open(FD,$homedir."/".$nsmver."/".$diff);
     while(<FD>){
       chomp;
@@ -66,14 +68,19 @@ foreach my $nsmver (@nsmverl) {
         if (/^<\s+(Bug:|\/B:)/) {
           next if ($f=~/new/i);
           $f=~s/-.+?//;
-          $currentpr=$f;
-          next if (exists($all{"$nsmver#$currentpr"}));
-          $all{"$nsmver#$currentpr"}=" " unless (exists($params{'prt'}) and $params{'prt'} ne "");
-          next;
+
+          if ($currprn > 0){
+            unless (exists($params{'prn'}) and $params{'prn'} ne "" and $currprn!~/$params{'prn'}/ or 
+            exists($params{'prt'}) and $params{'prt'} ne "" and $currprt!~/$params{'prt'}/i){
+              $all{"$nsmver#$currprn"}=$currprt;
+            }
+          }
+
+          $currprn=$f;
+          $currprt=" ";
+        }elsif (/^<\s+Title:/){
+          $currprt=$f;
         }
-        next if (exists($params{'prn'}) and $params{'prn'} ne "" and $currentpr!~/$params{'prn'}/);
-        next if (exists($params{'prt'}) and $params{'prt'} ne "" and $f!~/$params{'prt'}/i);
-        $all{"$nsmver#$currentpr"}=$f;
       }
     }
     close(FD);

@@ -68,7 +68,7 @@ To: "+confvar['emailto']+" \n\
 Subject: [NSMDIFF] update from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localtime()))+"\n" 
 
   for ver in lst:
-    if 'LGB' in ver:
+    if 'LGB' in ver and not '_' in ver:
       if not os.path.isdir(MAINDIR+"/"+ver):
         filediff = 0
         try:

@@ -7,7 +7,7 @@ dsbl_cleanup/ - dsbl cleanup - doesn't work anymore
 home_stuff/ - some scripts that I use at home
 jnpr/ - scripts for juniper devices/software
 other/ - other 
-pcap/ - playing with pcaps
+pcap_rawsockets/ - playing with pcaps and raw sockets
 scapy/ - some scripts based on scapy
 snmp/ - playing with snmp
 swatch/ - scripts and configuration for swatch

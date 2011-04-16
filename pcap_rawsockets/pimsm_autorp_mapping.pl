@@ -53,8 +53,7 @@ usage: $0 -d <destination IP> -rp <rendezvous point IP> <more options>
   -i <seconds>
    how long to wait in seconds between sending each packet,
    default value is ".$sleep.",
-
-\n";
+";
   exit;
 }
 
@@ -74,9 +73,7 @@ for(my $i=0;$i<$#ARGV;$i+=2){
 
 usage if (!defined($dst) or !defined($rp));
 
-if($#gaddr==-1){
-  push(@gaddr,"-224.0.0.0/4");
-}
+push(@gaddr,"-224.0.0.0/4") if($#gaddr==-1);
 
 # payload definition 
 # ftp://ftp.icm.edu.pl/packages/cisco-ipmulticast/pim-autorp-spec01.txt
@@ -93,17 +90,21 @@ if ($htime>255){
 }
 push(@data,($htime%256));
 
-# reservered bits
+# reserved bits
 push(@data,(
   0x00,0x00,0x00,0x00  
 ));                     
 
+# RP
 push(@data,split('\.',$rp)); 
 
 # RP highest PIM version - 11 : Dual version 1 and 2 
 push(@data,0x03);
 
+# number of group addresses
 push(@data,$#gaddr+1);
+
+# group addresses
 foreach (@gaddr){
   if (/^-/){
     push(@data,0x01);
@@ -116,16 +117,13 @@ foreach (@gaddr){
   push(@data,split('\.',$g[0]));
 }
 
-#my $payload = pack "C*",@hexpayload;
-
+# finally creating the packet
 my $a= Net::RawIP->new(
   {ip => {daddr => $dst, ttl=>$ttl},
   udp => {source => 496,dest => 496, data => pack "C*",@data}}
 );
 
-if (defined($src)){
-  $a->set({ip=>{saddr=>$src}});
-}
+$a->set({ip=>{saddr=>$src}}) if (defined($src));
 
 $count--;
 if ($count>0){
@@ -135,5 +133,6 @@ if ($count>0){
     sleep $sleep;
   }
 }
+
 print localtime(time())." sending packet dst:$dst rp:$rp\n";
 $a->send();

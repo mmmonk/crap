@@ -9,7 +9,7 @@ use integer;
 use Net::RawIP;
 
 
-my ($src,$dst,$rp);
+my ($src,$dst,$rp,$if);
 
 # some defaults values
 #
@@ -32,6 +32,9 @@ usage: $0 -d <destination IP> -rp <rendezvous point IP> <more options>
 
   -rp <IP>
     rendezvous point IP - required,
+
+  -I <interface>
+    interface name - required when destination is multicast address,
 
   -g <groupaddress/bitmask>
     group address, can be specified more then once, if prefixed 
@@ -66,6 +69,7 @@ for(my $i=0;$i<$#ARGV;$i+=2){
   if($ARGV[$i] eq "-ht" and exists($ARGV[$i+1])){ $htime=$ARGV[$i+1]; next;}
   if($ARGV[$i] eq "-t" and exists($ARGV[$i+1])){ $ttl=$ARGV[$i+1]; next;}
   if($ARGV[$i] eq "-c" and exists($ARGV[$i+1])){ $count=$ARGV[$i+1]; next;}
+  if($ARGV[$i] eq "-I" and exists($ARGV[$i+1])){ $if=$ARGV[$i+1]; next;}
   if($ARGV[$i] eq "-i" and exists($ARGV[$i+1])){ $sleep=$ARGV[$i+1]; next;}
   if($ARGV[$i] eq "-g" and exists($ARGV[$i+1])){ push(@gaddr,$ARGV[$i+1]); next;}
   usage; 
@@ -124,6 +128,18 @@ my $a= Net::RawIP->new(
 );
 
 $a->set({ip=>{saddr=>$src}}) if (defined($src));
+
+my @dstmac=split('\.',$dst);
+if ($dstmac[0] >= 224 and $dstmac[0] <= 239){
+  usage if (!defined($if));
+
+  if($dstmac[1]>127){
+    $dstmac[1]-=128; 
+  }
+  my $mac=sprintf("01:00:5e:%02x:%02x:%02x",$dstmac[1],$dstmac[2],$dstmac[3]);
+
+  $a->ethnew($if,dest=>$mac);
+}
 
 $count--;
 if ($count>0){

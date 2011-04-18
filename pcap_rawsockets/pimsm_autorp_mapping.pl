@@ -9,10 +9,11 @@ use integer;
 use Net::RawIP;
 
 
-my ($src,$dst,$rp,$if);
+my ($src,$rp,$if);
 
 # some defaults values
 #
+my $dst="224.0.1.40";
 my $sleep=1;
 my $count=1;
 my $htime=181;
@@ -27,14 +28,14 @@ usage: $0 -d <destination IP> -rp <rendezvous point IP> <more options>
   ftp://ftp.icm.edu.pl/packages/cisco-ipmulticast/pim-autorp-spec01.txt
 
   options:
-  -d <IP>
-    destination IP for the packet - required,
-
   -rp <IP>
     rendezvous point IP - required,
 
   -I <interface>
     interface name - required when destination is multicast address,
+
+  -d <IP>
+    destination IP for the packet - default is 224.0.1.40,
 
   -g <groupaddress/bitmask>
     group address, can be specified more then once, if prefixed 

@@ -24,6 +24,8 @@ sub usage{
   print "
 usage: $0 -d <destination IP> -rp <rendezvous point IP> <more options>
 
+  version: $Rev$
+
   packet is being send according to:
   ftp://ftp.icm.edu.pl/packages/cisco-ipmulticast/pim-autorp-spec01.txt
 
@@ -35,7 +37,7 @@ usage: $0 -d <destination IP> -rp <rendezvous point IP> <more options>
     interface name - required when destination is multicast address,
 
   -d <IP>
-    destination IP for the packet - default is 224.0.1.40,
+    destination IP for the packet - default is ".$dst.",
 
   -g <groupaddress/bitmask>
     group address, can be specified more then once, if prefixed 

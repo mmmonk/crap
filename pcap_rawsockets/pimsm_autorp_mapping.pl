@@ -24,7 +24,7 @@ sub usage{
   print "
 usage: $0 -d <destination IP> -rp <rendezvous point IP> <more options>
 
-  version: $Rev$
+  version: ".'$Rev$'."
 
   packet is being send according to:
   ftp://ftp.icm.edu.pl/packages/cisco-ipmulticast/pim-autorp-spec01.txt

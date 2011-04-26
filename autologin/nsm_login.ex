@@ -79,6 +79,7 @@ Ctrl+A l - types \"netscreen\\r\"
 Ctrl+A p - types \"rpm -qa | grep netscreen | xargs -r rpm -e ; rm -rf /var/netscreen/*/* /usr/netscreen/*\" <- noticed no \\r
 Ctrl+A i - can be entered during the nsm installtion will answer all the questions (clean install Gui+Dev if installing from scratch or just refresh otherwise)
 Ctrl+A u - correct the customer db (super password, IPs)
+Ctrl+A t - truncate the schema,
 
 Have fun :)\n"
 
@@ -160,9 +161,25 @@ Have fun :)\n"
         }
     }
 
+    \001t {
+      send "/etc/init.d/haSvr stop\r"
+      expect "*# " { send "/etc/init.d/guiSvr stop\r"}
+      expect "*# " { send "/etc/init.d/devSvr stop\r"}
+      expect "*# " { send "mv /usr/netscreen/GuiSvr/var/dmi-schema-stage /usr/netscreen/GuiSvr/var/dmi-schema-stage.old\r"}
+      expect "*# " { send "cp -ipr /usr/netscreen/GuiSvr/lib/initVar/dmi-schema-stage /usr/netscreen/GuiSvr/var/dmi-schema-stage\r"}
+      expect "*# " { send "rm -f /usr/netscreen/GuiSvr/var/xdb/init/*\r"}
+      expect "*# " { send "rm -rf /tmp/Schemas*\r"}
+      expect "*# " { send "rm -rf /usr/netscreen/GuiSvr/var/Schemas-GDH/*\r"}
+      expect "*# " { send "sh /usr/netscreen/GuiSvr/utils/.truncateSchemaTables.sh /usr/netscreen/GuiSvr/var/xdb\r"}
+      expect "*# " { send "cp -ipr /usr/netscreen/GuiSvr/lib/initVar/xdb/init/* /usr/netscreen/GuiSvr/var/xdb/init/\r"}
+      expect "*# " { send "/etc/init.d/haSvr start\r"}
+      expect "*# " { send "/etc/init.d/guiSvr start\r"}
+      expect "*# " { send "/etc/init.d/devSvr start\r"}
+    }
+
     \001u { 
-      send "/etc/init.d/guiSvr stop\r"
-      expect "*# " { send "/etc/init.d/haSvr stop\r"}
+      send "/etc/init.d/haSvr stop\r"
+      expect "*# " { send "/etc/init.d/guiSvr stop\r"}
       expect "*# " { send "/usr/netscreen/GuiSvr/utils/setperms.sh GuiSvr > /dev/null\r"}
       expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb admin 1 0 /__/password \"glee/aW9bOYEewkD/6Ri8sHh2mU=\" > /dev/null\r"}
       sleep 1

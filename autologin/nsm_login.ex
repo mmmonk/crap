@@ -171,7 +171,7 @@ Have fun :)\n"
       expect "*# " { send "rm -rf /tmp/Schemas*\r"}
       expect "*# " { send "rm -rf /usr/netscreen/GuiSvr/var/Schemas-GDH/*\r"}
       expect "*# " { send "sh /usr/netscreen/GuiSvr/utils/.truncateSchemaTables.sh /usr/netscreen/GuiSvr/var/xdb\r"}
-      expect "*# " { send "cp -ipr /usr/netscreen/GuiSvr/lib/initVar/xdb/init/* /usr/netscreen/GuiSvr/var/xdb/init/\r"}
+      expect "*# " { send "cp --reply=yes -fpr /usr/netscreen/GuiSvr/lib/initVar/xdb/init/* /usr/netscreen/GuiSvr/var/xdb/init/\r"}
       expect "*# " { send "/etc/init.d/haSvr start\r"}
       expect "*# " { send "/etc/init.d/guiSvr start\r"}
       expect "*# " { send "/etc/init.d/devSvr start\r"}

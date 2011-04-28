@@ -4,6 +4,7 @@
 
 use strict;
 use warnings;
+require "sys/syscall.ph";
 
 my $batinfo="/proc/acpi/battery/BAT1/info";
 my $batstat="/proc/acpi/battery/BAT1/state";
@@ -37,12 +38,21 @@ while(<T>){
 }
 close(T);
 
+my $fmt = "\0" x 512;
+my $dir = "/";
+my $res = syscall (&SYS_statfs, $dir, $fmt);
+# L here because we are running on 32 bits
+my ($ftype, $bsize, $blocks, $bfree, $bavail) = unpack("L5", $fmt);
+
+my $line="".(int((($blocks-$bavail)/$blocks)*100))."% ";
 if ($bstat eq "discharging"){
   my $h=($cur/$rate);
-  printf "-:%02.2f%%(%d.%02d) %dC\n",(($cur/$max)*100),int($h),(60*($h-int($h))),$ctemp;
+  $line.=sprintf "-:%02.2f%%(%d.%02d)",(($cur/$max)*100),int($h),(60*($h-int($h)));
 }elsif($bstat eq "charging"){
   my $h=($max-$cur)/$rate;
-  printf "+:%02.2f%%(%d.%02d) %dC\n",(($cur/$max)*100),int($h),(60*($h-int($h))),$ctemp;
+  $line.=sprintf "+:%02.2f%%(%d.%02d)",(($cur/$max)*100),int($h),(60*($h-int($h)));
 }elsif($bstat eq "charged"){
-  printf "=:%02.2f%% %dC\n",(($max/$dmax)*100),$ctemp;
+  $line.=sprintf "=:%02.2f%%",(($max/$dmax)*100);
 }
+
+print $line." ".$ctemp."C\n"; 

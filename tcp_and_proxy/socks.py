@@ -85,7 +85,10 @@ def socks5(s,host,port):
   if auth != 255:
     nport = pack('!H',port)
     try:
-      data = pack('!4B',5,1,0,1)+socket.inet_aton(host)+nport
+      if ":" in host:
+        data = pack('!4B',5,1,0,4)+socket.inet_pton(socket.AF_INET6,host)+nport
+      else:
+        data = pack('!4B',5,1,0,1)+socket.inet_pton(socket.AF_INET,host)+nport
     except socket.error:
       data = pack('!5B',5,1,0,3,len(host))+host+nport
 
@@ -117,7 +120,11 @@ if __name__ == '__main__':
     else:
       ver = 5
 
-    socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    if ":" in phost and socket.has_ipv6 == True:
+      socks = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    else:
+      socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    
     #socks.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK,1)
 
     try:

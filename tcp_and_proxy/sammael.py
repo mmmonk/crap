@@ -5,14 +5,14 @@
 from fcntl import fcntl,F_SETFL
 from OpenSSL.SSL import WantReadError as SSL_WantReadError,SysCallError as SSL_SysCallError,ZeroReturnError as SSL_ZeroReturnError,Context as SSL_Context,SSLv3_METHOD,Connection as SSL_Connection
 from select import select
-from socket import socket,SHUT_RDWR,AF_INET,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,SOL_SOCKET,SO_REUSEADDR,error as socket_error 
+from socket import socket,has_ipv6,SHUT_RDWR,AF_INET,AF_INET6,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,SOL_SOCKET,SO_REUSEADDR,error as socket_error 
 from os import chdir,getuid,setgid,setuid,umask,O_NONBLOCK,WNOHANG,fork,waitpid,getpid,getppid
 from sys import exit 
 import pwd, grp
 
 phost = ''
 pport = 443
-dhost = '127.0.0.1'
+dhost = '::1'
 dport = 80
 ver = "$Rev$"
 
@@ -101,13 +101,22 @@ mainpid = getpid()
 
 plog("sammael ("+str(ver)+") - daemon starting")
 
-s = socket(AF_INET, SOCK_STREAM)
-s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
-s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-s.bind((phost, pport))
-s.listen(1)
-
-plog("bound to socket - "+str(phost)+":"+str(pport))
+if has_ipv6 == True: 
+  s = socket(AF_INET6, SOCK_STREAM)
+  s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
+  s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+  s.bind((phost,pport))
+  s.listen(1)
+  s.setblocking(False)
+  plog("bound to socket - "+str(phost)+":"+str(pport))
+else:
+  s = socket(AF_INET, SOCK_STREAM)
+  s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
+  s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+  s.bind((phost, pport))
+  s.listen(1)
+  s.setblocking(False)
+  plog("bound to socket - "+str(phost)+":"+str(pport))
 
 deamonsetup()
 
@@ -123,53 +132,59 @@ plog("SSL context ready")
 plog("listening for connections")
 
 while (True):
-    conn, addr = s.accept()
+    accept,[],[] = select([s],[],[],30);
 
-    try:
-      waitpid(0,WNOHANG)
-    except OSError:
-      pass 
- 
-    pid = fork()
- 
-    if pid == 0:
-
-      chpid = getpid()
-      # let's add SSL to this socket 
-      ssl = SSL_Connection(ctx,conn)
-      ssl.setblocking(True)
-      ssl.set_accept_state()
-      ssl.do_handshake()
-      
-      data = ssl.recv(1024)
-
-      ssl.setblocking(False)
-
-      if data and 'qwerty' in data:
-        dport = 22 
-   
-      plog("connecting to "+str(dhost)+":"+str(dport)+" from "+str(addr[0])+":"+str(addr[1]),chpid)
-      proxy = socket(AF_INET, SOCK_STREAM)
-      proxy.setsockopt(IPPROTO_TCP, TCP_CORK,1)
+    if s in accept:
+      conn,addr = s.accept()
 
       try:
-        proxy.connect((dhost, dport))
-      except socket_error:
-        proxy.close()
-        conn.close()
-        exit()
+        waitpid(0,WNOHANG)
+      except OSError:
+        pass 
+   
+      pid = fork()
+   
+      if pid == 0:
 
-      plog("connected to "+str(dhost)+":"+str(dport)+" from "+str(addr[0])+":"+str(addr[1]),chpid)
+        chpid = getpid()
+        # let's add SSL to this socket 
+        ssl = SSL_Connection(ctx,conn)
+        ssl.setblocking(True)
+        ssl.set_accept_state()
+        ssl.do_handshake()
+        
+        data = ssl.recv(1024)
+
+        ssl.setblocking(False)
+
+        if data and 'qwerty' in data:
+          dport = 22 
+     
+        plog("connecting to "+str(dhost)+":"+str(dport)+" from "+str(addr[0])+":"+str(addr[1]),chpid)
+        if has_ipv6 == True:
+          proxy = socket(AF_INET6, SOCK_STREAM)
+        else:
+          proxy = socket(AF_INET, SOCK_STREAM)
+        proxy.setsockopt(IPPROTO_TCP, TCP_CORK,1)
+
+        try:
+          proxy.connect((dhost, dport))
+        except socket_error:
+          proxy.close()
+          conn.close()
+          exit()
+
+        plog("connected to "+str(dhost)+":"+str(dport)+" from "+str(addr[0])+":"+str(addr[1]),chpid)
+        
+        if dport == 80:
+          proxy.send(data)
       
-      if dport == 80:
-        proxy.send(data)
-    
-      fcntl(proxy, F_SETFL, O_NONBLOCK)
+        fcntl(proxy, F_SETFL, O_NONBLOCK)
 
-      plog("going into exchange between "+str(dhost)+":"+str(dport)+" and "+str(addr[0])+":"+str(addr[1]),chpid)
+        plog("going into exchange between "+str(dhost)+":"+str(dport)+" and "+str(addr[0])+":"+str(addr[1]),chpid)
 
-      exchange(ssl,proxy)
-      break
+        exchange(ssl,proxy)
+        break
 
-    else:
-      plog("child forked "+str(pid))
+      else:
+        plog("child forked "+str(pid))

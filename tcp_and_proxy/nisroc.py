@@ -7,7 +7,7 @@ from fcntl import fcntl,F_SETFL
 from os import O_NONBLOCK,fork,environ
 from select import select
 from sys import stdin, stdout, stderr, exit, argv
-from socket import socket,AF_INET,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,error as socket_error
+from socket import socket,has_ipv6,AF_INET,AF_INET6,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,error as socket_error
 
 configfile = environ['HOME']+"/.nisrocrc"
 version = "$Rev$"
@@ -104,8 +104,11 @@ if __name__ == '__main__':
     loadconfig()
 
     ctx = SSL_Context(SSLv3_METHOD)
-   
-    proxy = socket(AF_INET, SOCK_STREAM)
+    
+    if (":" in host and has_ipv6 == True) or (len(argv) >= 4 and ":" in phost and has_ipv6 == True):
+      proxy = socket(AF_INET6, SOCK_STREAM)
+    else:
+      proxy = socket(AF_INET, SOCK_STREAM)
     proxy.setsockopt(IPPROTO_TCP, TCP_CORK,1)  
   
     if len(argv) >= 4:

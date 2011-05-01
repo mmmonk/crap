@@ -165,8 +165,8 @@ Have fun :)\n"
       send "/etc/init.d/haSvr stop\r"
       expect "*# " { send "/etc/init.d/guiSvr stop\r"}
       expect "*# " { send "/etc/init.d/devSvr stop\r"}
-      expect "*# " { send "mv /usr/netscreen/GuiSvr/var/dmi-schema-stage /usr/netscreen/GuiSvr/var/dmi-schema-stage.old\r"}
-      expect "*# " { send "cp -ipr /usr/netscreen/GuiSvr/lib/initVar/dmi-schema-stage /usr/netscreen/GuiSvr/var/dmi-schema-stage\r"}
+      expect "*# " { send "mv -f /usr/netscreen/GuiSvr/var/dmi-schema-stage /usr/netscreen/GuiSvr/var/dmi-schema-stage.old\r"}
+      expect "*# " { send "cp --reply=yes -fpr /usr/netscreen/GuiSvr/lib/initVar/dmi-schema-stage /usr/netscreen/GuiSvr/var/dmi-schema-stage\r"}
       expect "*# " { send "rm -f /usr/netscreen/GuiSvr/var/xdb/init/*\r"}
       expect "*# " { send "rm -rf /tmp/Schemas*\r"}
       expect "*# " { send "rm -rf /usr/netscreen/GuiSvr/var/Schemas-GDH/*\r"}

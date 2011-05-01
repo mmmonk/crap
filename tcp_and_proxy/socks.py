@@ -9,6 +9,14 @@ from struct import pack,unpack
 import socket
 import sys
 
+def usage():
+  sys.stderr.write("\nusage: "+sys.argv[0]+" <options> socks_server socks_port destination_ip destination_port\n\n\
+  version: $Id$\n\n\
+  options:\n\
+  -v socks_ver - 4 or 5, default 5\n\
+  -cork - enables TCP_CORK socket option aka super nagle, default is off\n\n")
+  sys.exit(0)
+
 # main data exchnage function
 def exchange(s):
   # input:
@@ -78,6 +86,8 @@ def socks5(s,host,port):
   # 1 - if ready
   # 0 - if needs authentication 
 
+  error = ["succeeded", "general SOCKS server failure", "connection not allowed by ruleset", "Network unreachable", "Host unreachable", "Connection refused", "TTL expired", "Command not supported", "Address type not supported", "unassigned"]
+
   data = pack('!3B',5,1,0)
   s.send(data)
   data = s.recv(1024)
@@ -95,37 +105,58 @@ def socks5(s,host,port):
     s.send(data)
     data = s.recv(256)
     try:
-      code = unpack('BBH',data[:4])[1]
+      code = unpack('BBB',data[:3])[1]
     except:
+      sys.stderr.write("[-] socks server sent a wrong replay\n")
       return 0
 
     if code == 0:
       return 1 
     else:
+      if code > 9:
+        code=9
+      sys.stderr.write("[-] socks server sent an error: "+error[code]+"\n")
       return 0
 
   else:
+    sys.stderr.write("[-] socks server requires authentication\n")
     return 0 
 
 #### main stuff
 if __name__ == '__main__':
 
-  if len(sys.argv) >= 5: 
-    phost = sys.argv[1]
-    pport = int(sys.argv[2])
-    host  = sys.argv[3]
-    port  = int(sys.argv[4])
-    if len(sys.argv) == 6:
-      ver = int(sys.argv[5])
-    else:
-      ver = 5
+  len_argv=len(sys.argv)
+  if len_argv >= 5 and len_argv <= 8: 
+    
+    ver = 5
+    cork = 0
+   
+    try: 
+      i = 1
+      while i<len_argv:
+        if sys.argv[i] == '-v':
+          ver = sys.argv[i+1]
+          i+=2
+        elif sys.argv[i] == '-cork':
+          cork = 1
+          i+=1
+        else: 
+          phost = sys.argv[i]
+          pport = int(sys.argv[i+1])
+          host  = sys.argv[i+2]
+          port  = int(sys.argv[i+3])
+          i+=4
+    except:
+      usage()
+      sys.exit(0);
 
     if ":" in phost and socket.has_ipv6 == True:
       socks = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     else:
       socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
-    #socks.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK,1)
+    if cork: 
+      socks.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK,1)
 
     try:
       socks.connect((phost, pport))
@@ -136,11 +167,14 @@ if __name__ == '__main__':
 
     sys.stderr.write("[+] connecting via "+str(phost)+":"+str(pport)+" to "+str(host)+":"+str(port)+"\n")
 
-    if (ver == 5 and socks5(socks,host,port) == 1) or (ver == 4 and socks4(socks,host,port) == 1): 
-      exchange(socks)
+    if (ver == 5 and socks5(socks,host,port)) or (ver == 4 and socks4(socks,host,port)): 
+      try:
+        exchange(socks)
+      except KeyboardInterrupt: 
+        pass
       socks.close()
     else:
       sys.stderr.write("[-] socks server couldn't establish the connection\n")
 
   else:
-    sys.stderr.write("usage: "+sys.argv[0]+" ip_socks port_socks ip_dest port_dest [socks_ver]\n")
+    usage() 

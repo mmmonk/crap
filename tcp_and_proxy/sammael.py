@@ -156,7 +156,10 @@ while (True):
         except:
           exit()        
 
-        data = ssl.recv(1024)
+        try:
+          data = ssl.recv(1024)
+        except:
+          exit()
 
         ssl.setblocking(False)
 

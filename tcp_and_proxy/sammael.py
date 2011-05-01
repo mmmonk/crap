@@ -151,8 +151,11 @@ while (True):
         ssl = SSL_Connection(ctx,conn)
         ssl.setblocking(True)
         ssl.set_accept_state()
-        ssl.do_handshake()
-        
+        try:
+          ssl.do_handshake()
+        except:
+          exit()        
+
         data = ssl.recv(1024)
 
         ssl.setblocking(False)

@@ -88,7 +88,7 @@ my $timeout=600;
 my $sofarok=1;
 my $exp = new Expect;
 $exp->log_file("/home/case/nsm_install_$nsmserv.txt", "w");
-$exp->spawn("/usr/bin/ssh -ttt $user\@$nsmserv") or die "Can't run command\n";
+$exp->spawn("/usr/bin/ssh $user\@$nsmserv") or die "Can't run command\n";
 $exp->expect($timeout,
   [ qr/Store key in cache\? \(y\/n\)/, sub { my $e=shift;$e->send("y\n");exp_continue; }],
   [ qr/Are you sure you want to continue connecting \(yes\/no\)\?/, sub { my $e=shift;$e->send("yes\n");exp_continue; }],

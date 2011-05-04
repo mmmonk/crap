@@ -28,7 +28,7 @@ My suggestion is to use ~/.ssh/config for any non standard options.
   }
 }
 
-spawn ssh -o "ControlPersist no" $user@$host
+spawn ssh $user@$host
 
 set time     [ timestamp -format "%Y/%m/%d %H:%M:%S"]
 set filetime [ timestamp -format "%Y%m%d_%H%M%S"]

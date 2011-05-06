@@ -4,7 +4,12 @@
 
 use strict;
 use warnings;
-require "sys/syscall.ph";
+eval "require \"sys/syscall.ph\"";
+
+my $syscall=1;
+if ($@){
+  $syscall=0;
+}
 
 my $batinfo="/proc/acpi/battery/BAT1/info";
 my $batstat="/proc/acpi/battery/BAT1/state";
@@ -38,13 +43,17 @@ while(<T>){
 }
 close(T);
 
-my $fmt = "\0" x 512;
-my $dir = "/";
-my $res = syscall (&SYS_statfs, $dir, $fmt);
-# L here because we are running on 32 bits
-my ($ftype, $bsize, $blocks, $bfree, $bavail) = unpack("L5", $fmt);
+my $line="";
+if ($syscall){
+  my $fmt = "\0" x 512;
+  my $dir = "/";
+  my $res = syscall (&SYS_statfs, $dir, $fmt);
+  # L here because we are running on 32 bits
+  my ($ftype, $bsize, $blocks, $bfree, $bavail) = unpack("L5", $fmt);
 
-my $line="".(int((($blocks-$bavail)/$blocks)*100))."% ";
+  $line.="".(int((($blocks-$bavail)/$blocks)*100))."% ";
+}
+
 if ($bstat eq "discharging"){
   my $h=($cur/$rate);
   $line.=sprintf "-:%02.2f%%(%d.%02d)",(($cur/$max)*100),int($h),(60*($h-int($h)));

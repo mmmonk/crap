@@ -45,6 +45,7 @@ close(T);
 
 my $line="";
 if ($syscall){
+  # we have syscall, this is faster
   my $fmt = "\0" x 512;
   my $dir = "/";
   my $res = syscall (&SYS_statfs, $dir, $fmt);
@@ -52,6 +53,14 @@ if ($syscall){
   my ($ftype, $bsize, $blocks, $bfree, $bavail) = unpack("L5", $fmt);
 
   $line.="".(int((($blocks-$bavail)/$blocks)*100))."% ";
+}else{
+  # we don't have syscall, need to do a workaround
+  open(DF,"df |");
+  while(<DF>){
+    next unless (/\/$/);
+    $line.="".(split(" "))[4]." ";
+  }
+  close(DF);
 }
 
 if ($bstat eq "discharging"){

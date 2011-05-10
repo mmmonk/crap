@@ -21,6 +21,8 @@ Mrxvt.shading:                  50
 Mrxvt.showMenu:                 False
 Mrxvt.tabBackground:            black
 Mrxvt.tabForeground:            green
+Mrxvt.smartResize:              true
+Mrxvt.smoothResize:             false
 #Mrxvt.termName:                 xterm
 Mrxvt.textShadowMode:           none
 Mrxvt.title:                    term
@@ -48,5 +50,7 @@ Mrxvt.color15:                  #FFFFFF
 Mrxvt.macro.Ctrl+Shift+Left:    GotoTab -1
 Mrxvt.macro.Ctrl+Shift+Right:   GotoTab +1
 Mrxvt.macro.Ctrl+Shift+t:       NewTab
-Mrxvt.macro.Ctrl+Shift+s:       Str tmux_start.sh 0 \n 
-Mrxvt.macro.Add+Ctrl+Shift+s:   NewTab tmux_start.sh 1 
+Mrxvt.macro.Primary+Ctrl+Shift+s:       Str tmux_start.sh 0 \n 
+Mrxvt.macro.Primary+Add+Ctrl+Shift+s:   NewTab
+Mrxvt.macro.Primary+Add+Ctrl+Shift+s:   Str ssh_keep.sh x \n
+Mrxvt.macro.Ctrl+Shift+f:       Exec ff %s

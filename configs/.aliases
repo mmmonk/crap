@@ -10,13 +10,17 @@ alias e       i -v
 ls-F -l >& /dev/null && alias ls ls-F
 alias ll      ls -lA
 alias l       ls -lA
+alias lstd    "ls -lFA --time-style=+%D | grep `date +%D`"
 alias mv      mv -i
+alias ms      man -k
 alias p       ping
 alias rd	    screen -xRR
 where tmux > /dev/null && alias rd tmux attach
 alias realias	source ~/.aliases
 alias ressh   source ~/.ssh_agent
 alias s       ssh
+alias skm     ssh -O exit
+alias sfm     ssh -O forward 
 alias t       telnet
 alias h       history 25
 alias j       jobs -l
@@ -34,6 +38,9 @@ alias hex2bin 'echo "ibase=16;obase=2;" `echo \!:1 |tr "[:lower:]" "[:upper:]"` 
 alias hex2dec 'echo "ibase=16;" `echo \!:1 |tr "[:lower:]" "[:upper:]"` |bc'
 
 where vim > /dev/null && alias vi  vim
+
+## sshhosts
+set sshhosts = (`awk '/^host /{gsub(/host /,"");print}' ~/.ssh/config`)
 
 # local aliases specific to this host
 if ( -f ~/.aliases_local) then

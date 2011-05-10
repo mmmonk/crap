@@ -26,35 +26,34 @@ if ($?prompt) then
   unset autocorrect
   unset autoexpand
   unset autologout
-	set addsuffix
-	set autolist
+  set addsuffix
+  set autolist
   set color
   set colorcat
   set dunique
-	set filec
-	set histdup = 'erase'
-	set history = 200
-#	set implicitcd
-	set mail = (/var/mail/$USER)
-	set matchebeep = 'never'
-	set noclobber
-	set noding
+  set filec
+  set histdup = 'erase'
+  set history = 200
+  set mail = (/var/mail/$USER)
+  set matchebeep = 'never'
+  set noclobber
+  set noding
   set nokanji
-	set notify
-	set prompt = "[%n@%M %Y/%W/%D %P]\n%/ %# "
-	set rmstar
-	set savehist = 0
+  set notify
+  set prompt = "[%n@%M %Y/%W/%D %P]\n%/ %# "
+  set rmstar
+  set savehist = 0
   set symlinks = 'ignore'
   set time = 60
   set tperiod = 30
-	set visiblebell
+  set visiblebell
 #	set watch  = (any any)
   set who    = "%n has %a %l from %M."
-	if ( $?tcsh ) then
+  if ( $?tcsh ) then
 #		bindkey "^W" backward-delete-word
-		bindkey -k up history-search-backward
-		bindkey -k down history-search-forward
-	endif
+    bindkey -k up history-search-backward
+    bindkey -k down history-search-forward
+  endif
 
   # ssh-agent
   if ( -f ~/.ssh/ssh_agent ) then
@@ -63,12 +62,29 @@ if ($?prompt) then
     if ($?SSH_AGENT_PID) then
       if ( { kill -s 0 $SSH_AGENT_PID > /dev/null } == 0 ) then
         ssh-agent -c | grep SSH >! ~/.ssh/ssh_agent
-        source ~/.ssh/ssh_agent
       endif
     else
       ssh-agent -c | grep SSH >! ~/.ssh/ssh_agent
-      source ~/.ssh/ssh_agent
     endif
+    source ~/.ssh/ssh_agent
+  endif
+
+  # gpg-agent
+  if ( -f ~/.gpg-agent-info ) then
+    setenv GPG_TTY `tty`
+    source ~/.gpg-agent-info
+    if ($?GPG_AGENT_PID) then
+      if ( { kill -s 0 $GPG_AGENT_PID > /dev/null } == 0 ) then
+        gpg-agent -q --daemon -c >! ~/.gpg-agent-info
+        setenv GPG_AGENT_PID `pgrep -u $USER gpg-agent`  
+        echo "setenv GPG_AGENT_PID ${GPG_AGENT_PID}" >> ~/.gpg-agent-info
+      endif
+    else
+      gpg-agent -q --daemon -c >! ~/.gpg-agent-info
+      setenv GPG_AGENT_PID `pgrep -u $USER gpg-agent`  
+      echo "setenv GPG_AGENT_PID ${GPG_AGENT_PID}" >> ~/.gpg-agent-info
+    endif
+    source ~/.gpg-agent-info
   endif
 
   # alias file
@@ -84,9 +100,24 @@ if ($?prompt) then
         alias precmd  'printf "\033]0;${USER}@${SHOST} \007"'
         breaksw
       case "screen*":
-        alias precmd  'printf "\033k\033\134"'
+        if ($?TMUX) then
+          alias postcmd 'printf "\033]$user@$SHOST \!#:0 \007"'
+          alias precmd  'printf "\033]${USER}@${SHOST} \007"'
+        else
+          alias precmd  'printf "\033k\033\134"'
+        endif
         breaksw
     endsw
   endif
+  if ( -x /usr/games/fortune && -r ~/fortunes/mysli_zebrane ) then
+    echo ""
+    /usr/games/fortune ~/fortunes/mysli_zebrane
+    echo ""
+  endif
 
+  complete ssh 'p/*/$sshhosts/'
+  complete s 'p/*/$sshhosts/'
+  complete sftp 'p/*/$sshhosts/'
+  complete scp 'p/*/$sshhosts/'
+  complete sk 'p/*/$sshhosts/'
 endif

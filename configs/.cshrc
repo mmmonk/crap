@@ -76,13 +76,11 @@ if ($?prompt) then
     if ($?GPG_AGENT_PID) then
       if ( { kill -s 0 $GPG_AGENT_PID > /dev/null } == 0 ) then
         gpg-agent -q --daemon -c >! ~/.gpg-agent-info
-        setenv GPG_AGENT_PID `pgrep -u $USER gpg-agent`  
-        echo "setenv GPG_AGENT_PID ${GPG_AGENT_PID}" >> ~/.gpg-agent-info
+        echo "setenv GPG_AGENT_PID `pgrep -u $USER gpg-agent`" >> ~/.gpg-agent-info
       endif
     else
       gpg-agent -q --daemon -c >! ~/.gpg-agent-info
-      setenv GPG_AGENT_PID `pgrep -u $USER gpg-agent`  
-      echo "setenv GPG_AGENT_PID ${GPG_AGENT_PID}" >> ~/.gpg-agent-info
+      echo "setenv GPG_AGENT_PID `pgrep -u $USER gpg-agent`" >> ~/.gpg-agent-info
     endif
     source ~/.gpg-agent-info
   endif

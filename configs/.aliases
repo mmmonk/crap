@@ -40,9 +40,11 @@ alias hex2dec 'echo "ibase=16;" `echo \!:1 |tr "[:lower:]" "[:upper:]"` |bc'
 where vim > /dev/null && alias vi  vim
 
 ## sshhosts
-set sshhosts = (`awk '/^host /{gsub(/host /,"");print}' ~/.ssh/config`)
+if ( -f ~/.ssh/config) then
+  set sshhosts = (`awk '/^host /{gsub(/host /,"");print}' ~/.ssh/config`)
+endif
 
-# local aliases specific to this host
+## local aliases specific to this host
 if ( -f ~/.aliases_local) then
   source ~/.aliases_local
 endif 

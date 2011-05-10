@@ -4,8 +4,7 @@
 # What ports, IPs and protocols we listen for
 Port 22
 # Use these options to restrict which interfaces/protocols sshd will bind to
-ListenAddress 172.30.73.133
-ListenAddress 127.0.0.1
+#ListenAddress ::
 #ListenAddress 0.0.0.0
 Protocol 2
 # HostKeys for protocol version 2
@@ -23,8 +22,8 @@ SyslogFacility AUTH
 LogLevel INFO
 
 # Authentication:
-LoginGraceTime 300
-PermitRootLogin no 
+LoginGraceTime 120
+PermitRootLogin forced-commands-only
 StrictModes yes
 
 RSAAuthentication yes
@@ -41,11 +40,11 @@ HostbasedAuthentication no
 #IgnoreUserKnownHosts yes
 
 # To enable empty passwords, change to yes (NOT RECOMMENDED)
-PermitEmptyPasswords no
+PermitEmptyPasswords no 
 
 # Change to yes to enable challenge-response passwords (beware issues with
 # some PAM modules and threads)
-ChallengeResponseAuthentication no 
+ChallengeResponseAuthentication no
 
 # Change to no to disable tunnelled clear text passwords
 PasswordAuthentication no 
@@ -60,44 +59,55 @@ KerberosAuthentication no
 GSSAPIAuthentication no
 #GSSAPICleanupCredentials yes
 
-PrintMotd no
+X11Forwarding no 
+X11DisplayOffset 10
+PrintMotd yes 
 PrintLastLog yes
 TCPKeepAlive yes
-
-PermitTunnel no 
 #UseLogin no
-
-UseDNS no
-
-X11Forwarding no
-X11DisplayOffset 10
-AllowTcpForwarding no
-MaxAuthTries 1
-MaxSessions 5
 
 #MaxStartups 10:30:60
 #Banner /etc/issue.net
 
 # Allow client to pass locale environment variables
-#AcceptEnv LANG LC_*
+AcceptEnv LANG LC_*
 
-Subsystem sftp /usr/lib/openssh/sftp-server
+#Subsystem sftp /usr/lib/openssh/sftp-server
+Subsystem sftp internal-sftp
 
-UsePAM no 
+UsePAM no
+UseDNS no
 
-Ciphers aes256-ctr
+Ciphers aes256-ctr,3des-cbc,blowfish-cbc
 MACs hmac-sha1,hmac-md5
+PermitTunnel point-to-point 
 
-AllowUsers dorotaq case
+ClientAliveInterval 30
+DebianBanner no
+Banner none
 
-Match User case
- X11Forwarding yes
- AllowTcpForwarding yes
- MaxSessions 30
- PermitOpen any
+MaxAuthTries 2
 
-Match User dorotaq
- X11Forwarding yes
- AllowTcpForwarding yes
- MaxSessions 30
- PermitOpen any
+AllowUsers root dorota case
+
+Match user dorota
+  PasswordAuthentication yes
+  X11Forwarding yes
+  X11DisplayOffset 10
+  MaxAuthTries 6
+  PermitOpen any
+  MaxSessions 30
+
+Match user case
+  PasswordAuthentication yes
+  X11Forwarding yes
+  X11DisplayOffset 10
+  MaxAuthTries 6
+  PermitOpen any
+  MaxSessions 30
+
+#Match user sftp
+#  MaxSessions 2
+#  PasswordAuthentication yes
+#  ForceCommand internal-sftp
+#  ChrootDirectory /home/sftp

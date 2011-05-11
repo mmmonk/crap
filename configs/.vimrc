@@ -127,4 +127,9 @@ if has('autocmd')
   augroup END
 endif
 
+" local changes 
+if filereadable(expand("~/.vimrc.local"))
+  source ~/.vimrc.local
+endif
+
 set secure

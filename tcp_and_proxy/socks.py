@@ -90,7 +90,7 @@ def socks5(s,host,port):
 
   data = pack('!3B',5,1,0)
   s.send(data)
-  data = s.recv(1024)
+  data = s.recv(2)
   auth = unpack('2B',data)[1]
   if auth != 255:
     nport = pack('!H',port)

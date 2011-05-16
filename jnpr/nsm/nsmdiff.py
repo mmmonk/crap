@@ -97,15 +97,21 @@ Subject: [NSMDIFF] update from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localti
         if filediff == 0:    
           os.mkdir(MAINDIR+"/"+ver)
           os.chmod(MAINDIR+"/"+ver,0755)
-          difftext += "\n\nNo information about fixes in "+ver+"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
+          difftext += "\n\nBuild without filediff information "+ver+"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
           somethingnew = 1
 
   nsm.quit()
 
   if somethingnew == 1:
     difftext += "--\nThis email was created by a very intelligent script\nAll flames/complaints will go to /dev/null\n"
+    
+    # this touch is to note time of last useful update 
+    try:
+      open(MAINDIR+"/latest_update.txt","a")
+    except:
+      warn("Error touching the timestamp file\n") 
+
     try:
       open(EMAIL+"/diff"+str(int(time.time())),'w').write(difftext)
     except:
       print difftext
-

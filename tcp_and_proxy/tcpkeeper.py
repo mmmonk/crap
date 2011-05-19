@@ -87,7 +87,7 @@ try:
               # try very hard to send this data ;)
               ok=0
               tries=0
-              while ok==0 or tries<=limit: 
+              while ok==0 and tries<=limit: 
                 try:
                   out.send(data) 
                   ok=1

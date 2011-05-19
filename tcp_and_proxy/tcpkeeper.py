@@ -33,7 +33,7 @@ plog("bound to socket - "+str(phost)+":"+str(pport))
 
 plog("listening for connections")
 
-while (True):
+while 1:
     accept,[],[] = select([s],[],[],30);
 
     if s in accept:
@@ -74,13 +74,20 @@ while (True):
               inc.shutdown(SHUT_RDWR)
               break 
             else:
-              try:
-                out.send(data)
-              except:
-                plog("reconnecting",chpid);
-                out = socket(AF_INET, SOCK_STREAM)
-                out.connect((dhost, dport))
-                out.send(data)
+              # try very hard to send this data ;)
+              ok=0
+              while ok==0: 
+                try:
+                  out.send(data) 
+                  ok=1
+                except:
+                  pass
+                if ok==0: # if sending fails, lets try to reconnect
+                  out = socket(AF_INET, SOCK_STREAM)
+                  try:
+                    out.connect((dhost, dport))
+                  except:
+                    pass
 
           elif out in toread:
             data = out.recv(4096)

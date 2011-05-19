@@ -13,6 +13,9 @@ pport = int(argv[2])
 dhost  = argv[3]
 dport  = int(argv[4])
 
+# this is the limit of how many times we try to do a reconnect
+limit = 10
+
 def plog(msg, childpid = 0):
   
   if childpid == 0:
@@ -33,7 +36,8 @@ plog("bound to socket - "+str(phost)+":"+str(pport))
 
 plog("listening for connections")
 
-while 1:
+try:
+  while 1:
     accept,[],[] = select([s],[],[],30);
 
     if s in accept:
@@ -76,18 +80,23 @@ while 1:
             else:
               # try very hard to send this data ;)
               ok=0
-              while ok==0: 
+              tries=0
+              while ok==0 or tries<=limit: 
                 try:
                   out.send(data) 
                   ok=1
                 except:
                   pass
+                tries+=1
                 if ok==0: # if sending fails, lets try to reconnect
                   out = socket(AF_INET, SOCK_STREAM)
                   try:
                     out.connect((dhost, dport))
                   except:
                     pass
+              if ok==0:
+                plog("could not reconnect in "+str(limit)+" tries",chpid)
+                exit()
 
           elif out in toread:
             data = out.recv(4096)
@@ -101,3 +110,5 @@ while 1:
         exit()
       else:
         plog("child forked "+str(pid))
+except KeyboardInterrupt:
+  plog("Ctrl+C pressed, exiting")

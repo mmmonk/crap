@@ -8,13 +8,19 @@ from socket import socket,has_ipv6,SHUT_RDWR,AF_INET,AF_INET6,SOCK_STREAM,IPPROT
 from os import O_NONBLOCK,WNOHANG,fork,waitpid,getpid,getppid
 from sys import argv,exit 
 
+# this is the limit of how many times we try to do a reconnect
+# actually the OS also tries to do reconnects, by default it
+# will try 3 times per one our try
+limit = 10
+
+if len(argv)!=5:
+  print "Usage: "+argv[0]+" listening_addr listening_port conn_to_addr conn_to_port"
+  exit()
+
 phost = argv[1]
 pport = int(argv[2])
 dhost  = argv[3]
 dport  = int(argv[4])
-
-# this is the limit of how many times we try to do a reconnect
-limit = 10
 
 def plog(msg, childpid = 0):
   

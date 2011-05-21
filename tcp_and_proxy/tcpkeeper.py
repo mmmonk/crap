@@ -7,6 +7,7 @@ from select import select
 from socket import socket,has_ipv6,SHUT_RDWR,AF_INET,AF_INET6,SOCK_STREAM,IPPROTO_TCP,SOL_SOCKET,SO_REUSEADDR,error as socket_error 
 from os import O_NONBLOCK,WNOHANG,fork,waitpid,getpid,getppid
 from sys import argv,exit 
+from time import sleep
 
 # this is the limit of how many times we try to do a reconnect
 # actually the OS also tries to do reconnects, by default it
@@ -74,8 +75,12 @@ try:
 
         plog("going into exchange between "+str(dhost)+":"+str(dport)+" and "+str(addr[0])+":"+str(addr[1]),chpid)
 
+        outok = 1
         while 1:
-          toread,[],[] = select([out,inc],[],[],30)
+          if outok == 1:
+            toread,[],[] = select([out,inc],[],[],30)
+          else:
+            toread,[],[] = select([inc],[],[],30)
           [],towrite,[] = select([],[inc],[],30)
 
           if inc in toread:
@@ -85,28 +90,32 @@ try:
               break 
             else:
               # try very hard to send this data ;)
-              ok=0
-              tries=0
-              while ok==0 and tries<=limit: 
+              ok = 0
+              tries = 0
+              while ok == 0 and tries<=limit: 
                 try:
                   out.send(data) 
-                  ok=1
+                  ok = 1
+                  outok = 1
                 except:
                   pass
-                tries+=1
-                if ok==0: # if sending fails, lets try to reconnect
+                tries += 1
+                if ok == 0: # if sending fails, lets try to reconnect
                   out = socket(AF_INET, SOCK_STREAM)
                   try:
                     out.connect((dhost, dport))
                   except:
-                    pass
-              if ok==0:
+                    sleep(1)
+              
+              if ok == 0:
                 plog("could not reconnect in "+str(limit)+" tries",chpid)
+                inc.shutdown(SHUT_RDWR)
                 exit()
 
           elif out in toread:
             data = out.recv(4096)
             if len(data) == 0:
+              outok = 0
               try:
                 out.shutdown(SHUT_RDWR)
               except:

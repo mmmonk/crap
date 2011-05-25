@@ -36,6 +36,14 @@ set textwidth=0   " don't wrap words
 set ttymouse=xterm
 set visualbell    " use a visual bell instead of beeping
 set wrap          " Wrap too long lines
+
+" Tell vim to remember certain things when we exit
+"  '10  :  marks will be remembered for up to 10 previously edited files
+"  "100 :  will save up to 100 lines for each register
+"  :20  :  up to 20 lines of command-line history will be remembered
+"  %    :  saves and restores the buffer list
+"  n... :  where to save the viminfo files
+set viminfo='10,\"100,:20,%,n~/.viminfo
 fixdel
 
 filetype plugin on
@@ -107,11 +115,30 @@ nmap <LocalLeader>ww :set wrap! wrap?<cr>
 " toggle paste mode.  Everything is inserted literally - no indending
 set pastetoggle=<F11>
 
+
+
 if has('autocmd')
+  
+  function! ResCur()
+    if line("'\"") <= line("$")
+      normal! g`"
+      return 1
+    endif
+  endfunction
+
+  augroup resCur
+    autocmd!
+    autocmd BufWinEnter * call ResCur()
+  augroup END
+
   augroup openssl-enc
     au BufNewFile,BufReadPre *.enc :set secure viminfo= noswapfile nobackup nowritebackup history=0
-    au BufRead *.enc :% ! openssl enc -d -aes-256-cbc 
-    au BufWrite *.enc :% ! openssl enc -aes-256-cbc
+    au BufRead *.enc :% ! openssl enc -a -d -aes-256-cbc 
+    au BufWrite *.enc :% ! openssl enc -a -aes-256-cbc
+  augroup END
+
+  augroup makefile
+    au BufRead Makefile :set noexpandtab
   augroup END
 
 "  augroup openssl-enca

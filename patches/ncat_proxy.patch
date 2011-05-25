@@ -1,0 +1,850 @@
+Index: ncat.h
+===================================================================
+--- ncat.h	(revision 23277)
++++ ncat.h	(working copy)
+@@ -122,18 +122,41 @@
+ #endif
+ #endif
+ 
++#define SOCKS_BUFF_SIZE 512
++
+ /* structs */
+ 
+ #ifdef WIN32
+ #pragma pack(1)
+ #endif
++
+ struct socks4_data {
+     char version;
+     char type;
+     unsigned short port;
+-    unsigned long address;
+-    char username[256];
++    uint32_t address;
++    char data[SOCKS_BUFF_SIZE]; //this has to be able to hold FQDN and username
+ } __attribute__((packed));
++
++struct socks5_connect {
++  char ver;
++  char nmethods;
++  char methods[3];
++} __attribute__((packed));
++
++struct socks5_auth {
++  char ver; // must be always 1
++  char data[SOCKS_BUFF_SIZE];
++} __attribute__((packed));
++
++struct socks5_request {
++  char ver;
++  char cmd;
++  char rsv;
++  char atyp;
++  char dst[SOCKS_BUFF_SIZE]; // addr/name and port info
++} __attribute__((packed));
++
+ #ifdef WIN32
+ #pragma pack()
+ #endif
+@@ -157,8 +180,8 @@
+ /* Default Ncat port */
+ #define DEFAULT_NCAT_PORT 31337
+ 
+-/* Default port for SOCKS4 */
+-#define DEFAULT_SOCKS4_PORT 1080
++/* Default port for SOCKS */
++#define DEFAULT_SOCKS_PORT 1080
+ 
+ /* The default port Ncat will connect to when trying to connect to an HTTP
+  * proxy server.  The current setting is the default for squid and probably
+@@ -179,11 +202,21 @@
+ #define SOCKS4_VERSION          4
+ #define SOCKS_CONNECT           1
+ #define SOCKS_BIND              2
+-#define SOCKS_CONN_ACC          90 /* woot */
+-#define SOCKS_CONN_REF          91
+-#define SOCKS_CONN_IDENT        92
+-#define SOCKS_CONN_IDENTDIFF    93
++#define SOCKS4_CONN_ACC          90 /* woot */
++#define SOCKS4_CONN_REF          91
++#define SOCKS4_CONN_IDENT        92
++#define SOCKS4_CONN_IDENTDIFF    93
+ 
++/* SOCKS5 protocol */
++#define SOCKS5_VERSION          5
++#define SOCKS5_AUTH_NONE        0
++#define SOCKS5_AUTH_GSSAPI      1
++#define SOCKS5_AUTH_USERPASS    2
++#define SOCKS5_AUTH_FAILED      255
++#define SOCKS5_ATYP_IPv4        1
++#define SOCKS5_ATYP_NAME        3
++#define SOCKS5_ATYP_IPv6        4
++
+ /* Length of IPv6 address */
+ #ifndef INET6_ADDRSTRLEN
+ #define INET6_ADDRSTRLEN 46
+Index: ncat_core.h
+===================================================================
+--- ncat_core.h	(revision 23277)
++++ ncat_core.h	(working copy)
+@@ -98,9 +98,6 @@
+ extern union sockaddr_u targetss;
+ extern size_t targetsslen;
+ 
+-extern union sockaddr_u httpconnect;
+-extern union sockaddr_u socksconnect;
+-
+ struct options {
+     unsigned short portno;
+ 
+@@ -204,3 +201,5 @@
+ /* Make it so that line endings read from a console are always \n (not \r\n).
+    Defined in ncat_posix.c and ncat_win.c. */
+ extern void set_lf_mode(void);
++
++extern int getaddrfamily(const char *addr);
+Index: ncat_core.c
+===================================================================
+--- ncat_core.c	(revision 23277)
++++ ncat_core.c	(working copy)
+@@ -112,9 +112,6 @@
+ union sockaddr_u targetss;
+ size_t targetsslen;
+ 
+-union sockaddr_u httpconnect;
+-union sockaddr_u socksconnect;
+-
+ /* Global options structure. */
+ struct options o;
+ 
+@@ -457,3 +454,30 @@
+ 
+     return 1;
+ }
++
++/* this function will return in what format the target
++ * host is specified. It will return:
++ * 1 - for ipv4,
++ * 2 - for ipv6,
++ * -1 - for hostname
++ * this has to work even if there is no IPv6 support on
++ * local system, proxy may support it.
++ */
++int getaddrfamily(const char *addr)
++{
++    int ret;
++
++    if (strchr(addr,':'))
++      return 2;
++
++    struct addrinfo hint, *info =0;
++    zmem(&hint,sizeof(hint));
++    hint.ai_family = AF_UNSPEC;
++    hint.ai_flags = AI_NUMERICHOST;
++    ret = getaddrinfo(addr, 0, &hint, &info);
++    if (ret)
++        return -1;
++    freeaddrinfo(info);
++    return 1;
++}
++
+Index: ncat_main.c
+===================================================================
+--- ncat_main.c	(revision 23277)
++++ ncat_main.c	(working copy)
+@@ -116,12 +116,9 @@
+ static int ncat_listen_mode(void);
+ 
+ /* Determines if it's parsing HTTP or SOCKS by looking at defport */
+-static void parseproxy(char *str, struct sockaddr_storage *ss, unsigned short defport)
++static void parseproxy(char *str, struct sockaddr_storage *ss, size_t *sslen, unsigned short *portno)
+ {
+     char *c = strrchr(str, ':'), *ptr;
+-    int httpproxy = (defport == DEFAULT_PROXY_PORT);
+-    unsigned short portno;
+-    size_t sslen;
+ 
+     ptr = str;
+ 
+@@ -129,13 +126,11 @@
+         *c = 0;
+ 
+     if (c && strlen((c + 1)))
+-        portno = (unsigned short) atoi(c + 1);
+-    else
+-        portno = defport;
++        *portno = (unsigned short) atoi(c + 1);
+ 
+-    if (!resolve(ptr, portno, ss, &sslen, o.af)) {
++    if (!resolve(ptr, *portno, ss, sslen, o.af)) {
+         loguser("Could not resolve proxy \"%s\".\n", ptr);
+-        if (o.af == AF_INET6 && httpproxy)
++        if (o.af == AF_INET6 && *portno)
+             loguser("Did you specify the port number? It's required for IPv6.\n");
+         exit(EXIT_FAILURE);
+     }
+@@ -217,6 +212,7 @@
+     struct host_list_node *allow_host_list = NULL;
+     struct host_list_node *deny_host_list = NULL;
+ 
++    unsigned short proxyport = DEFAULT_PROXY_PORT;
+     int srcport = -1;
+     char *source = NULL;
+     char *proxyaddr = NULL;
+@@ -506,7 +502,7 @@
+ "      --broker               Enable Ncat's connection brokering mode\n"
+ "      --chat                 Start a simple Ncat chat server\n"
+ "      --proxy <addr[:port]>  Specify address of host to proxy through\n"
+-"      --proxy-type <type>    Specify proxy type (\"http\" or \"socks4\")\n"
++"      --proxy-type <type>    Specify proxy type (\"http\" or \"socks4\" or \"socks5\")\n"
+ "      --proxy-auth <auth>    Authenticate with HTTP or SOCKS proxy server\n"
+ #ifdef HAVE_OPENSSL
+ "      --ssl                  Connect or listen with SSL\n"
+@@ -535,30 +531,35 @@
+     /* Will be AF_INET or AF_INET6 when valid */
+     memset(&targetss.storage, 0, sizeof(targetss.storage));
+     targetss.storage.ss_family = AF_UNSPEC;
+-    httpconnect.storage = socksconnect.storage = srcaddr.storage = targetss.storage;
++    srcaddr.storage = targetss.storage;
+ 
+     if (proxyaddr) {
+       if (!o.proxytype)
+           o.proxytype = Strdup("http");
+ 
+-      if (!strcmp(o.proxytype, "http")) {
+-          /* Parse HTTP proxy address and temporarily store it in httpconnect.  If
++      if (!strcmp(o.proxytype,"http") || !strcmp(o.proxytype, "socks4") || !strcmp(o.proxytype, "socks5") || !strcmp(o.proxytype, "socks")) {
++          if (!strcmp(o.proxytype, "socks4") || !strcmp(o.proxytype, "socks5") || !strcmp(o.proxytype, "socks"))
++              proxyport = DEFAULT_SOCKS_PORT;
++          /* Parse proxy address and temporarily store it in proxyconnect.  If
+            * the proxy server is given as an IPv6 address (not hostname), the port
+            * number MUST be specified as well or parsing will break (due to the
+            * colons in the IPv6 address and host:port separator).
+            */
++          parseproxy(proxyaddr, &targetss.storage, &targetsslen, &proxyport);
+ 
+-          parseproxy(proxyaddr, &httpconnect.storage, DEFAULT_PROXY_PORT);
+-      } else if (!strcmp(o.proxytype, "socks4") || !strcmp(o.proxytype, "4")) {
+-          /* Parse SOCKS proxy address and temporarily store it in socksconnect */
+-
+-          parseproxy(proxyaddr, &socksconnect.storage, DEFAULT_SOCKS4_PORT);
++          if (o.af == AF_INET)
++              targetss.in.sin_port = htons(proxyport);
++#ifdef HAVE_IPV6
++          else 
++              targetss.in6.sin6_port = htons(proxyport);
++#endif
+       } else {
+           bye("Invalid proxy type \"%s\".", o.proxytype);
+       }
+ 
+-      free(o.proxytype);
+-      free(proxyaddr);
++      if (o.listen)
++          bye("Invalid option combination: --proxy and -l.");
++
+     } else {
+       if (o.proxytype) {
+         if (!o.listen)
+@@ -617,7 +618,7 @@
+         if (strspn(argv[optind], "0123456789") != strlen(argv[optind])) {
+             o.target = argv[optind];
+             /* resolve hostname */
+-            if (!resolve(o.target, 0, &targetss.storage, &targetsslen, o.af))
++            if (!o.proxytype && !resolve(o.target, 0, &targetss.storage, &targetsslen, o.af))
+                 bye("Could not resolve hostname %s.", o.target);
+             optind++;
+         } else {
+@@ -646,26 +647,13 @@
+         o.portno = (unsigned short) long_port;
+     }
+ 
+-    if (o.af == AF_INET)
++    if (!o.proxytype && o.af == AF_INET)
+         targetss.in.sin_port = htons(o.portno);
+ #ifdef HAVE_IPV6
+-    else
++    else if (!o.proxytype)
+         targetss.in6.sin6_port = htons(o.portno);
+ #endif
+ 
+-    /* Since the host we're actually *connecting* to is the proxy server, we
+-     * need to reverse these address structures to avoid any further confusion
+-     */
+-    if (httpconnect.storage.ss_family != AF_UNSPEC) {
+-        union sockaddr_u tmp = targetss;
+-        targetss = httpconnect;
+-        httpconnect = tmp;
+-    } else if (socksconnect.storage.ss_family != AF_UNSPEC) {
+-        union sockaddr_u tmp = targetss;
+-        targetss = socksconnect;
+-        socksconnect = tmp;
+-    }
+-
+     if (o.udp) {
+         /* Don't allow a false sense of security if someone tries SSL over UDP. */
+         if (o.ssl)
+@@ -688,6 +676,8 @@
+        the console. A no-op on Unix. */
+     set_lf_mode();
+ 
++    free(proxyaddr);
++
+     if (o.listen)
+         return ncat_listen_mode();
+     else
+@@ -717,9 +707,6 @@
+ }
+ 
+ static int ncat_listen_mode(void) {
+-    /* Can't 'listen' AND 'connect' to a proxy server at the same time. */
+-    if (httpconnect.storage.ss_family != AF_UNSPEC || socksconnect.storage.ss_family != AF_UNSPEC)
+-        bye("Invalid option combination: --proxy and -l.");
+ 
+     if (o.idletimeout != 0)
+         bye("An idle timeout only works in connect mode.");
+Index: ncat_connect.c
+===================================================================
+--- ncat_connect.c	(revision 23277)
++++ ncat_connect.c	(working copy)
+@@ -242,50 +242,48 @@
+ }
+ 
+ /* Just like inet_socktop, but it puts IPv6 addresses in square brackets. */
+-static const char *sock_to_url(const union sockaddr_u *su)
++static const char *sock_to_url(char* host_str,unsigned short port)
+ {
+-    static char buf[INET6_ADDRSTRLEN + 32];
+-    const char *host_str;
+-    unsigned short port;
++    static char buf[512];
+ 
+-    host_str = inet_socktop(su);
+-    port = inet_port(su);
+-    if (su->storage.ss_family == AF_INET)
+-        Snprintf(buf, sizeof(buf), "%s:%hu", host_str, port);
+-    else if (su->storage.ss_family == AF_INET6)
+-        Snprintf(buf, sizeof(buf), "[%s]:%hu]", host_str, port);
+-    else
+-        bye("Unknown address family in sock_to_url_host.");
++    switch(getaddrfamily(host_str)) {
++      case -1:
++      case 1:
++          Snprintf(buf, sizeof(buf), "%s:%hu", host_str, port);
++          break;
++      case 2:
++          Snprintf(buf, sizeof(buf), "[%s]:%hu]", host_str, port);
++    }
+ 
+     return buf;
+ }
+ 
+ static int append_connect_request_line(char **buf, size_t *size, size_t *offset,
+-    const union sockaddr_u *su)
++    char* host_str, unsigned short port)
+ {
+     return strbuf_sprintf(buf, size, offset, "CONNECT %s HTTP/1.0\r\n",
+-        sock_to_url(su));
++        sock_to_url(host_str,port));
+ }
+ 
+-static char *http_connect_request(const union sockaddr_u *su, int *n)
++static char *http_connect_request(char* host_str, unsigned short port, int *n)
+ {
+     char *buf = NULL;
+     size_t size = 0, offset = 0;
+ 
+-    append_connect_request_line(&buf, &size, &offset, su);
++    append_connect_request_line(&buf, &size, &offset, host_str,port);
+     strbuf_append_str(&buf, &size, &offset, "\r\n");
+     *n = offset;
+ 
+     return buf;
+ }
+ 
+-static char *http_connect_request_auth(const union sockaddr_u *su, int *n,
++static char *http_connect_request_auth(char* host_str, unsigned short port, int *n,
+     struct http_challenge *challenge)
+ {
+     char *buf = NULL;
+     size_t size = 0, offset = 0;
+ 
+-    append_connect_request_line(&buf, &size, &offset, su);
++    append_connect_request_line(&buf, &size, &offset, host_str, port);
+     strbuf_append_str(&buf, &size, &offset, "Proxy-Authorization:");
+     if (challenge->scheme == AUTH_BASIC) {
+         char *auth_str;
+@@ -308,7 +306,7 @@
+             return NULL;
+         }
+         response_hdr = http_digest_proxy_authorization(challenge,
+-            username, password, "CONNECT", sock_to_url(&httpconnect));
++            username, password, "CONNECT", sock_to_url(o.target,o.portno));
+         if (response_hdr == NULL) {
+             free(proxy_auth);
+             return NULL;
+@@ -349,7 +347,7 @@
+     header = NULL;
+ 
+     /* First try a request with no authentication. */
+-    request = http_connect_request(&httpconnect, &n);
++    request = http_connect_request(o.target,o.portno, &n);
+     if (send(sd, request, n, 0) < 0) {
+         loguser("Error sending proxy request: %s.\n", socket_strerror(socket_errno()));
+         free(request);
+@@ -399,7 +397,7 @@
+             goto bail;
+         }
+ 
+-        request = http_connect_request_auth(&httpconnect, &n, &challenge);
++        request = http_connect_request_auth(o.target,o.portno, &n, &challenge);
+         if (request == NULL) {
+             loguser("Error building Proxy-Authorization header.\n");
+             http_challenge_free(&challenge);
+@@ -455,6 +453,355 @@
+     return -1;
+ }
+ 
++/* SOCKS4a support 
++ * Return a usable socket descriptor after 
++ * proxy negotiation, or -1 on any error.
++ */
++static int do_proxy_socks4(void)
++{
++    struct socket_buffer stateful_buf;
++    struct socks4_data socks4msg;
++    char socksbuf[8];
++    int sd,len = 9;
++
++    sd = do_connect(SOCK_STREAM);
++    if (sd == -1) {
++        loguser("Proxy connection failed: %s.\n", socket_strerror(socket_errno()));
++        return sd;
++    }
++    socket_buffer_init(&stateful_buf, sd);
++
++    if (o.verbose) {
++        loguser("Connected to proxy %s:%hu\n", inet_socktop(&targetss),
++            inet_port(&targetss));
++    }
++    
++    /* Fill the socks4_data struct */
++    zmem(&socks4msg, sizeof(socks4msg));
++    socks4msg.version = SOCKS4_VERSION;
++    socks4msg.type = SOCKS_CONNECT;
++    socks4msg.port = htons(o.portno);
++
++    switch(getaddrfamily(o.target)) {
++        
++        case 1: // IPv4 address family
++           
++            socks4msg.address = inet_addr(o.target);
++            
++            if (o.proxy_auth){
++                memcpy(socks4msg.data, o.proxy_auth, strlen(o.proxy_auth));
++                len += strlen(o.proxy_auth);
++            }
++            break;
++        
++        case 2: // IPv6 address family 
++           
++            loguser("Error: IPv6 addresses are not supported with Socks4.\n");
++            close(sd);
++            return -1;
++
++        case -1: // fqdn 
++    
++            socks4msg.address = inet_addr("0.0.0.1");
++            
++            if (strlen(o.target) > SOCKS_BUFF_SIZE-2) {
++                loguser("Error: host name is too long.\n");
++                close(sd);
++                return -1;
++            }
++
++            if (o.proxy_auth){
++                if (strlen(o.target)+strlen(o.proxy_auth) > SOCKS_BUFF_SIZE-2) {
++                    loguser("Error: host name and username are too long.\n");
++                    close(sd);
++                    return -1;
++                }
++                Strncpy(socks4msg.data,o.proxy_auth,sizeof(socks4msg.data));
++                len += strlen(o.proxy_auth); 
++            }
++            memcpy(socks4msg.data+(len-8), o.target, strlen(o.target));
++            len += strlen(o.target)+1; 
++    }
++
++    if (send(sd, (char *) &socks4msg, len, 0) < 0) {
++        loguser("Error: sending proxy request: %s.\n", socket_strerror(socket_errno()));
++        close(sd);
++        return -1;
++    }
++
++    /* The size of the socks4 response is 8 bytes. So read exactly
++       8 bytes from the buffer */
++    if (socket_buffer_readcount(&stateful_buf, socksbuf, 8) < 0) {
++        loguser("Error: short response from proxy.\n");
++        close(sd);
++        return -1;
++    }
++
++    if (sd != -1 && socksbuf[1] != SOCKS4_CONN_ACC) {
++        loguser("Proxy connection failed.\n");
++        close(sd);
++        return -1;
++    }
++
++    return sd;
++}
++
++/* SOCKS5 support 
++ * Return a usable socket descriptor after 
++ * proxy negotiation, or -1 on any error.
++ */
++static int do_proxy_socks5(void)
++{
++
++    struct socket_buffer stateful_buf;
++    struct socks5_connect socks5msg;
++    uint32_t inetaddr;
++    char inet6addr[16];
++    unsigned short proxyport = htons(o.portno);
++    char socksbuf[8];
++    int sd,len,lenfqdn;
++    
++
++    sd = do_connect(SOCK_STREAM);
++    if (sd == -1) {
++        loguser("Proxy connection failed: %s.\n", socket_strerror(socket_errno()));
++        return sd;
++    }
++
++    socket_buffer_init(&stateful_buf, sd);
++
++    if (o.verbose) {
++        loguser("Connected to proxy %s:%hu\n", inet_socktop(&targetss),
++            inet_port(&targetss));
++    }
++    
++    zmem(&socks5msg,sizeof(socks5msg));
++    socks5msg.ver = SOCKS5_VERSION;
++    socks5msg.nmethods = 1;
++    socks5msg.methods[0] = SOCKS5_AUTH_NONE;
++    len = 3; 
++
++    if (o.proxy_auth){
++        socks5msg.nmethods ++;
++        socks5msg.methods[1] = SOCKS5_AUTH_USERPASS;
++        len ++;
++    } 
++    
++    if (send(sd, (char *) &socks5msg, len, 0) < 0) {
++        loguser("Error: proxy request: %s.\n", socket_strerror(socket_errno()));
++        close(sd);
++        return -1;
++    }
++   
++    /* first response just two bytes, version and auth method */
++    if (socket_buffer_readcount(&stateful_buf, socksbuf, 2) < 0) {
++        loguser("Error: malformed first response from proxy.\n");
++        close(sd);
++        return -1;
++    }
++
++    if (socksbuf[0] != 5){
++        loguser("Error: got wrong server version in response.\n");
++        close(sd);
++        return -1;
++    }
++
++    switch(socksbuf[1]) {
++
++        case SOCKS5_AUTH_NONE:
++            if (o.verbose)
++                loguser("No authentication needed.\n");
++            break;
++
++        case SOCKS5_AUTH_GSSAPI:
++            loguser("GSSAPI authentication method not supported.\n");
++            close(sd);
++            return -1;
++        
++        case SOCKS5_AUTH_USERPASS:
++            if (o.verbose) 
++                loguser("Doing username and password authentication.\n");
++
++            if(!o.proxy_auth){
++                loguser("Error: proxy requested to do authentication, but no credentials were provided.\n");
++                close(sd);
++                return -1;
++            }
++            
++            if (strlen(o.proxy_auth) > SOCKS_BUFF_SIZE-2){
++                loguser("Error: username and password are too long to fit into buffer.\n");
++                close(sd);
++                return -1;
++            }
++
++            char *proxy_auth;
++            char *username, *password;
++
++            /* Split up the proxy auth argument. */
++            proxy_auth = Strdup(o.proxy_auth);
++            username = strtok(proxy_auth, ":");
++            password = strtok(NULL, ":");
++            if (password == NULL || username == NULL) {
++                free(proxy_auth);
++                loguser("Error: empty username or password.\n");
++                close(sd);
++                return -1;
++            }
++            
++            /* 
++             * For username/password authentication the client's authentication request is
++             * field 1: version number, 1 byte (must be 0x01)
++             * field 2: username length, 1 byte
++             * field 3: username
++             * field 4: password length, 1 byte
++             * field 5: password
++             *
++             * Server response for username/password authentication:
++             * field 1: version, 1 byte
++             * field 2: status code, 1 byte.
++             * 0x00 = success
++             * any other value = failure, connection must be closed
++             */
++            struct socks5_auth socks5auth;
++    
++            socks5auth.ver = 1;
++            socks5auth.data[0] = strlen(username);
++            memcpy(socks5auth.data+1,username,strlen(username));
++            len = 1 + strlen(username);
++            
++            socks5auth.data[len]=strlen(password);
++            memcpy(socks5auth.data+len+1,password,strlen(password));
++            len += 1 + strlen(password);
++            
++            if (send(sd, (char *) &socks5auth, len, 0) < 0) {
++                loguser("Error: sending proxy authentication.\n");
++                close(sd);
++                return -1;
++            }
++            
++            if (socket_buffer_readcount(&stateful_buf, socksbuf, 2) < 0) {
++                loguser("Error: malformed proxy authentication response.\n");
++                close(sd);
++                return -1;
++            }
++
++            if (socksbuf[0] != 5 || socksbuf[1] != 0) {
++                loguser("Error: authentication failed.\n"); 
++                close(sd);
++                return -1;
++            }
++
++        default:
++            loguser("Error - can't choose any authentication method.\n");
++            close(sd);
++            return -1;
++    }
++    
++    struct socks5_request socks5msg2;
++
++    zmem(&socks5msg2,sizeof(socks5msg2));
++    socks5msg2.ver = SOCKS5_VERSION;
++    socks5msg2.cmd = SOCKS_CONNECT;
++    socks5msg2.rsv = 0;
++    
++    switch(getaddrfamily(o.target)) {
++
++        case 1: // IPv4 address family
++            socks5msg2.atyp = SOCKS5_ATYP_IPv4; 
++            inetaddr = inet_addr(o.target);
++            memcpy(socks5msg2.dst, &inetaddr, 4); 
++            len = 4;
++            break;
++        
++        case 2: // IPv6 address family TODO
++            socks5msg2.atyp = SOCKS5_ATYP_IPv6;
++            inet_pton(AF_INET6,o.target,&inet6addr);
++            memcpy(socks5msg2.dst, inet6addr,16);
++            len = 16; 
++            break;
++
++        case -1: // FQDN 
++            socks5msg2.atyp = SOCKS5_ATYP_NAME; 
++            lenfqdn=strlen(o.target);
++            if (lenfqdn > SOCKS_BUFF_SIZE-5){
++                loguser("Error: host name too long.\n");
++                close(sd);
++                return -1;
++            }
++            socks5msg2.dst[0]=lenfqdn;
++            memcpy(socks5msg2.dst+1,o.target,lenfqdn);
++            len = 1 + lenfqdn;
++    }
++
++    memcpy(socks5msg2.dst+len, &proxyport, sizeof(proxyport));
++    len += 2 + 1 + 3; 
++
++    if (len > sizeof(socks5msg2)){
++        loguser("Error: address information too large.\n");
++        close(sd);
++        return -1;
++    }
++
++    if (send(sd, (char *) &socks5msg2, len, 0) < 0) {
++        loguser("Error: sending proxy request: %s.\n", socket_strerror(socket_errno()));
++        close(sd);
++        return -1;
++    }
++
++    /* TODO just two bytes for now, need to read more for bind */
++    if (socket_buffer_readcount(&stateful_buf, socksbuf, 2) < 0) {
++        loguser("Error: malformed second response from proxy.\n");
++        close(sd);
++        return -1;
++    }
++   
++    switch(socksbuf[1]) {
++        case 0: 
++            if (o.verbose)
++                loguser("connection succeeded.\n");
++            break;
++        case 1: 
++            loguser("Error: general SOCKS server failure.\n");
++            close(sd);
++            return -1;
++        case 2: 
++            loguser("Error: connection not allowed by ruleset.\n");
++            close(sd);
++            return -1;
++        case 3: 
++            loguser("Error: Network unreachable.\n");
++            close(sd);
++            return -1;
++        case 4: 
++            loguser("Error: Host unreachable.\n");
++            close(sd);
++            return -1;
++        case 5:
++            loguser("Error: Connection refused.\n");
++            close(sd);
++            return -1;
++        case 6: 
++            loguser("Error: TTL expired.\n");
++            close(sd);
++            return -1;
++        case 7: 
++            loguser("Error: Command not supported.\n");
++            close(sd);
++            return -1;
++        case 8: 
++            loguser("Error: Address type not supported.\n");
++            close(sd);
++            return -1;
++        default:
++            loguser("Error: unassigned value in the reply.\n");
++            close(sd);
++            return -1;
++    }
++    
++    return(sd);
++}
++
++
+ int ncat_connect(void) {
+     nsock_pool mypool;
+     nsock_event_id ev;
+@@ -475,8 +822,7 @@
+     set_ssl_ctx_options((SSL_CTX *)nsp_ssl_init(mypool));
+ #endif
+ 
+-    if (httpconnect.storage.ss_family == AF_UNSPEC
+-             && socksconnect.storage.ss_family == AF_UNSPEC) {
++    if (!o.proxytype) {
+         /* A non-proxy connection. Create an iod for a new socket. */
+         cs.sock_nsi = nsi_new(mypool, NULL);
+         if (cs.sock_nsi == NULL)
+@@ -538,64 +884,27 @@
+     } else {
+         /* A proxy connection. */
+         static int connect_socket;
+-        int len;
+-        char* line;
+-        size_t n;
+ 
+-        if (httpconnect.storage.ss_family != AF_UNSPEC) {
+-            connect_socket = do_proxy_http();
++            if (strcmp(o.proxytype, "http") == 0)
++                connect_socket = do_proxy_http();
++            
++            else if (strcmp(o.proxytype, "socks4") == 0)
++                connect_socket = do_proxy_socks4();
++            
++            else if (strcmp(o.proxytype, "socks5") == 0 || strcmp(o.proxytype, "socks") == 0)
++                connect_socket = do_proxy_socks5();
++            
+             if (connect_socket == -1)
+                 return 1;
+-        } else if (socksconnect.storage.ss_family != AF_UNSPEC) {
+-            struct socket_buffer stateful_buf;
+-            struct socks4_data socks4msg;
+-            char socksbuf[8];
+-
+-            connect_socket = do_connect(SOCK_STREAM);
+-            if (connect_socket == -1) {
+-                loguser("Proxy connection failed: %s.\n", socket_strerror(socket_errno()));
+-                return 1;
+-            }
+-
+-            socket_buffer_init(&stateful_buf, connect_socket);
+-
+-            if (o.verbose) {
+-                loguser("Connected to proxy %s:%hu\n", inet_socktop(&targetss),
+-                    inet_port(&targetss));
+-            }
+-
+-            /* Fill the socks4_data struct */
+-            zmem(&socks4msg, sizeof(socks4msg));
+-            socks4msg.version = SOCKS4_VERSION;
+-            socks4msg.type = SOCKS_CONNECT;
+-            socks4msg.port = socksconnect.in.sin_port;
+-            socks4msg.address = socksconnect.in.sin_addr.s_addr;
+-            if (o.proxy_auth)
+-                Strncpy(socks4msg.username, (char *) o.proxy_auth, sizeof(socks4msg.username));
+-
+-            len = 8 + strlen(socks4msg.username) + 1;
+-
+-            if (send(connect_socket, (char *) &socks4msg, len, 0) < 0) {
+-                loguser("Error sending proxy request: %s.\n", socket_strerror(socket_errno()));
+-                return 1;
+-            }
+-            /* The size of the socks4 response is 8 bytes. So read exactly
+-               8 bytes from the buffer */
+-            if (socket_buffer_readcount(&stateful_buf, socksbuf, 8) < 0) {
+-                loguser("Error: short reponse from proxy.\n");
+-                return 1;
+-            }
+-            if (socksbuf[1] != 90) {
+-                loguser("Proxy connection failed.\n");
+-                return 1;
+-            }
+-
++            
++            /* o.proxytype is not needed any more, moved here from ncat_main.c */
++            free(o.proxytype);
+             /* Clear out whatever is left in the socket buffer which may be
+-               already sent by proxy server along with http response headers. */
+-            line = socket_buffer_remainder(&stateful_buf, &n);
++             already sent by proxy server along with http response headers. */
++            //line = socket_buffer_remainder(&stateful_buf, &n);
+             /* Write the leftover data to stdout. */
+-            Write(STDOUT_FILENO, line, n);
+-        }
++            //Write(STDOUT_FILENO, line, n);
++//        }
+ 
+         /* Once the proxy negotiation is done, Nsock takes control of the
+            socket. */

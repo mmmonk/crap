@@ -69,6 +69,10 @@ expect "*#" {
   send "\r"
 }
 
+expect "*#" {
+  send "ntpdate nl.pool.ntp.org\r"
+}
+
 expect "*# " {
   log_file "/home/case/store/work/_archives_worklogs/$host-$filetime.log"
   send_log "\n---------- log start at $time ----------\n"
@@ -165,7 +169,8 @@ Have fun :)\n"
       send "/etc/init.d/haSvr stop\r"
       expect "*# " { send "/etc/init.d/guiSvr stop\r"}
       expect "*# " { send "/etc/init.d/devSvr stop\r"}
-      expect "*# " { send "mv -f /usr/netscreen/GuiSvr/var/dmi-schema-stage /usr/netscreen/GuiSvr/var/dmi-schema-stage.old\r"}
+      #expect "*# " { send "mv -f /usr/netscreen/GuiSvr/var/dmi-schema-stage /usr/netscreen/GuiSvr/var/dmi-schema-stage.old\r"}
+      expect "*# " { send "rm -rf /usr/netscreen/GuiSvr/var/dmi-schema-stage\r"}
       expect "*# " { send "cp --reply=yes -fpr /usr/netscreen/GuiSvr/lib/initVar/dmi-schema-stage /usr/netscreen/GuiSvr/var/dmi-schema-stage\r"}
       expect "*# " { send "rm -f /usr/netscreen/GuiSvr/var/xdb/init/*\r"}
       expect "*# " { send "rm -rf /tmp/Schemas*\r"}
@@ -181,6 +186,7 @@ Have fun :)\n"
       send "/etc/init.d/haSvr stop\r"
       expect "*# " { send "/etc/init.d/guiSvr stop\r"}
       expect "*# " { send "/usr/netscreen/GuiSvr/utils/setperms.sh GuiSvr > /dev/null\r"}
+      expect "*# " { send "/bin/chmod +s /usr/netscreen/GuiSvr/utils/.installIdTool\r"}
       expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb admin 1 0 /__/password \"glee/aW9bOYEewkD/6Ri8sHh2mU=\" > /dev/null\r"}
       sleep 1
       expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb server 0 0 /__/ip \"$ourip\" > /dev/null\r"}

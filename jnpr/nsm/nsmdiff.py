@@ -107,7 +107,7 @@ Subject: [NSMDIFF] update from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localti
     
     # this touch is to note time of last useful update 
     try:
-      open(MAINDIR+"/latest_update.txt","a")
+      open(MAINDIR+"/latest_update.txt","w")
     except:
       warn("Error touching the timestamp file\n") 
 

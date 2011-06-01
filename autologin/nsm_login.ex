@@ -69,8 +69,9 @@ expect "*#" {
   send "\r"
 }
 
+# time setup
 expect "*#" {
-  send "ntpdate nl.pool.ntp.org\r"
+  send "TZ='Europe/Amsterdam';export TZ;ntpdate 172.30.73.133;hwclock --systohc\r"
 }
 
 expect "*# " {

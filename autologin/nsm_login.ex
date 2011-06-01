@@ -71,7 +71,7 @@ expect "*#" {
 
 # time setup
 expect "*#" {
-  send "TZ='Europe/Amsterdam';export TZ;ntpdate 172.30.73.133;hwclock --systohc\r"
+  send "TZ='Europe/Amsterdam';export TZ;ntpdate -u 172.30.73.133;hwclock --systohc\r"
 }
 
 expect "*# " {

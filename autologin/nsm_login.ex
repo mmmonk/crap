@@ -57,7 +57,7 @@ expect timeout {
   send -s "sudo su -\r"
   exp_continue
 } "*# " {
-  send -s "unset TMOUT\r"
+  send -s "unset TMOUT;ln -sf /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime;ntpdate -u 172.30.73.133;hwclock --systohc\r"
 }
 
 expect "*#" {
@@ -69,38 +69,37 @@ expect "*#" {
   send "\r"
 }
 
-# time setup
-expect "*#" {
-  send "TZ='Europe/Amsterdam';export TZ;ntpdate -u 172.30.73.133;hwclock --systohc\r"
-}
-
 expect "*# " {
   log_file "/home/case/store/work/_archives_worklogs/$host-$filetime.log"
   send_log "\n---------- log start at $time ----------\n"
 
   send_user "
---- Key shortcuts ---
-Ctrl+A l - types \"netscreen\\r\"
-Ctrl+A p - types \"rpm -qa | grep netscreen | xargs -r rpm -e ; rm -rf /var/netscreen/*/* /usr/netscreen/*\" <- noticed no \\r
-Ctrl+A i - can be entered during the nsm installtion will answer all the questions (clean install Gui+Dev if installing from scratch or just refresh otherwise)
-Ctrl+A u - correct the customer db (super password, IPs)
-Ctrl+A t - truncate the schema,
-
-Have fun :)\n"
+--- Help key ---
+Ctrl+a h - all shortcuts\n"
 
   send "\r"
 
   interact {
 
+    \001h { send_user "
+--- Help ---
+
+IP that will be used during the installation is: $ourip
+
+Ctrl+a h - this message
+Ctrl+a i - can be entered during the nsm installation will answer all the questions (clean install Gui+Dev if installing from scratch or just refresh otherwise)
+Ctrl+a l - types \"netscreen\\r\"
+Ctrl+a p - types \"rpm -qa | grep netscreen | xargs -r rpm -e ; rm -rf /var/netscreen/*/* /usr/netscreen/*\" <- notice no \\r
+Ctrl+a t - truncate the schema
+Ctrl+a u - correct the customer db (super password, IPs)
+
+" 
+    send "\r"
+    }
+
     \001l { send "$pass\r" }
 
     \001p { send "rpm -qa | grep netscreen | xargs -r rpm -e ; rm -rf /var/netscreen/*/* /usr/netscreen/*" }
-
-    \001n {
-        puts "\nPlease enter the version to install: "
-        set test [gets stdin]
-        puts "you entered: $test"
-    }
 
     \001i { 
         send  "\r"

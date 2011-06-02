@@ -1,9 +1,10 @@
 #!/usr/bin/expect -f
 
-;# $Id$
+# $Id$
 
 set send_slow {10 .01}
 set timeout 60
+set app nsm
 
 if { $argc == 0 } {
   puts "
@@ -51,27 +52,41 @@ expect timeout {
   send -s "$pass\r"
   exp_continue
 } "Run NSMXPress system setup" {
+  set app nsm 
   send -s "n"
+  exp_continue
+} "1-6,QR" {
+  set app space
+  send -s "6"
   exp_continue
 } "*$ " {
   send -s "sudo su -\r"
   exp_continue
 } "*# " {
-  send -s "unset TMOUT;ln -sf /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime;ntpdate -u 172.30.73.133;hwclock --systohc\r"
+  if { $app == "nsm" } {
+    send -s "unset TMOUT;ln -sf /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime;ntpdate -u 172.30.73.133;hwclock --systohc\r"
+  } else {
+    send "\r"
+  }
 }
 
-expect "*#" {
-  send "ifconfig | perl -nle'/dr:(172.30.\\S+)/&&print\$1'\r"
-}
+if { $app == "nsm" } {
+  expect "*#" {
+    send "ifconfig | perl -nle'/dr:(172.30.\\S+)/&&print\$1'\r"
+  }
 
-expect "*#" {
-  set ourip [regexp -inline -- {172\.30\.\d+\.\d+} $expect_out(buffer)]
-  send "\r"
+  expect "*#" {
+    set ourip [regexp -inline -- {172\.30\.\d+\.\d+} $expect_out(buffer)]
+    send "\r"
+  }
+} else {
+  set ourip 127.0.0.1
 }
 
 expect "*# " {
   log_file "/home/case/store/work/_archives_worklogs/$host-$filetime.log"
   send_log "\n---------- log start at $time ----------\n"
+  send_user "\n---------- session start at $time ----------\n"
 
   send_user "
 --- Help key ---
@@ -79,7 +94,31 @@ Ctrl+a h - all shortcuts\n"
 
   send "\r"
 
+
   interact {
+
+    \003  { send "\003" }
+    \004  { send "exit\r" 
+      set timeout 10
+      if { $app == "nsm" } { 
+        expect timeout {
+          set timeout 60
+        } "*$ " { 
+          send "exit\r" 
+          sleep 1
+          return
+        }
+      } 
+      if { $app == "space" } {
+        expect timeout {
+          set timeout 60
+        } "1-6,QR" {
+          send "q"
+          sleep 1
+          return
+        }
+      }
+    }
 
     \001h { send_user "
 --- Help ---
@@ -208,5 +247,6 @@ set time     [ timestamp -format "%Y/%m/%d %H:%M:%S"]
 send_log "\n---------- log close at $time ----------\n"
 log_file
 exec /bin/bzip2 /home/case/store/work/_archives_worklogs/$host-$filetime.log
+send_user "\n---------- session closed at $time ----------\n"
 exit
 

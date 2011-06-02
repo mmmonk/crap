@@ -1,11 +1,11 @@
-message_line_first %g(%w%3%g)%B<%n%5%c%2%n%B>%n %1
-message_line  %1\n
+message_line_first  %r%3%n %5%g<%n %g%1%n 
+message_line    %g%1%n\n
 message_conference_line_first %g(%w%3%g)%C<%n%5%B%2%n%C>%n %1
-chat_line_first %g<%n%5%B%2%n%g>%n %1\n
+chat_line_first  %5%g<%n %g%1%n 
 chat_conference_line_first %C<%n%5%B%2%n%C>%n %1\n
-chat_line  %1\n
-sent_line_first %B<%n%5%g%2%n%B>%n %1\n
-sent_line  %1\n
+chat_line    %g%1%n\n
+sent_line_first  %5%B>%n %B%1%n\n
+sent_line    %B%1%n\n
 
 secure %c#%n
 
@@ -13,21 +13,25 @@ statusbar %{?away %c}%{?avail %r}%{?invisible %C}%{?notavail %K}ja%n%{?activity 
 
 header %{?query %{?query_away %waway}%{?query_avail %cavail}%{?query_notavail %Knotavail}%{?query_invisible %Cinvisible}%{?query_descr : %{query_descr}}}%{?!query %{?away %waway}%{?avail %cavail}%{?notavail %Knotavail}%{?invisible %Cinvisible}%{?descr : %{descr}}}%n
 
-message_line_first,nc %g(%w%3%g)%B<%n%5%c%2%n%B>%n %1
+message_line_first,nc  %r%3%n %5%g<%n %g%1%n 
 message_conference_line_first,nc %g(%w%3%g)%C<%n%5%2%C>%n %1
-message_line,nc  %1\n
-chat_line_first,nc %g<%n%5%B%2%n%g>%n %1\n
+message_line,nc    %g%1%n\n
+chat_line_first,nc  %5%g<%n %g%1%n
 chat_conference_line_first,nc %C<%5%B%2%C>%n %1\n
-chat_line,nc  %1\n
-sent_line_first,nc %B<%n%5%g%2%n%B>%n %1\n
-sent_line,nc  %1\n
+chat_line,nc    %g%1%n\n
+sent_line_first,nc  %5%B>%n %B%1%n\n
+sent_line,nc    %B%1%n\n
 
 known_user %1%n
 unknown_user %1%n
 
 message_timestamp_now -
 message_timestamp_today %H%M
-message_timestamp %Y-%m-%d %H%M
+message_timestamp %y%m%d-%H%M
+
+ncurses_prompt_none > 
+ncurses_prompt > 
+ncurses_prompt_query %1> 
 
 list_avail %> %B%1 %Y(dostêpn%@2)%n %b%3:%4%n\n
 list_avail_descr %> %B%1 %Y(dostêpn%@2: %n%5%Y)%n %b%3:%4%n\n

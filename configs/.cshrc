@@ -1,6 +1,7 @@
 # A righteous umask
 if ($uid == 0) then
 	umask 022
+  cp -u /home/case/{.cshrc,.vimrc,.aliases,.tmux.conf,.screenrc} ~/
 else
 	umask 77 
 endif
@@ -18,7 +19,6 @@ setenv PAGER more
 where less > /dev/null && setenv PAGER less
 where most > /dev/null && setenv PAGER most
 
-#setenv	GPG_TTY `tty`
 setenv	SHOST `echo $HOST | awk -F'.' '{print $1}'`
 
 if ($?prompt) then
@@ -57,32 +57,48 @@ if ($?prompt) then
 
   # ssh-agent
   if ( -f ~/.ssh/ssh_agent ) then
-    source ~/.ssh/ssh_agent
 
-    if ($?SSH_AGENT_PID) then
-      if ( { kill -s 0 $SSH_AGENT_PID > /dev/null } == 0 ) then
+    set TPID = `pgrep -nu $USER ssh-agent`
+
+    if ($TPID == "") then
+      ssh-agent -c | grep SSH >! ~/.ssh/ssh_agent
+    else
+      source ~/.ssh/ssh_agent
+      if ($?SSH_AGENT_PID) then
+        if ($SSH_AGENT_PID != $TPID) then
+          ssh-agent -c | grep SSH >! ~/.ssh/ssh_agent
+        endif
+      else
+        pkill -u $USER ssh-agent
         ssh-agent -c | grep SSH >! ~/.ssh/ssh_agent
       endif
-    else
-      ssh-agent -c | grep SSH >! ~/.ssh/ssh_agent
     endif
     source ~/.ssh/ssh_agent
+    unset TPID
   endif
 
   # gpg-agent
   if ( -f ~/.gpg-agent-info ) then
     setenv GPG_TTY `tty`
-    source ~/.gpg-agent-info
-    if ($?GPG_AGENT_PID) then
-      if ( { kill -s 0 $GPG_AGENT_PID > /dev/null } == 0 ) then
+    set TPID = `pgrep -nu $USER gpg-agent`
+
+    if ($TPID == "") then
+      gpg-agent -q --daemon -c >! ~/.gpg-agent-info
+      echo "setenv GPG_AGENT_PID `pgrep -u $USER gpg-agent`" >> ~/.gpg-agent-info
+    else
+      source ~/.gpg-agent-info
+      if ($?GPG_AGENT_PID) then
+        if ($GPG_AGENT_PID != $TPID) then
+          gpg-agent -q --daemon -c >! ~/.gpg-agent-info
+          echo "setenv GPG_AGENT_PID `pgrep -u $USER gpg-agent`" >> ~/.gpg-agent-info
+        endif
+      else
         gpg-agent -q --daemon -c >! ~/.gpg-agent-info
         echo "setenv GPG_AGENT_PID `pgrep -u $USER gpg-agent`" >> ~/.gpg-agent-info
       endif
-    else
-      gpg-agent -q --daemon -c >! ~/.gpg-agent-info
-      echo "setenv GPG_AGENT_PID `pgrep -u $USER gpg-agent`" >> ~/.gpg-agent-info
     endif
     source ~/.gpg-agent-info
+    unset TPID
   endif
 
   # alias file
@@ -113,9 +129,26 @@ if ($?prompt) then
     echo ""
   endif
 
-  complete ssh 'p/*/$sshhosts/'
-  complete s 'p/*/$sshhosts/'
-  complete sftp 'p/*/$sshhosts/'
-  complete scp 'p/*/$sshhosts/'
+  complete alias 'p/1/a/'
+  complete dpkg 'p/1/(-I -l -L)/' 'n/-{I,l,L}/`dpkg -l | awk \{print\ \$2\}`/'
+  complete last 'p/1/u/'
+  complete man 'p/*/c/'
+  complete menv 'p/1/$sshhosts/'
+  complete scp 'p/2/$sshhosts/'
+  complete setenv 'p/1/e/'
+  complete set 'p/1/s/'
+  complete sftp 'p/1/$sshhosts/'
+  complete skm 'p/1/$sshhosts/'
+  complete sfm 'p/2/(-L -R -D)/' 'p/1/$sshhosts/'
   complete sk 'p/*/$sshhosts/'
+  complete s 'p/*/$sshhosts/'
+  complete ssh 'p/*/$sshhosts/'
+
+  if ($uid == 0) then
+    complete aptitude 'p/1/(show search versions update install upgrade dist-upgrade)/' 'p/2/`dpkg -l | awk \{print\ \$2\}`/'
+    complete kill 'n/-s/S/' 'p/*/`ps ax | awk \{print\ \$1\}`/'
+  else
+    complete aptitude 'p/1/(show search versions)/' 'p/2/`dpkg -l | awk \{print\ \$2\}`/'
+    complete kill 'n/-s/S/' 'p/*/`ps | awk \{print\ \$1\}`/'
+  endif
 endif

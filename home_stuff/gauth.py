@@ -10,8 +10,13 @@ from hmac import HMAC
 from hashlib import sha1
 from base64 import b32decode 
 from os import getenv
+from sys import exit
 
-s = open(getenv("HOME")+"/.gauth.conf").read()
+try:
+  s = open(getenv("HOME")+"/.gauth.conf").read()
+except:
+  print "Can't read ~/.gauth.conf file"
+  exit(1)
 
 tm = int(time() / 30)
 

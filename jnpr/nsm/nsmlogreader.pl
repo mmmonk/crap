@@ -22,8 +22,8 @@ while(<>){
   
   if (/^\[(\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}\.\d{3})\] /){
     ($date,$time)=split(" ",$1);
-    ($d,$m,$Y)=split('/',$date);
-    $ts="$Y/$m/$d $time";
+    ($m,$d,$Y)=split('/',$date);
+    $ts="$Y/$m/$d-$time";
     $c=0;
     push(@data,"$ts 000 $_");
     next;
@@ -37,13 +37,13 @@ while(<>){
     next;
   }
   if ($c<100) {
-    push(@data,"$ts 00$c $_");
+    push(@data,"$ts 0$c $_");
     next;
   }
 
   push(@data,"$ts $c $_");
 }
 
-foreach my $line (sort @data){
-  print $line;
+foreach (sort @data){
+  print;
 }

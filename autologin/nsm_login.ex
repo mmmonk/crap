@@ -201,6 +201,9 @@ Ctrl+a u - correct the customer db (super password, IPs)
         } "Are the above actions correct? (y/n)> " {
           send "y\r"
           exp_continue
+        } "Specify location of PostgreSQL * bin *> " {
+          send "\r"
+          exp_continue
         }
     }
 

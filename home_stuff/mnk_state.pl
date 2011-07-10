@@ -22,26 +22,30 @@ my $cur=0;
 my $rate=0;
 my $bstat="";
 
-open(B,$batinfo);
-while(<B>){
-  $dmax=$1 if (/design capacity:\s+(\d+)\s+mAh/);
-  $max=$1 if (/last full capacity:\s+(\d+)\s+mAh/); 
+if ( -f $batinfo) {
+  open(B,$batinfo);
+  while(<B>){
+    $dmax=$1 if (/design capacity:\s+(\d+)\s+mAh/);
+    $max=$1 if (/last full capacity:\s+(\d+)\s+mAh/); 
+  }
+  close(B);
 }
-close(B);
-
+if ( -f $batstat) {
 open(B,$batstat);
-while(<B>){
-  $rate=$1 if (/present rate:\s+(\d+)\s+mA/);
-  $cur=$1 if (/remaining capacity:\s+(\d+)\s+mAh/);  
-  $bstat=$1 if (/charging state:\s+(\S+)\n/);
+  while(<B>){
+    $rate=$1 if (/present rate:\s+(\d+)\s+mA/);
+    $cur=$1 if (/remaining capacity:\s+(\d+)\s+mAh/);  
+    $bstat=$1 if (/charging state:\s+(\S+)\n/);
+  }
+  close(B);
 }
-close(B);
-
-open(T,$curtemp);
-while(<T>){
-  $ctemp=$1 if (/temperature:\s+(\d+)\s+C/); 
+if ( -f $curtemp) {
+  open(T,$curtemp);
+  while(<T>){
+    $ctemp=$1 if (/temperature:\s+(\d+)\s+C/); 
+  }
+  close(T);
 }
-close(T);
 
 my $line="";
 if ($syscall){
@@ -73,4 +77,8 @@ if ($bstat eq "discharging"){
   $line.=sprintf "=:%02.2f%%",(($max/$dmax)*100);
 }
 
-print $line." ".$ctemp."C\n"; 
+if ($ctemp == 0) {
+  print $line."\n";
+}else{
+  print $line." ".$ctemp."C\n"; 
+}

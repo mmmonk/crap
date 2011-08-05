@@ -1,0 +1,11 @@
+openContainer "role"
+setQueryTimeout 10
+# query 'collection("admin")'
+# setVerbose -1 -1
+# query 'collection("admin")/__[dbxml:metadata("Name")="stetesc" and dbxml:metadata("ObjVerID")=0]'
+# query 'collection("admin")/__[dbxml:metadata("Name")="marek"]'
+lookupIndex node-metadata-equality-string "" Name "super" 
+# lookupIndex node-metadata-equality-decimal "" ObjectID 71
+print
+quit
+

@@ -7,7 +7,8 @@ use warnings;
 use integer;
 
 my $guiutils="/usr/netscreen/GuiSvr/utils/";
-my $dbroot="/usr/netscreen/GuiSvr/var/xdb/data/";
+my $nsmxdb="/usr/netscreen/GuiSvr/var/xdb/data/";
+my $dbroot="/tmp/";
 my $queryfile="/tmp/dbxml_adminrole_query.txt";
 my $dbver;
 
@@ -24,6 +25,17 @@ my $dbxmlpath="$guiutils/$dbver/";
 $ENV{LD_LIBRARY_PATH}="$dbxmlpath/lib:";
 
 umask(0077);
+
+sub syncfile{
+  my $file=shift;
+
+  my $src="$nsmxdb/$file";
+  my $dst="$dbroot/$file";
+
+  if (! -e $dst or ((stat($src))[9] > (stat($dst))[9])  or ! ((stat($src))[7] == (stat($dst))[7])){
+    system("cp $src $dst");
+  }
+}
 
 sub dbxmlquery{
   my $container=shift;
@@ -44,6 +56,9 @@ quit";
   return @data;
 }
 
+syncfile("admin");
+syncfile("role");
+syncfile("domain");
 unlink($queryfile) if ( -f $queryfile);
 my @res = dbxmlquery("admin","__[dbxml:metadata(\"HighDbVerID\")=65520]");
 

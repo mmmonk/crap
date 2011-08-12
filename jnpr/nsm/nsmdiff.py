@@ -89,6 +89,7 @@ Subject: [NSMDIFF] update from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localti
                 os.rmdir(MAINDIR+"/"+ver)
                 sys.exit(1)              
 
+              os.chmod(MAINDIR+"/"+diff,0644)
               difftext += "\n\nFixes in "+ver+"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
               difftext += open(MAINDIR+"/"+diff,'r').read()
               somethingnew = 1

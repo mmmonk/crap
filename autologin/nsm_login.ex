@@ -83,6 +83,12 @@ if { $app == "nsm" } {
   set ourip 127.0.0.1
 }
 
+if { $app == "nsm" } {
+  expect "*#" {
+    send "DBXML_DIR=`ls -1 -t /usr/netscreen/GuiSvr/utils|grep dbxml| head -n 1`;LD_LIBRARY_PATH=/usr/netscreen/GuiSvr/utils/\$DBXML_DIR/lib:\$LD_LIBRARY_PATH;export LD_LIBRARY_PATH\r"
+  }
+}
+
 expect "*# " {
   log_file "/home/case/store/work/_archives_worklogs/$host-$filetime.log"
   send_log "\n---------- log start at $time ----------\n"

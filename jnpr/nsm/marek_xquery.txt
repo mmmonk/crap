@@ -9,3 +9,47 @@ lookupIndex node-metadata-equality-string "" Name "super"
 print
 quit
 
+# dbxml> getMetaData 0000000000010001  
+# Metadata for document: 0000000000010001
+#         http://www.sleepycat.com/2002/dbxml:name
+#         DomainID
+#         HighDbVerID
+#         InternalName
+#         LowDbVerID
+#         Name
+#         ObjVerID
+#         ObjectID
+#         Timestamp
+#         PartialUpdateCount
+# 
+# dbxml> getMetaData 0000000000010001 "" HighDbVerID  
+# Retrieved metadata item 'HighDbVerID' in document, 0000000000010001
+# 
+# dbxml> print  
+# 88
+# 
+# 
+# docName=docID --> 32bit Obj ID+ 16bit ver ID+ 16bit DomainID --> 16
+# digit Hex
+
+# dbxml>openContainer admin  
+# 
+# dbxml> query '  
+# for $a in collection() return dbxml:metadata("dbxml:name", $a)'
+# 
+# dbxml> print  
+# 0000000000000001
+# 0000000100000001
+# 00000005FFF00001
+# 00000006FFF00001
+# 0000000FFFF00001
+# 0000003300000001
+# 0000003400000001
+# <snip>
+# 
+# 
+# dbxml> getMetaData 0000004BFFF00001 "" HighDbVerID  
+# Retrieved metadata item 'HighDbVerID' in document, 0000004BFFF00001
+# 
+# dbxml> print  
+# 65520

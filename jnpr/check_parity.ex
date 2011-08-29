@@ -34,6 +34,9 @@ log_file "~/check_parity-$filetime.log"
 proc counterrors {pattern logs} {
   set errorcount 0
   foreach line [split $logs "\n"] {
+    if { [regexp "/var/log/messages" $line] } {
+      continue
+    }
     if { [regexp $pattern $line] } {
       incr errorcount 1
     }
@@ -65,16 +68,16 @@ foreach host [split $file_data "\n"] {
     spawn telnet $host
 
     expect timeout {
-      send_user "$host: CONNECTION ERROR - connection timeout\n"
+      send_user "\n$host: CONNECTION ERROR - connection timeout\n"
       continue
     } eof {
-      send_user "$host: CONNECTION ERROR - got eof\n"
+      send_user "\n$host: CONNECTION ERROR - got eof\n"
       continue
     } "Login incorrect" {
-      send_user "$host: CONNECTION ERROR - wrong credentials\n"
+      send_user "\n$host: CONNECTION ERROR - wrong credentials\n"
       continue
     } "Permission denied, please try again." {
-      send_user "$host: CONNECTION ERROR - wrong credentials\n"
+      send_user "\n$host: CONNECTION ERROR - wrong credentials\n"
       continue 
     } "Are you sure you want to continue connecting (yes/no)?" {
       send -s "yes\r"
@@ -95,10 +98,10 @@ foreach host [split $file_data "\n"] {
     set errorpermember 0
 
     expect timeout {
-      send_user "$host: CONNECTION ERROR - connection timeout\n"
+      send_user "\n$host: CONNECTION ERROR - connection timeout\n"
       break 
     } eof {
-      send_user "$host: CONNECTION ERROR - got eof\n"
+      send_user "\n$host: CONNECTION ERROR - got eof\n"
       break
     } "*> " {
       send -s "start shell\r"
@@ -118,29 +121,28 @@ foreach host [split $file_data "\n"] {
     set errorpermember 0
     set done 0
     for { set x 0 } { $x<=9 } { incr x } {
-      
       if { $x != $master } {
         expect timeout {
-          send_user "$host: CONNECTION ERROR - connection timeout\n"
+          send_user "\n$host: CONNECTION ERROR - connection timeout\n"
           break
         } eof {
-          send_user "$host: CONNECTION ERROR - got eof\n"
+          send_user "\n$host: CONNECTION ERROR - got eof\n"
           break
         } "*> " { 
           send -s "request session member $x\r"
         }
         
         expect timeout {
-          send_user "$host: CONNECTION ERROR - connection timeout\n"
+          send_user "\n$host: CONNECTION ERROR - connection timeout\n"
           break
         } eof {
-          send_user "$host: CONNECTION ERROR - got eof\n"
+          send_user "\n$host: CONNECTION ERROR - got eof\n"
           break
         } "assword: " {
           send -s "$pass\r"
           exp_continue
         } "No route to host" {
-          break
+          continue
         } "*> " {
           send -s "start shell\r"
           exp_continue
@@ -157,7 +159,7 @@ foreach host [split $file_data "\n"] {
         expect "*% " {send -s "exit\r"}
       }
     }
-     send_user "\n#### $host in total has $errorperhost errors ####\n"
+    send_user "\n#### $host in total has $errorperhost errors ####\n"
     expect "*> " { send -s "exit\r"}
   }
 }

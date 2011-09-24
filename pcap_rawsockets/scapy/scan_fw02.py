@@ -34,7 +34,7 @@ for i in range(1,maxvalue):
       print "Allowed port "+str(port)+" to host "+str(dhost)
       allowed.append(port)
 
-  if port % 10 == 0:
+  if i % 10 == 0:
     dhost = "157.166."+str(random.randint(1,255))+"."+str(random.randint(1,255))
     sport = random.randint(1025,65534)
     time.sleep(1)

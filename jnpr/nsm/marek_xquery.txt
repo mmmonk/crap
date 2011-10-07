@@ -9,6 +9,12 @@ lookupIndex node-metadata-equality-string "" Name "super"
 print
 quit
 
+# current objects in the db
+# query 'for $a in collection() where dbxml:metadata("ObjVerID",$a)=0 return dbxml:metadata("dbxml:name", $a)'
+# query 'for $a in collection() where dbxml:metadata("HighDbVerID",$a)=65520 return dbxml:metadata("dbxml:name", $a)'
+
+
+
 # dbxml> getMetaData 0000000000010001  
 # Metadata for document: 0000000000010001
 #         http://www.sleepycat.com/2002/dbxml:name
@@ -40,9 +46,9 @@ quit
 # dbxml> print  
 # 0000000000000001
 # 0000000100000001
-# 00000005FFF00001
-# 00000006FFF00001
-# 0000000FFFF00001
+# 00000005FFF00001  <- deleted object
+# 00000006FFF00001  <- deleted object
+# 0000000FFFF00001  <- deleted object
 # 0000003300000001
 # 0000003400000001
 # <snip>

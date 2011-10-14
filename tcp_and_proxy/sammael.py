@@ -126,7 +126,7 @@ plog("dropped privs")
 ctx = SSL_Context(SSLv3_METHOD)
 ctx.use_privatekey_file('/usr/local/certs/server.key')
 ctx.use_certificate_file('/usr/local/certs/server.crt')
-ctx.set_cipher_list('HIGH')
+ctx.set_cipher_list('RC4-SHA')
 
 plog("SSL context ready")
 plog("listening for connections")

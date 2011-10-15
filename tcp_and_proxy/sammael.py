@@ -17,7 +17,8 @@ dport = 80
 ver = "$Rev$"
 
 def plog(msg, childpid = 0):
-  
+  global mainpid
+
   if childpid == 0:
     print "["+str(mainpid)+"] "+str(msg)
   else:
@@ -26,7 +27,7 @@ def plog(msg, childpid = 0):
 
 def deamonsetup(uid_name='nobody', gid_name='nogroup'):
 
-#  chroot("/usr/local/certs/")
+  # chroot("/usr/local/certs/")
 
   chdir("/")
 
@@ -79,7 +80,7 @@ def exchange(s,c):
       except SSL_SysCallError,SSL_ZeroReturnError:
         s.sock_shutdown(SHUT_RDWR)
         c.shutdown(SHUT_RDWR)
-        break
+        exit() 
 
       if len(data) > 0: 
         c_send(data)
@@ -90,48 +91,52 @@ def exchange(s,c):
       if len(data) == 0:
         c.shutdown(SHUT_RDWR)
         s.sock_shutdown(SHUT_RDWR)
-        break
+        exit() 
 
       else:
         s_send(data)
 
 ##### main crap
+def main():
 
-mainpid = getpid()
+  global mainpid
+  global dport
+  mainpid = getpid()
 
-plog("sammael ("+str(ver)+") - daemon starting")
+  plog("sammael ("+str(ver)+") - daemon starting")
 
-if has_ipv6 == True: 
-  s = socket(AF_INET6, SOCK_STREAM)
-  s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
-  s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-  s.bind((phost,pport))
-  s.listen(1)
-  s.setblocking(False)
-  plog("bound to socket - "+str(phost)+":"+str(pport))
-else:
-  s = socket(AF_INET, SOCK_STREAM)
-  s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
-  s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-  s.bind((phost, pport))
-  s.listen(1)
-  s.setblocking(False)
-  plog("bound to socket - "+str(phost)+":"+str(pport))
+  if has_ipv6 == True: 
+    s = socket(AF_INET6, SOCK_STREAM)
+    s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
+    s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+    s.bind((phost,pport))
+    s.listen(1)
+    s.setblocking(False)
+    plog("bound to socket - "+str(phost)+":"+str(pport))
+  else:
+    s = socket(AF_INET, SOCK_STREAM)
+    s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
+    s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+    s.bind((phost, pport))
+    s.listen(1)
+    s.setblocking(False)
+    plog("bound to socket - "+str(phost)+":"+str(pport))
 
-deamonsetup()
+  deamonsetup()
 
-plog("dropped privs")
+  plog("dropped privs")
 
-### SSL context
-ctx = SSL_Context(SSLv3_METHOD)
-ctx.use_privatekey_file('/usr/local/certs/server.key')
-ctx.use_certificate_file('/usr/local/certs/server.crt')
-ctx.set_cipher_list('RC4-SHA')
+  ### SSL context
+  ctx = SSL_Context(SSLv3_METHOD)
 
-plog("SSL context ready")
-plog("listening for connections")
+  ctx.use_privatekey_file('/usr/local/certs/server.key')
+  ctx.use_certificate_file('/usr/local/certs/server.crt')
+  ctx.set_cipher_list('RC4-MD5')
 
-while (True):
+  plog("SSL context ready")
+  plog("listening for connections")
+
+  while (True):
     accept,[],[] = select([s],[],[],30);
 
     if s in accept:
@@ -190,7 +195,13 @@ while (True):
         plog("going into exchange between "+str(dhost)+":"+str(dport)+" and "+str(addr[0])+":"+str(addr[1]),chpid)
 
         exchange(ssl,proxy)
-        break
+        exit() 
 
       else:
         plog("child forked "+str(pid))
+
+
+# main program
+if __name__ == "__main__":
+  main()
+

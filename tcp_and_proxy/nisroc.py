@@ -28,9 +28,10 @@ def loadconfig():
     if line[0] != '#':
       line = line.strip()
       val = line.split(';')
+      stderr.write("[?] data: "+str(val[0])+"-"+str(val[1])+"-"+str(val[2])+"-"+str(val[3])+"\n")
       if len(val) == 4:
         hostdata[str(val[0])+":"+str(val[1])] = str(val[2])+";"+str(val[3])
-
+        
 
 def appconfig(host,port,digest,key):
 
@@ -146,11 +147,10 @@ if __name__ == '__main__':
     except:
       exit("[-] ssl handshake error")
 
+    digest_save = 0
+    key = 0
     if str(host)+":"+str(port) in hostdata:
       digest_save,key = hostdata[str(host)+":"+str(port)].split(';')
-    else:
-      digest_save = 0
-      key = 0
 
     digest = ssl.get_peer_certificate().digest('sha256')
 
@@ -160,7 +160,7 @@ if __name__ == '__main__':
     else:
       stderr.write("[?] cert digest "+str(digest)+" - not verifed\n")
 
-    if key != 0:
+    if key:
       ssl.send(key)
     elif 'nisroc' in environ:
       ssl.send(environ['nisroc'])

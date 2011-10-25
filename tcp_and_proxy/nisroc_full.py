@@ -7,7 +7,7 @@ from fcntl import fcntl,F_SETFL
 from os import O_NONBLOCK,fork,environ
 from select import select
 from sys import stdin, stdout, stderr, exit, argv
-from socket import socket,AF_INET,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,error as socket_error
+from socket import socket,has_ipv6,AF_INET,AF_INET6,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,error as socket_error
 
 configfile = environ['HOME']+"/.nisrocrc"
 version = "$Rev$"
@@ -28,9 +28,10 @@ def loadconfig():
     if line[0] != '#':
       line = line.strip()
       val = line.split(';')
+      stderr.write("[?] data: "+str(val[0])+"-"+str(val[1])+"-"+str(val[2])+"-"+str(val[3])+"\n")
       if len(val) == 4:
         hostdata[str(val[0])+":"+str(val[1])] = str(val[2])+";"+str(val[3])
-
+        
 
 def appconfig(host,port,digest,key):
 
@@ -104,8 +105,11 @@ if __name__ == '__main__':
     loadconfig()
 
     ctx = SSL_Context(SSLv3_METHOD)
-   
-    proxy = socket(AF_INET, SOCK_STREAM)
+    
+    if (":" in host and has_ipv6 == True) or (len(argv) >= 4 and ":" in phost and has_ipv6 == True):
+      proxy = socket(AF_INET6, SOCK_STREAM)
+    else:
+      proxy = socket(AF_INET, SOCK_STREAM)
     proxy.setsockopt(IPPROTO_TCP, TCP_CORK,1)  
   
     if len(argv) >= 4:
@@ -143,11 +147,10 @@ if __name__ == '__main__':
     except:
       exit("[-] ssl handshake error")
 
+    digest_save = 0
+    key = 0
     if str(host)+":"+str(port) in hostdata:
       digest_save,key = hostdata[str(host)+":"+str(port)].split(';')
-    else:
-      digest_save = 0
-      key = 0
 
     digest = ssl.get_peer_certificate().digest('sha256')
 
@@ -157,7 +160,7 @@ if __name__ == '__main__':
     else:
       stderr.write("[?] cert digest "+str(digest)+" - not verifed\n")
 
-    if key != 0:
+    if key:
       ssl.send(key)
     elif 'nisroc' in environ:
       ssl.send(environ['nisroc'])

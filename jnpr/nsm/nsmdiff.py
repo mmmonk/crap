@@ -33,6 +33,13 @@ if __name__ == '__main__':
 
   LoadConf(conffile)
 
+  checkall = 0
+  try:
+    if sys.argv[1] == "check":
+      checkall = 1
+  except:
+    pass
+
   MAINDIR = confvar['nsmdiffdir']
   EMAIL = MAINDIR+"/.tosend" 
 
@@ -69,7 +76,7 @@ Subject: [NSMDIFF] update from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localti
 
   for ver in lst:
     if 'LGB' in ver and not '_' in ver:
-      if not os.path.isdir(MAINDIR+"/"+ver):
+      if checkall == 1 or not os.path.isdir(MAINDIR+"/"+ver):
         filediff = 0
         try:
           vlst=nsm.nlst(ver)
@@ -78,24 +85,37 @@ Subject: [NSMDIFF] update from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localti
         for diff in vlst:
           if '_filediff' in diff:
             rsize = nsm.size(diff)
-            if ( rsize > 0 ):
-              os.mkdir(MAINDIR+"/"+ver)
-              os.chmod(MAINDIR+"/"+ver,0755)
-              try:
-                nsm.retrbinary("RETR "+diff, open(MAINDIR+"/"+diff,'wb').write)
-              except:
-                warn("problem with the ftp server")
-                os.remove(MAINDIR+"/"+diff)
-                os.rmdir(MAINDIR+"/"+ver)
-                sys.exit(1)              
+            if rsize > 0:
+              if not os.path.isdir(MAINDIR+"/"+ver): 
+                os.mkdir(MAINDIR+"/"+ver)
+                os.chmod(MAINDIR+"/"+ver,0755)
+            
+              if os.path.isfile(MAINDIR+"/"+diff) and os.stat(MAINDIR+"/"+diff).st_size >= rsize:
+                break 
 
-              os.chmod(MAINDIR+"/"+diff,0644)
-              difftext += "\n\nFixes in "+ver+"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
-              difftext += open(MAINDIR+"/"+diff,'r').read()
-              somethingnew = 1
-              filediff = 1
+              else:
+                try:
+                  nsm.retrbinary("RETR "+diff, open(MAINDIR+"/"+diff,'wb').write)
+                  ls = []
+                  nsm.dir(diff,ls.append)
+                  if ":" in ls[0]:
+                    mtime = time.mktime(time.strptime(ls[0][43:55]+" "+str(time.localtime().tm_year),"%b %d %H:%M %Y"))
+                  else:
+                    mtime = time.mktime(time.strptime(ls[0][43:55],"%b %d  %Y"))
+                except:
+                  warn("problem with the ftp server")
+                  os.remove(MAINDIR+"/"+diff)
+                  os.rmdir(MAINDIR+"/"+ver)
+                  sys.exit(1)              
+
+                os.utime(MAINDIR+"/"+diff,(mtime,mtime))
+                os.chmod(MAINDIR+"/"+diff,0644)
+                difftext += "\n\nFixes in "+ver+"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
+                difftext += open(MAINDIR+"/"+diff,'r').read()
+                somethingnew = 1
+                filediff = 1
           
-        if filediff == 0:    
+        if filediff == 0 and checkall == 0:    
           os.mkdir(MAINDIR+"/"+ver)
           os.chmod(MAINDIR+"/"+ver,0755)
           difftext += "\n\nBuild without filediff information "+ver+"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"

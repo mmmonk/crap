@@ -5,19 +5,20 @@
 from fcntl import fcntl,F_SETFL
 from OpenSSL.SSL import WantReadError as SSL_WantReadError,SysCallError as SSL_SysCallError,ZeroReturnError as SSL_ZeroReturnError,Context as SSL_Context,SSLv3_METHOD,Connection as SSL_Connection
 from select import select
-from socket import socket,SHUT_RDWR,AF_INET,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,SOL_SOCKET,SO_REUSEADDR,error as socket_error 
+from socket import socket,has_ipv6,SHUT_RDWR,AF_INET,AF_INET6,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,SOL_SOCKET,SO_REUSEADDR,error as socket_error 
 from os import chdir,getuid,setgid,setuid,umask,O_NONBLOCK,WNOHANG,fork,waitpid,getpid,getppid
 from sys import exit 
 import pwd, grp
 
 phost = ''
 pport = 443
-dhost = '127.0.0.1'
+dhost = '::1'
 dport = 80
 ver = "$Rev$"
 
 def plog(msg, childpid = 0):
-  
+  global mainpid
+
   if childpid == 0:
     print "["+str(mainpid)+"] "+str(msg)
   else:
@@ -26,7 +27,7 @@ def plog(msg, childpid = 0):
 
 def deamonsetup(uid_name='nobody', gid_name='nogroup'):
 
-#  chroot("/usr/local/certs/")
+  # chroot("/usr/local/certs/")
 
   chdir("/")
 
@@ -79,7 +80,7 @@ def exchange(s,c):
       except SSL_SysCallError,SSL_ZeroReturnError:
         s.sock_shutdown(SHUT_RDWR)
         c.shutdown(SHUT_RDWR)
-        break
+        exit() 
 
       if len(data) > 0: 
         c_send(data)
@@ -90,86 +91,117 @@ def exchange(s,c):
       if len(data) == 0:
         c.shutdown(SHUT_RDWR)
         s.sock_shutdown(SHUT_RDWR)
-        break
+        exit() 
 
       else:
         s_send(data)
 
 ##### main crap
+def main():
 
-mainpid = getpid()
+  global mainpid
+  global dport
+  mainpid = getpid()
 
-plog("sammael ("+str(ver)+") - daemon starting")
+  plog("sammael ("+str(ver)+") - daemon starting")
 
-s = socket(AF_INET, SOCK_STREAM)
-s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
-s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-s.bind((phost, pport))
-s.listen(1)
+  if has_ipv6 == True: 
+    s = socket(AF_INET6, SOCK_STREAM)
+    s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
+    s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+    s.bind((phost,pport))
+    s.listen(1)
+    s.setblocking(False)
+    plog("bound to socket - "+str(phost)+":"+str(pport))
+  else:
+    s = socket(AF_INET, SOCK_STREAM)
+    s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
+    s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+    s.bind((phost, pport))
+    s.listen(1)
+    s.setblocking(False)
+    plog("bound to socket - "+str(phost)+":"+str(pport))
 
-plog("bound to socket - "+str(phost)+":"+str(pport))
+  deamonsetup()
 
-deamonsetup()
+  plog("dropped privs")
 
-plog("dropped privs")
+  ### SSL context
+  ctx = SSL_Context(SSLv3_METHOD)
 
-### SSL context
-ctx = SSL_Context(SSLv3_METHOD)
-ctx.use_privatekey_file('/usr/local/certs/server.key')
-ctx.use_certificate_file('/usr/local/certs/server.crt')
-ctx.set_cipher_list('HIGH')
+  ctx.use_privatekey_file('/usr/local/certs/server.key')
+  ctx.use_certificate_file('/usr/local/certs/server.crt')
+  ctx.set_cipher_list('RC4-MD5')
 
-plog("SSL context ready")
-plog("listening for connections")
+  plog("SSL context ready")
+  plog("listening for connections")
 
-while (True):
-    conn, addr = s.accept()
+  while (True):
+    accept,[],[] = select([s],[],[],30);
 
-    try:
-      waitpid(0,WNOHANG)
-    except OSError:
-      pass 
- 
-    pid = fork()
- 
-    if pid == 0:
-
-      chpid = getpid()
-      # let's add SSL to this socket 
-      ssl = SSL_Connection(ctx,conn)
-      ssl.setblocking(True)
-      ssl.set_accept_state()
-      ssl.do_handshake()
-      
-      data = ssl.recv(1024)
-
-      ssl.setblocking(False)
-
-      if data and 'qwerty' in data:
-        dport = 22 
-   
-      plog("connecting to "+str(dhost)+":"+str(dport)+" from "+str(addr[0])+":"+str(addr[1]),chpid)
-      proxy = socket(AF_INET, SOCK_STREAM)
-      proxy.setsockopt(IPPROTO_TCP, TCP_CORK,1)
+    if s in accept:
+      conn,addr = s.accept()
 
       try:
-        proxy.connect((dhost, dport))
-      except socket_error:
-        proxy.close()
-        conn.close()
-        exit()
+        waitpid(0,WNOHANG)
+      except OSError:
+        pass 
+   
+      pid = fork()
+   
+      if pid == 0:
 
-      plog("connected to "+str(dhost)+":"+str(dport)+" from "+str(addr[0])+":"+str(addr[1]),chpid)
+        chpid = getpid()
+        # let's add SSL to this socket 
+        ssl = SSL_Connection(ctx,conn)
+        ssl.setblocking(True)
+        ssl.set_accept_state()
+        try:
+          ssl.do_handshake()
+        except:
+          exit()        
+
+        try:
+          data = ssl.recv(1024)
+        except:
+          exit()
+
+        ssl.setblocking(False)
+
+        if data and 'qwerty' in data:
+          dport = 22 
+     
+        plog("connecting to "+str(dhost)+":"+str(dport)+" from "+str(addr[0])+":"+str(addr[1]),chpid)
+        if has_ipv6 == True:
+          proxy = socket(AF_INET6, SOCK_STREAM)
+        else:
+          proxy = socket(AF_INET, SOCK_STREAM)
+        proxy.setsockopt(IPPROTO_TCP, TCP_CORK,1)
+
+        try:
+          proxy.connect((dhost, dport))
+        except socket_error:
+          proxy.close()
+          conn.close()
+          exit()
+
+        plog("connected to "+str(dhost)+":"+str(dport)+" from "+str(addr[0])+":"+str(addr[1]),chpid)
+        
+        if dport == 80:
+          proxy.send(data)
       
-      if dport == 80:
-        proxy.send(data)
-    
-      fcntl(proxy, F_SETFL, O_NONBLOCK)
+        fcntl(proxy, F_SETFL, O_NONBLOCK)
 
-      plog("going into exchange between "+str(dhost)+":"+str(dport)+" and "+str(addr[0])+":"+str(addr[1]),chpid)
+        plog("going into exchange between "+str(dhost)+":"+str(dport)+" and "+str(addr[0])+":"+str(addr[1]),chpid)
 
-      exchange(ssl,proxy)
-      break
+        exchange(ssl,proxy)
+        exit() 
 
-    else:
-      plog("child forked "+str(pid))
+      else:
+        plog("child forked "+str(pid))
+
+
+# main program
+if __name__ == "__main__":
+  main()
+

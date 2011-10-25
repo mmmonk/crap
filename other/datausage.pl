@@ -5,6 +5,8 @@
 use strict;
 use warnings;
 
+require "sys/syscall.ph";
+
 my $datafile="/var/local/datausage.dat";
 
 my $limit=500; # in gigabytes
@@ -58,20 +60,29 @@ open(BW,"> $datafile") or die "$!\n";
 print BW "$cts $curdata $lbm $lbd";
 close(BW);
 
+my $fmt = "\0" x 512;
+my $dir = "/";
+my $res = syscall (&SYS_statfs, $dir, $fmt);
+# Q below because we are running on 64 bit - man statfs
+my ($ftype, $bsize, $blocks, $bfree, $bavail) = unpack("Q5", $fmt);
+
+
 my $print=0;
-open(MOTD,"/etc/motd") or die "$!\n";
+open(MOTD,"/etc/motd.tail") or die "$!\n";
 open(NMOTD,"> /etc/motd_new") or die "$!\n";
 while(<MOTD>){
+  next if (/^Current disk usage /);
   if (/^Data usage/){
-    printf NMOTD "Data usage this month %.2f G (limit %d G), today %d M.\n", (($lbm/1024),$limit,$lbd);
+    printf NMOTD "Data usage this month %.2f G (limit %d G), today %d M.\nCurrent disk usage %d%%.\n", (($lbm/1024),$limit,$lbd),(int((($blocks-$bavail)/$blocks)*100));
     $print=1;
   }else{ 
     print NMOTD;
   }
 }
 if ($print==0){
-  printf NMOTD "Data usage this month %.2f G (limit %d G), today %d M.\n", (($lbm/1024),$limit,$lbd);
+  printf NMOTD "Data usage this month %.2f G (limit %d G), today %d M.\nCurrent disk usage %d%%.\n", (($lbm/1024),$limit,$lbd),(int((($blocks-$bavail)/$blocks)*100));
 }
 close(NMOTD);
 close(MOTD);
-rename("/etc/motd_new","/etc/motd");
+rename("/etc/motd_new","/etc/motd.tail");
+system("/bin/cp /etc/motd.tail /etc/motd");

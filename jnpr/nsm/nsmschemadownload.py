@@ -155,18 +155,14 @@ if newschema == 1 and httpok == 1:
 
   version = version.replace('"','')
 
-  try:
-    os.rename(maindir+"/schema_"+asctime+".tgz", maindir+"/schema_"+version+".tgz")
-    os.chmod(maindir+"/schema_"+version+".tgz",S_IROTH|S_IRGRP|S_IWUSR|S_IRUSR) 
-  except:
-    print "rename from "+maindir+"/schema_"+asctime+".tgz to "+ maindir+"/schema_"+version+".tgz\n or chmod  failed" 
-    sys.exit(1)
+  os.unlink(maindir+"/schema_"+asctime+".tgz")
 
   emailtxt = "From: "+confvar['emailfrom']+" \n\
 To: "+confvar['emailto']+" \n\
 Subject: [schemamonitor] New schema version "+version+" from "+mdate+" \n\n\n\
 You can download it from here:\n\
 ftp://172.30.73.133/nsmdiff_and_stuff/schema/schema_"+version+".tgz\n\
+The file size is: "+str(size)+"\n\
 The release notes information can be probably downloaded from here:\n\
 http://kb.juniper.net/library/CUSTOMERSERVICE/GLOBAL_JTAC/technotes/DMI_Schema_v"+version+".pdf\n\n\
 --\nThis email was created by a very intelligent script\nAll flames/complaints will go to /dev/null\n"

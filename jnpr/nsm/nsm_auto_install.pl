@@ -9,12 +9,14 @@ use Socket;
 use Expect;
 
 my $nsmver=shift;
-my $nsmserv=lc(shift);
+my $nsmserv=shift;
 my $user="admin";
 my $pass="netscreen";
-$nsmver=~s/lgb/LGB/;
 
 die "usage: $0 nsmver nsmserv\n" unless ($nsmserv);
+
+$nsmserv=lc($nsmserv);
+$nsmver=~s/lgb/LGB/;
 
 my %conf;
 sub loadconf {
@@ -114,6 +116,8 @@ $exp->expect($timeout,
   [ qr/--More--/,
     sub { my $e=shift;$e->send(" ");exp_continue;}],
   [ qr/Hit Ctrl-C to abort installation or ENTER to continue/,
+    sub { my $e=shift;$e->send("\n");exp_continue;}],
+  [ qr/Hit Ctrl-C to abort or ENTER to continue/,
     sub { my $e=shift;$e->send("\n");exp_continue;}],
   [ qr/Enter the License File Path>/,
     sub { my $e=shift;$e->send("/var/tmp/lic.txt\n");exp_continue;}],

@@ -180,6 +180,9 @@ Ctrl+a u - correct the customer db (super password, IPs)
         } "Enter the https port for NBI service *>" {
           send "\r"
           exp_continue
+        } "Enter the https port for web server *>" {
+          send "\r"
+          exp_continue
         } "Enter password (password will not display as you type)>" {
           send "$pass\r"
           exp_continue

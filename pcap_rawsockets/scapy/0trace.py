@@ -38,7 +38,7 @@ def TCPflags(a):
 
 pkts = "" 
 while 1 == 1:
-  tmp = sniff(filter="ip and tcp and src port "+str(my_dport)+" and src host "+str(target),timeout = 5, lfilter = lambda x: x.haslayer(TCP))
+  tmp = sniff(filter="ip and tcp and src port "+str(my_dport)+" and src host "+str(target),timeout = 5, count = 1, lfilter = lambda x: x.haslayer(TCP))
   if len(tmp) > 0:
     pkts = tmp
   else:
@@ -47,19 +47,28 @@ while 1 == 1:
 
 pkts.nsummary()
 
-last = len(pkts)
-lpkt = pkts[last-1]
+lpkt = pkts[0]
 
 try:
   my_ack = lpkt.seq+len(lpkt.load)
 except:
   my_ack = lpkt.seq
 
+### got timestamp
+
+tseho = 0
+for opt in lpkt.getlayer(TCP).options:
+  if "Timestamp" in opt:
+    tseho = opt[1][0]
+
+tsval = tseho + 3
+
+
 my_seq = lpkt.ack
 my_sport = lpkt.dport 
 dttl = lpkt.ttl
-dst = lpkt.payload.src
-print "got TCP flags %s and TTL %d from target %s" % (TCPflags(lpkt.payload.payload.flags),dttl,dst)
+
+print "got TCP flags %s and TTL %d from target %s" % (TCPflags(lpkt.getlayer(TCP).flags),dttl,target)
 print "using: seq: "+str(my_seq)+", ack:"+str(my_ack)+", sport:"+str(my_sport)
 
 ttldiff = 255
@@ -68,27 +77,26 @@ for defttl in [64,128,255]:
   if tmp > 0 and tmp < ttldiff:
 	ttldiff = tmp
 
-print "%s is probably %d hops away (at least one way ;))" % (dst,ttldiff+1)
+print "%s is probably %d hops away (at least one way ;))" % (target,ttldiff+1)
 
-ip = IP(dst = target)
+pkt = IP(dst = target)/TCP(sport = my_sport, dport = my_dport, flags = "A", seq = my_seq, ack = my_ack)
 
-data=""
+if tseho > 0:
+  pkt.payload.options = [('NOP', None), ('NOP', None),('Timestamp',(tsval,tseho))]
 
 while 1 == 1:
-  ip.ttl = my_ttl
-  rcv = sr1(ip/TCP(sport = my_sport, dport = my_dport, flags = "A", seq = my_seq, ack = my_ack)/data,retry = 2,timeout = 1)
+  pkt.ttl = my_ttl
+  rcv = sr1(pkt,retry = 2,timeout = 1)
   if rcv:
     print "%2d : %15s rcv proto %s, TTL %3d" % (my_ttl,rcv.src,rcv.proto,rcv.ttl)
 
-    if rcv.proto == 6:
-      if dttl != rcv.ttl:
-        print "Probable SYN proxy, SA TTL %d, now TTL %d" % (dttl,rcv.ttl)
-      print "done, got: TCP flags: %s" % TCPflags(rcv.payload.flags)
+    if rcv.haslayer(TCP):
+      print "done, got: TCP flags: %s" % TCPflags(rcv.getlayer(TCP).flags)
       break
 
   else:
     print "%2d : ???.???.???.???" % my_ttl
-    if my_ttl > 25:
+    if my_ttl > 20:
       print "out of TTL ;)"
       break
   

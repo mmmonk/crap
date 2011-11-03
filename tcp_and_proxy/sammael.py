@@ -152,6 +152,8 @@ def main():
       if pid == 0:
 
         chpid = getpid()
+        plog("got connection from "+str(addr[0])+":"+str(addr[1]),chpid)
+
         # let's add SSL to this socket 
         ssl = SSL_Connection(ctx,conn)
         ssl.setblocking(True)

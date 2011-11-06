@@ -22,7 +22,7 @@ allowed = []
 # the same can be done for proto
 # in that case proto equals port
 # and maxvalue = 255
-for i in range(1,maxvalue):
+for i in xrange(1,maxvalue):
   port = random.choice(portrange)
   portrange.remove(port)
   # print "sport:"+str(sport)+" dport:"+str(port)

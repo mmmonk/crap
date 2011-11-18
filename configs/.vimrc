@@ -109,12 +109,16 @@ nmap <F7> :% ! gpg --encrypt<CR>
 nmap a<F7> :% ! gpg -a --encrypt<CR>
 nmap <F8> :% ! gpg --decrypt<CR>
 
+inoremap <F9> <C-O>za
+nnoremap <F9> za
+onoremap <F9> <C-C>za
+vnoremap <F9> zf
+
 " use ,ww to toggle line wrapping
 nmap <LocalLeader>ww :set wrap! wrap?<cr>
 
 " toggle paste mode.  Everything is inserted literally - no indending
 set pastetoggle=<F11>
-
 
 
 if has('autocmd')

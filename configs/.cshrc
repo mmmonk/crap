@@ -143,6 +143,7 @@ if ($?prompt) then
   complete sk 'p/*/$sshhosts/'
   complete s 'p/*/$sshhosts/'
   complete ssh 'p/*/$sshhosts/'
+  complete which 'p/1/c/'
 
   if ($uid == 0) then
     complete aptitude 'p/1/(show search versions update install upgrade dist-upgrade)/' 'p/2/`dpkg -l | awk \{print\ \$2\}`/'

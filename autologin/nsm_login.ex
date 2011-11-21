@@ -70,6 +70,8 @@ expect timeout {
   send "echo \${SHELL}\r"
 }
 
+
+### make sure we are running bash
 expect "*#" {
   if { ! [regexp "bash" $expect_out(buffer)] } {
     send -s "bash\r"
@@ -149,6 +151,8 @@ Ctrl+a h - all shortcuts\n"
       if { $app == "nsm" } { 
         expect timeout {
           set timeout 60
+        } eof {
+          return
         } "*# " {
           send "exit\r"
           exp_continue
@@ -175,20 +179,25 @@ Ctrl+a h - all shortcuts\n"
 IP that will be used during the installation is: $ourip
 
 Ctrl+a h - this message,
-Ctrl+a c - corrects /usr/netscreen/DevSvr/var/devSvr.cfg by removing unneeded whitespace characters,
+Ctrl+a c - corrects /usr/netscreen/DevSvr/var/devSvr.cfg by removing unneeded white characters (make a copy) and restart DevSvr,
 Ctrl+a i - can be entered during the nsm installation will answer all the questions (clean install Gui+Dev if installing from scratch or just refresh otherwise),
-Ctrl+a l - types \"netscreen\\r\",
-Ctrl+a p - types \"rpm -qa | grep netscreen | xargs -r rpm -e ; rm -rf /var/netscreen/*/* /usr/netscreen/*\" <- notice no \\r,
-Ctrl+a t - truncate the schema,
-Ctrl+a u - correct the customer db (super password, IPs)
+Ctrl+a l - types \"netscreen\\r\" or any other string that was set as the password,
+Ctrl+a p - prepares a command that will uninstall all NSM packages and remove all the data from the server, the command is printed without \\r at the end, 
+Ctrl+a t - truncates the schema,
+Ctrl+a u - corrects the customer db (super password, IPs)
 
-" 
+"
     send "\r"
     }
 
-    \001l { send "$pass\r" }
+    \001l { 
+      send "$pass\r"
+    }
 
-    \001c { send "perl -pi -e 's/\s\s+/ /g' /usr/netscreen/DevSvr/var/devSvr.cfg\r" }
+    \001c {
+      set backuptime [ timestamp -format "%Y%m%d_%H%M%S"]
+      send "perl -pi\".$backuptime\" -e 's/\s\s+/ /g' /usr/netscreen/DevSvr/var/devSvr.cfg && /etc/init.d/devSvr restart\r" 
+    }
 
     \001p { 
       if { $os == "Linux" } {

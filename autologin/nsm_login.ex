@@ -174,11 +174,12 @@ Ctrl+a h - all shortcuts\n"
 
 IP that will be used during the installation is: $ourip
 
-Ctrl+a h - this message
-Ctrl+a i - can be entered during the nsm installation will answer all the questions (clean install Gui+Dev if installing from scratch or just refresh otherwise)
-Ctrl+a l - types \"netscreen\\r\"
-Ctrl+a p - types \"rpm -qa | grep netscreen | xargs -r rpm -e ; rm -rf /var/netscreen/*/* /usr/netscreen/*\" <- notice no \\r
-Ctrl+a t - truncate the schema
+Ctrl+a h - this message,
+Ctrl+a c - corrects /usr/netscreen/DevSvr/var/devSvr.cfg by removing unneeded whitespace characters,
+Ctrl+a i - can be entered during the nsm installation will answer all the questions (clean install Gui+Dev if installing from scratch or just refresh otherwise),
+Ctrl+a l - types \"netscreen\\r\",
+Ctrl+a p - types \"rpm -qa | grep netscreen | xargs -r rpm -e ; rm -rf /var/netscreen/*/* /usr/netscreen/*\" <- notice no \\r,
+Ctrl+a t - truncate the schema,
 Ctrl+a u - correct the customer db (super password, IPs)
 
 " 
@@ -186,6 +187,8 @@ Ctrl+a u - correct the customer db (super password, IPs)
     }
 
     \001l { send "$pass\r" }
+
+    \001c { send "perl -pi -e 's/\s\s+/ /g' /usr/netscreen/DevSvr/var/devSvr.cfg\r" }
 
     \001p { 
       if { $os == "Linux" } {

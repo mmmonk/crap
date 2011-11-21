@@ -173,21 +173,23 @@ Ctrl+a h - all shortcuts\n"
       }
     }
 
-    \001h { send_user "
+    \001h { 
+      send_user "
 --- Help ---
 
 IP that will be used during the installation is: $ourip
 
 Ctrl+a h - this message,
-Ctrl+a c - corrects /usr/netscreen/DevSvr/var/devSvr.cfg by removing unneeded white characters (make a copy) and restart DevSvr,
+Ctrl+a c - correct /usr/netscreen/DevSvr/var/devSvr.cfg by removing unneeded white characters (make a copy) and restart DevSvr,
+Ctrl+a d - download and do a clean install of a given NSM version,
 Ctrl+a i - can be entered during the nsm installation will answer all the questions (clean install Gui+Dev if installing from scratch or just refresh otherwise),
-Ctrl+a l - types \"netscreen\\r\" or any other string that was set as the password,
-Ctrl+a p - prepares a command that will uninstall all NSM packages and remove all the data from the server, the command is printed without \\r at the end, 
-Ctrl+a t - truncates the schema,
-Ctrl+a u - corrects the customer db (super password, IPs)
+Ctrl+a l - types \"$pass\\r\",
+Ctrl+a p - prepare a command that will uninstall all NSM packages and remove all the NSM data from the server, the command is printed without \\r at the end, 
+Ctrl+a t - truncate the schema,
+Ctrl+a u - correct the customer db (super password, IPs)
 
 "
-    send "\r"
+      send "\r"
     }
 
     \001l { 
@@ -197,6 +199,16 @@ Ctrl+a u - corrects the customer db (super password, IPs)
     \001c {
       set backuptime [ timestamp -format "%Y%m%d_%H%M%S"]
       send "perl -pi\".$backuptime\" -e 's/\s\s+/ /g' /usr/netscreen/DevSvr/var/devSvr.cfg && /etc/init.d/devSvr restart\r" 
+    }
+
+    \001d {
+      send_user "\nPlease enter the NSM version in LGB format: "
+      stty cooked echo 
+      expect_user -re "(.*)\n"
+      stty raw -echo
+      set nextnsmver $expect_out(1,string)
+      system "date;uptime"
+      send_user "|localy run: nsm_auto_install.pl $nextnsmver $ourip|\n"
     }
 
     \001p { 

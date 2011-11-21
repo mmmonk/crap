@@ -2,6 +2,10 @@
 
 # $Id$
 
+set logdir "/home/case/store/work/_archives_worklogs/"
+
+set os "Linux"
+
 set send_slow {10 .01}
 set timeout 60
 set app nsm
@@ -63,16 +67,52 @@ expect timeout {
   send -s "sudo su -\r"
   exp_continue
 } "*# " {
-  if { $app == "nsm" } {
-    send -s "unset TMOUT;ln -sf /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime;ntpdate -u 172.30.73.133;hwclock --systohc\r"
+  send "echo \${SHELL}\r"
+}
+
+expect "*#" {
+  if { ! [regexp "bash" $expect_out(buffer)] } {
+    send -s "bash\r"
   } else {
     send "\r"
   }
 }
 
+expect "*#" {
+  send -s "uname\r"
+}
+
+expect "*#" {
+  if { [regexp "Linux" $expect_out(buffer)] } {
+    set os "Linux"
+  } elseif { [regexp "SunOS" $expect_out(buffer)] } {
+    set os "SunOS"
+  } else {
+    return
+  }
+  send "\r"
+}
+
+expect "*#" {
+  if { $os == "Linux" } {
+    if { $app == "nsm" } {
+      send -s "unset TMOUT;ln -sf /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime;ntpdate -u 172.30.73.133;hwclock --systohc\r"
+    }
+  } elseif { $os eq "SunOS" } {
+    send "ntpdate -u 172.30.73.133\r"
+  } else {
+    send "\r"
+  }
+}
+
+
 if { $app == "nsm" } {
   expect "*#" {
-    send "ifconfig | perl -nle'/dr:(172.30.\\S+)/&&print\$1'\r"
+    if { $os == "Linux" } {
+      send -s "ifconfig | perl -nle'/dr:(172.30.\\S+)/&&print\$1'\r"
+    } elseif { $os == "SunOS" } {
+      send -s "ifconfig -a | perl -nle'/net (172.30.\\S+)/&&print\$1'\r"
+    }
   }
 
   expect "*#" {
@@ -90,7 +130,7 @@ if { $app == "nsm" } {
 }
 
 expect "*# " {
-  log_file "/home/case/store/work/_archives_worklogs/$host-$filetime.log"
+  log_file "$logdir/$host-$filetime.log"
   send_log "\n---------- log start at $time ----------\n"
   send_user "\n---------- session start at $time ----------\n"
 
@@ -109,6 +149,9 @@ Ctrl+a h - all shortcuts\n"
       if { $app == "nsm" } { 
         expect timeout {
           set timeout 60
+        } "*# " {
+          send "exit\r"
+          exp_continue
         } "*$ " { 
           send "exit\r" 
           sleep 1
@@ -144,7 +187,13 @@ Ctrl+a u - correct the customer db (super password, IPs)
 
     \001l { send "$pass\r" }
 
-    \001p { send "rpm -qa | grep netscreen | xargs -r rpm -e ; rm -rf /var/netscreen/*/* /usr/netscreen/*" }
+    \001p { 
+      if { $os == "Linux" } {
+        send -s "rpm -qa | grep netscreen | xargs -r rpm -e ; rm -rf /var/netscreen/*/* /usr/netscreen/*" 
+      } elseif { $os == "SunOS" } {
+        send -s "pkgrm -n `pkginfo -c application | grep -i netscreen | grep -v NSCNpostgres | awk '{print \$2}' | xargs` &&  rm -rf /var/netscreen/ /usr/netscreen/"
+      } 
+    }
 
     \001i { 
         send  "\r"
@@ -258,7 +307,7 @@ Ctrl+a u - correct the customer db (super password, IPs)
 set time     [ timestamp -format "%Y/%m/%d %H:%M:%S"]
 send_log "\n---------- log close at $time ----------\n"
 log_file
-exec /bin/bzip2 /home/case/store/work/_archives_worklogs/$host-$filetime.log
+exec /bin/bzip2 $logdir/$host-$filetime.log
 send_user "\n---------- session closed at $time ----------\n"
 exit
 

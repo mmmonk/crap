@@ -85,7 +85,7 @@ expect "*#" {
 }
 
 expect "*#" {
-  send -s "export PROMPT_COMMAND='echo -ne \"\\a\\033_\${USER}@\${HOSTNAME%%.*}:\${PWD}\\033\\\\\"';uname\r"
+  send -s "set -o vi;export HISTCONTROL=ignoredups;export PS1='\[\\D{%Y-%m-%d %H:%M:%S}\]\\n\\u@\\h:\\W \\\$ ';export PROMPT_COMMAND='echo -ne \"\\a\\033_\${USER}@\${HOSTNAME%%.*}:\${PWD}\\033\\\\\"';uname\r"
 }
 
 expect "*#" {

@@ -85,7 +85,7 @@ expect "*#" {
 }
 
 expect "*#" {
-  send -s "set -o vi;export HISTCONTROL=ignoredups;export PS1='\[\\D{%Y-%m-%d %H:%M:%S}\]\\n\\u@\\h:\\W \\\$ ';export PROMPT_COMMAND='echo -ne \"\\a\\033_\${USER}@\${HOSTNAME%%.*}:\${PWD}\\033\\\\\"';uname\r"
+  send -s "set -o vi;export HISTCONTROL=ignoredups;export PS1='\[\\D{%Y-%m-%d %H:%M:%S}\]\\n\\u@\\h:\\w \\\$ ';export PROMPT_COMMAND='echo -ne \"\\a\\033_\${USER}@\${HOSTNAME%%.*}:\${PWD}\\033\\\\\"';uname\r"
 }
 
 expect "*#" {
@@ -187,6 +187,7 @@ Ctrl+a c - menu choice, including removal, cleanup, db changes and corrections,
 #Ctrl+a d - download and do a clean install of a given NSM version,
 Ctrl+a i - can be entered during the nsm installation will answer all the questions (clean install Gui+Dev if installing from scratch or just refresh otherwise),
 Ctrl+a x - stop/status/start/restart/version on all three services,
+Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S sutaible for naming backups/copies of files,
 #Ctrl+a f - trigger an action based on a pattern match, if pattern is found, a script on the remote machine will be run /root/data.sh
 "
       send "\r"
@@ -199,6 +200,11 @@ Ctrl+a x - stop/status/start/restart/version on all three services,
       stty raw -echo
       set action $expect_out(1,string)
       send -s "/etc/init.d/guiSvr $action; /etc/init.d/devSvr $action; /etc/init.d/haSvr $action\n"
+    }
+    
+    \001t {
+      set backuptime [ timestamp -format "%Y%m%d_%H%M%S"]
+      send -s "$backuptime"
     }
 
     \001c {

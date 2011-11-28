@@ -13,3 +13,4 @@ snmp/             - playing with snmp
 scapy/            - different scripts that are based on scapy
 swatch/           - scripts and configuration for swatch
 tcp_and_proxy/    - scripts and programs that play with TCP/IP and that use HTTP/SOCKS proxy
+wireshark_lua/    - example of wireshark dissector written in lua

@@ -163,6 +163,7 @@ def main():
         except:
           exit()        
 
+        plog("ssl handshake done",chpid)
         try:
           data = ssl.recv(1024)
         except:

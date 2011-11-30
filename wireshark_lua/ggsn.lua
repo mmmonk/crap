@@ -1,0 +1,23 @@
+--
+-- decoding IP inside ggsn packet 
+--
+-- usage:
+--    wireshark -X lua_script:ggsn.lua 
+-- 
+-- any ideas, suggestions for changes, new versions of the protocol
+-- please contact Marek Lukaszuk
+
+ipggsn_proto = Proto("IPoverGGSN","IP over GGSN")
+
+function ipggsn_proto.dissector(buf,pinfo,tree)
+        local offset = 26
+        if buf(0,3):uint() == 5064515 and buf(22,2):uint() == 16562 then
+          offset = 30 
+        end
+        local inside_dis = Dissector.get ("ip")
+        inside_dis:call (buf(offset):tvb(), pinfo, tree)
+end
+
+wtap_diss = DissectorTable.get("wtap_encap")
+wtap_diss:add(87,ipggsn_proto)
+

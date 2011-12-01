@@ -14,7 +14,7 @@ phost = ''
 pport = 443
 dhost = '::1'
 dport = 80
-ver = "$Rev$"
+ver = "20111130"
 
 def plog(msg, childpid = 0):
   global mainpid
@@ -163,6 +163,7 @@ def main():
         except:
           exit()        
 
+        plog("ssl handshake done",chpid)
         try:
           data = ssl.recv(1024)
         except:

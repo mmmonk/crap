@@ -6,6 +6,8 @@
 -- 
 -- any ideas, suggestions for changes, new versions of the protocol
 -- please contact Marek Lukaszuk
+--
+-- version: 20111203 
 
 ipggsn_proto = Proto("IPoverGGSN","IP over GGSN")
 

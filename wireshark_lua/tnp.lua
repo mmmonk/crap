@@ -10,7 +10,7 @@
 -- doc about LUA support in wireshark:
 -- https://www.wireshark.org/docs/wsug_html_chunked/wsluarm.html
 --
--- script version: 20111129
+-- script version: 20111207
 --
 -- TODO:
 -- - check TODO in the code ;)
@@ -327,7 +327,7 @@ function tnp_proto.dissector(buf,pinfo,tree)
       tnpheader:add(f.ttl,buf(7,1))
       tnpheader:add(f.daddr,buf(8,4))
       tnpheader:add(f.saddr,buf(12,4))
-      pinfo.cols.info:append(buf(8,4) .. " > " .. buf(12,4))
+      pinfo.cols.info:append(buf(12,4) .. " > " .. buf(8,4))
     end
     
     pinfo.cols.info:append(" proto:" .. tnpprotoname)

@@ -230,7 +230,7 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S sutaible for nami
       if { $action == 1 } {
       
         set backuptime [ timestamp -format "%Y%m%d_%H%M%S"]
-        send "perl -pi\".$backuptime\" -e 's/\s\s+/ /g' /usr/netscreen/DevSvr/var/devSvr.cfg && /etc/init.d/devSvr restart\r" 
+        send "perl -pi\".$backuptime\" -e 's/  +/ /g' /usr/netscreen/DevSvr/var/devSvr.cfg && /etc/init.d/devSvr restart\r" 
      
       # truncate schema
       } elseif { $action == 2 } {

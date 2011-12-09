@@ -67,6 +67,10 @@ expect timeout {
   set app space
   send -s "6"
   exp_continue
+} "1-7,QR" {
+  set app space
+  send -s "7"
+  exp_continue
 } "*$ " {
   send -s "sudo su -\r"
   exp_continue
@@ -128,6 +132,7 @@ if { $app == "nsm" } {
   }
 } else {
   set ourip 127.0.0.1
+  send "\r"
 }
 
 if { $app == "nsm" } {
@@ -169,7 +174,7 @@ Ctrl+a h - all shortcuts\n"
       if { $app == "space" } {
         expect timeout {
           set timeout 60
-        } "1-6,QR" {
+        } ",QR" {
           send "q"
           sleep 1
           return

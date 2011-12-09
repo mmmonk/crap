@@ -63,8 +63,8 @@ def socks4(s,host,port,s_send,s_recv):
 
   if code == 90:
     return 1 
-  else:
-    return 0 
+  
+  return 0 
 
 # SOCKS5 proxy 
 def socks5(s,host,port,s_send,s_recv):
@@ -95,11 +95,10 @@ def socks5(s,host,port,s_send,s_recv):
 
     if code == 0:
       return 1 
-    else:
-      if code > 9:
-        code=9
-      sys.stderr.write("[-] socks server sent an error: "+error[code]+"\n")
-      return 0
+    if code > 9:
+      code=9
+    sys.stderr.write("[-] socks server sent an error: "+error[code]+"\n")
+    return 0
 
   else:
     sys.stderr.write("[-] socks server requires authentication\n")
@@ -115,8 +114,8 @@ def http_connect(s,host,port,s_send,s_recv):
   if "HTTP/1.1 200 " in data or "HTTP/1.0 200 " in data:
     sys.stderr.write("[+] http proxy server allowed the connection\n");
     return 1
-  else:
-    sys.stderr.write("[-] http proxy server doesn't allow our connection\n"); 
+  
+  sys.stderr.write("[-] http proxy server doesn't allow our connection\n"); 
   
   return 0
 

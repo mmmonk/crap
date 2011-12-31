@@ -13,12 +13,12 @@ def usage():
   sys.stderr.write("\nusage: "+sys.argv[0]+" <options> socks_server socks_port destination_ip destination_port\n\n\
   version: $Id$\n\n\
   options:\n\
-  -v socks_ver - 4 or 5, default 5\n\
+  -p protocol - tcp/udp/bind (default tcp)\n\
   -cork - enables TCP_CORK socket option aka super nagle, default is off\n\n")
   sys.exit(0)
 
 # preaparing a socks5 connection
-def socks5(s,host,port):
+def socks5(s,host,port,proto=1):
   # input:
   # s - socket object
   # host - destination host either IP or a name
@@ -37,26 +37,38 @@ def socks5(s,host,port):
     nport = pack('!H',port)
     try:
       if ":" in host:
-        data = pack('!4B',5,1,0,4)+socket.inet_pton(socket.AF_INET6,host)+nport
+        data = pack('!4B',5,proto,0,4)+socket.inet_pton(socket.AF_INET6,host)+nport
       else:
-        data = pack('!4B',5,1,0,1)+socket.inet_pton(socket.AF_INET,host)+nport
+        data = pack('!4B',5,proto,0,1)+socket.inet_pton(socket.AF_INET,host)+nport
     except socket.error:
-      data = pack('!5B',5,1,0,3,len(host))+host+nport
+      data = pack('!5B',5,proto,0,3,len(host))+host+nport
 
     s.send(data)
     data = s.recv(256)
+    dhost = ""
+    dport = 0
     try:
-      code = unpack('BBB',data[:3])[1]
+      code = unpack('BBBB',data[:4])
+      if code[3] == 1:
+        dhost = socket.inet_ntop(socket.AF_INET,data[4:8])
+        dport = (unpack("!H",data[8:10]))[0]
+      elif code[3] == 4:
+        dhost = socket.inet_ntop(socket.AF_INET6,data[4:20])
+        dport = (unpack("!H",data[20:22]))[0] 
+      elif code[3] == 3:
+        dhost = data[4:-2]
     except:
       sys.stderr.write("[-] socks server sent a wrong replay\n")
       return 0
 
-    if code == 0:
+    sys.stderr.write("[?] host:"+str(dhost)+" port:"+str(dport)+"\n")
+
+    if code[1] == 0:
       return 1 
     else:
-      if code > 9:
-        code=9
-      sys.stderr.write("[-] socks server sent an error: "+error[code]+"\n")
+      if code[1] > 9:
+        code[1] = 9
+      sys.stderr.write("[-] socks server sent an error: "+error[code[1]]+"\n")
       return 0
 
   else:
@@ -71,12 +83,18 @@ if __name__ == '__main__':
     
     ver = 5
     cork = 0
-   
+    proto = 1 
+
     try: 
       i = 1
       while i<len_argv:
-        if sys.argv[i] == '-v':
-          ver = sys.argv[i+1]
+        if sys.argv[i] == '-p':
+          if sys.argv[i+1] == 'udp':
+            proto = 3 
+          elif sys.argv[i+1] == 'bind':
+            proto = 2 
+          else:
+            proto = 1 
           i+=2
         elif sys.argv[i] == '-cork':
           cork = 1
@@ -108,11 +126,8 @@ if __name__ == '__main__':
 
     sys.stderr.write("[+] connecting via "+str(phost)+":"+str(pport)+" to "+str(host)+":"+str(port)+"\n")
 
-    if (ver == 5 and socks5(socks,host,port)) or (ver == 4 and socks4(socks,host,port)): 
-      try:
-        exchange(socks)
-      except KeyboardInterrupt: 
-        pass
+    if socks5(socks,host,port,proto):
+      print "OK\n"
       socks.close()
     else:
       sys.stderr.write("[-] socks server couldn't establish the connection\n")

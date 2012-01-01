@@ -6,6 +6,7 @@ from fcntl import fcntl, F_SETFL
 from os import O_NONBLOCK
 from select import select
 from struct import pack,unpack 
+from time import sleep
 import socket
 import sys
 
@@ -33,6 +34,11 @@ def socks5(s,host,port,proto=1):
   s.send(data)
   data = s.recv(2)
   auth = unpack('2B',data)[1]
+
+  if proto == 3: # in UDP we are setting our _source_ address at this stage
+    host = "0.0.0.0"
+    port = 0
+
   if auth != 255:
     nport = pack('!H',port)
     try:
@@ -59,21 +65,20 @@ def socks5(s,host,port,proto=1):
         dhost = data[4:-2]
     except:
       sys.stderr.write("[-] socks server sent a wrong replay\n")
-      return 0
+      return (0,0,0) 
 
     sys.stderr.write("[?] host:"+str(dhost)+" port:"+str(dport)+"\n")
-
     if code[1] == 0:
-      return 1 
+      return (code[3],dhost,dport)
     else:
       if code[1] > 9:
         code[1] = 9
       sys.stderr.write("[-] socks server sent an error: "+error[code[1]]+"\n")
-      return 0
+      return (0,0,0) 
 
   else:
     sys.stderr.write("[-] socks server requires authentication\n")
-    return 0 
+    return (0,0,0) 
 
 #### main stuff
 if __name__ == '__main__':
@@ -126,8 +131,24 @@ if __name__ == '__main__':
 
     sys.stderr.write("[+] connecting via "+str(phost)+":"+str(pport)+" to "+str(host)+":"+str(port)+"\n")
 
-    if socks5(socks,host,port,proto):
-      print "OK\n"
+    (atyp,dhost,dport) = socks5(socks,host,port,proto)
+    if dhost != 0:
+      if proto == 3: # UDP
+        print "dhost:"+str(dhost)+" dport:"+str(dport)+"\n"
+        
+        if atyp == 1:
+          udpsocks = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+        elif atype == 4: 
+          udpsocks = socket.socket(socket.AF_INET6,socket.SOCK_DGRAM)
+       
+        if ":" in host:
+          udpsockshead = pack('!4B',0,0,0,1)+socket.inet_pton(socket.AF_INET6,host)+pack('!H',port)
+        else:
+          udpsockshead = pack('!4B',0,0,0,1)+socket.inet_pton(socket.AF_INET,host)+pack('!H',port)
+        
+        udpsocks.sendto(udpsockshead+"hello",(dhost,dport))
+        udpsocks.close()
+      #sleep(300)
       socks.close()
     else:
       sys.stderr.write("[-] socks server couldn't establish the connection\n")

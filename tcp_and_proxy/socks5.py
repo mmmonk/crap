@@ -6,7 +6,6 @@ from fcntl import fcntl, F_SETFL
 from os import O_NONBLOCK
 from select import select
 from struct import pack,unpack 
-from time import sleep
 import socket
 import sys
 
@@ -65,7 +64,7 @@ def socks5(s,host,port,proto=1):
         dhost = data[4:-2]
     except:
       sys.stderr.write("[-] socks server sent a wrong replay\n")
-      return (0,0,0) 
+      return (-1,-1,-1) 
 
     sys.stderr.write("[?] host:"+str(dhost)+" port:"+str(dport)+"\n")
     if code[1] == 0:
@@ -74,11 +73,11 @@ def socks5(s,host,port,proto=1):
       if code[1] > 9:
         code[1] = 9
       sys.stderr.write("[-] socks server sent an error: "+error[code[1]]+"\n")
-      return (0,0,0) 
+      return (-1,-1,-1) 
 
   else:
     sys.stderr.write("[-] socks server requires authentication\n")
-    return (0,0,0) 
+    return (-1,-1,-1) 
 
 #### main stuff
 if __name__ == '__main__':
@@ -132,8 +131,12 @@ if __name__ == '__main__':
     sys.stderr.write("[+] connecting via "+str(phost)+":"+str(pport)+" to "+str(host)+":"+str(port)+"\n")
 
     (atyp,dhost,dport) = socks5(socks,host,port,proto)
-    if dhost != 0:
+    if dhost != -1:
       if proto == 3: # UDP
+
+        # TODO
+        # - add listening socket for this that will add UDP SOCKS header to any incomming packet
+        #
         print "dhost:"+str(dhost)+" dport:"+str(dport)+"\n"
         
         if atyp == 1:
@@ -148,7 +151,11 @@ if __name__ == '__main__':
         
         udpsocks.sendto(udpsockshead+"hello",(dhost,dport))
         udpsocks.close()
-      #sleep(300)
+      elif proto == 1: # TCP
+        print "TCP\n"
+      elif proto == 2: # Bind
+        print "TCP bind\n"
+
       socks.close()
     else:
       sys.stderr.write("[-] socks server couldn't establish the connection\n")

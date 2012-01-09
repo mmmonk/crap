@@ -14,6 +14,8 @@ ssh_user=""
 ssh_pass=""
 ssh_key=""
 
+cpty = []
+
 class Server (paramiko.ServerInterface):
 
   def __init__(self):
@@ -45,6 +47,14 @@ class Server (paramiko.ServerInterface):
     return True
 
   def check_channel_pty_request(self, channel, term, width, height, pixelwidth, pixelheight ,modes):
+    global cpty
+    cpty[0]=term
+    cpty[1]=width
+    cpty[2]=height
+    cpty[3]=pixelwidth
+    cpty[4]=pixelheight
+    cpty[5]=modes
+    print cpty
     return True
 
 

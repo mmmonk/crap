@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 
-from subprocess import call
-import sys
+from subprocess import call,Popen,PIPE
+from time import time
 import os
-import time
+import sys
 
 rfcdir = "/home/case/store/rfc/"
+maxtime = 3600*24*7;
 
-wget = "/usr/bin/wget"
+wget = "/usr/bin/wget -t 3 -m -q -O "
+bzip2 = "/bin/bzip2 -c"
 
 if len(sys.argv) < 2:
   print "usage: "+sys.argv[0]+" (pattern_to_search_for|rfc_number)"
@@ -22,21 +24,23 @@ except:
 
 if query.isdigit():
   try:
-    try:
-      print open(rfcdir+"/rfc"+query,"r").read()
-    except IOError:
-      call(wget+" -m -q -t 2 -O "+rfcdir+"/rfc"+query+" https://tools.ietf.org/rfc/rfc"+query+".txt", shell=True)
-      print open(rfcdir+"/rfc"+query,"r").read()
+    
+    if not os.path.isfile(rfcdir+"/rfc"+query+".bz2"): 
+      call(wget+" - https://tools.ietf.org/rfc/rfc"+query+".txt | "+bzip2+" > "+rfcdir+"/rfc"+query+".bz2", shell=True)
+    print Popen(bzip2+" -d "+rfcdir+"/rfc"+query+".bz2", shell=True, stdout=PIPE).stdout.read()
   except:
     print "can't open rfc"+query
 
 else:
   try:
     try:
-      if (int(time.time())-int(os.stat(rfcdir+"/rfc-index").st_mtime))/3600 > 3600*24*7:
-        call(wget+" -q -t 3 -O "+rfcdir+"/rfc-index ftp://ftp.ietf.org/rfc/rfc-index",shell=True)
-    except OSError, e:
-      call(wget+" -q -t 3 -O "+rfcdir+"/rfc-index ftp://ftp.ietf.org/rfc/rfc-index",shell=True)
+      mtime = (int(time())-int(os.stat(rfcdir+"/rfc-index").st_mtime))/3600
+    except OSError:
+      mtime = maxtime+1;
+    
+    if mtime > maxtime:
+      call(wget+rfcdir+"/rfc-index ftp://ftp.ietf.org/rfc/rfc-index",shell=True)
+    
     rfc = open(rfcdir+"/rfc-index","r")
   except:
     print "can't open rfc index"

@@ -9,7 +9,7 @@ from md5 import md5
 from time import sleep
 from socket import inet_pton
 from struct import unpack,pack
-from random import randint
+# from random import randint # TODO
 import os
 import sys
 

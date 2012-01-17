@@ -24,14 +24,13 @@ seen = []
 
 # uniq seqence number generator based on some data
 def seqgen(data):
-  return int(str(md5(data).hexdigest()),16)%4294967296 # % max seq num
+  return int(md5(data).hexdigest(),16) >> 96 
 
 # function to check and print matching packets
 def checkpkt(pkt):
   if pkt.haslayer(TCP) and pkt.getlayer(TCP).flags == 18: # 18 eq SA
     txt = pkt.payload.src+":"+str(pkt.sport)
     if pkt.getlayer(TCP).ack-1 == seqgen(txt):
-      global seen
       if txt not in seen:
         print txt
         seen.append(txt)
@@ -43,7 +42,7 @@ def checkpkt(pkt):
   else:
     return False
 
-def int2addr(data,ip6 = False):
+def int2addr(data,ip6):
   if ip6 == True:
     a = hex(data).lstrip("0x").zfill(32)
     return "{0}:{1}:{2}:{3}:{4}:{5}:{6}:{7}".format() # FIXME
@@ -85,20 +84,20 @@ if __name__ == '__main__':
     sleep(1) # to make sure that the other process started listening for packets
   
     if ip6 == False:
-      pkt = IP(dst = int2addr(addrbeg))/TCP(sport = 1026, dport = port)
+      pkt = IP(dst = int2addr(addrbeg,ip6))/TCP(sport = 1026, dport = port)
     else:
-      pkt = IPV6(dst = int2addr(addrbeg))/TCP(sport = 1026, dport = port)
+      pkt = IPV6(dst = int2addr(addrbeg,ip6))/TCP(sport = 1026, dport = port)
     
     host = addrbeg
-    
-    while host < addrend:
-      ip = int2addr(host)
-      pkt.getlayer(IP).dst = ip 
-      pkt.getlayer(TCP).seq = seqgen(ip+":"+str(port))
-      send(pkt)
-      host+=1
 
     try:
+      while host < addrend:
+        ip = int2addr(host , ip6)
+        pkt.dst = ip  # FIXME
+        pkt.seq = seqgen(ip+":"+str(port))
+        send(pkt)
+        host+=1
+
       os.wait()
     except:
       os.kill(cpid,15)

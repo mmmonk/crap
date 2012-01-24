@@ -10,8 +10,12 @@ import re
 import sys
 
 my_ttl = 1
-target = sys.argv[1]
-my_dport = int(sys.argv[2])
+try:
+  target = sys.argv[1]
+  my_dport = int(sys.argv[2])
+except:
+  print "usage: "+sys.argv[0]+" host port"
+  sys.exit(1)
 
 def dec2bin(a,b):
   if a == 0:

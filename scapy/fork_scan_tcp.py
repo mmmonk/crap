@@ -18,10 +18,17 @@ import sys
 # add range of ports
 # randomize asking
 
-hosts = sys.argv[1]
-port = int(sys.argv[2])
+try:
+  hosts = sys.argv[1]
+  port = int(sys.argv[2])
+except:
+  print "usage: "+sys.argv[0]+" target_ip/bitmask port"
+  sys.exit(1)
+
 seen = []
 salt = str(randint(0,256))
+
+
 
 # uniq seqence number generator based on some data
 def seqgen(data):

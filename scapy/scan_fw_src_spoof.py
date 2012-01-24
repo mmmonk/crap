@@ -7,7 +7,11 @@ import sys
 import random
 import time
 
-dhost = sys.argv[1] 
+try:
+  dhost = sys.argv[1] 
+except:
+  print "usage: "+sys.argv[0]+" target_ip"
+  sys.exit(1)
 
 shost = "172.30."+str(random.randint(72,73))+"."+str(random.randint(2,254))
 sport = random.randint(1025,65534)

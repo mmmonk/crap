@@ -30,7 +30,7 @@ for i in xrange(1,maxvalue):
   #L4 = UDP(sport=sport,dport=port)
   L4 = TCP(sport=sport,dport=port,flags=2,urgptr=0)
   
-  ans = sr1(L3/L4),timeout=0.5)
+  ans = sr1((L3/L4),timeout=0.5)
   if ans:
     if ans.proto == 1 and ans.payload.type == 11 and ans.payload.code == 0:
       print "Allowed port "+str(port)+" to host "+str(dhost)

@@ -9,7 +9,7 @@ from md5 import md5
 from time import sleep
 from socket import inet_pton
 from struct import unpack,pack
-# from random import randint # TODO
+from random import randint
 import os
 import sys
 
@@ -21,6 +21,7 @@ import sys
 hosts = sys.argv[1]
 port = int(sys.argv[2])
 seen = []
+salt = str(randint(0,256))
 
 # uniq seqence number generator based on some data
 def seqgen(data):
@@ -30,7 +31,7 @@ def seqgen(data):
 def checkpkt(pkt):
   if pkt.haslayer(TCP) and pkt.getlayer(TCP).flags == 18: # 18 eq SA
     txt = pkt.payload.src+":"+str(pkt.sport)
-    if pkt.getlayer(TCP).ack-1 == seqgen(txt):
+    if pkt.getlayer(TCP).ack-1 == seqgen(txt+salt):
       if txt not in seen:
         print txt
         seen.append(txt)
@@ -81,7 +82,7 @@ if __name__ == '__main__':
   if cpid:
     # the sending process
 
-    sleep(1) # to make sure that the other process started listening for packets
+    sleep(5) # to make sure that the other process started listening for packets
   
     if ip6 == False:
       pkt = IP(dst = int2addr(addrbeg,ip6))/TCP(sport = 1026, dport = port)
@@ -94,7 +95,7 @@ if __name__ == '__main__':
       while host < addrend:
         ip = int2addr(host , ip6)
         pkt.dst = ip  # FIXME
-        pkt.seq = seqgen(ip+":"+str(port))
+        pkt.seq = seqgen(ip+":"+str(port)+salt)
         send(pkt)
         host+=1
 

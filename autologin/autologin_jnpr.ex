@@ -82,7 +82,7 @@ send_log "\n---------- log start at $time ----------\n"
 interact {
 	;# so that we don't get logout when idle
 	;# timeout 180 { send " \b"}
-	\001d {
+	\004 {
 		send_user "\nbye, bye\n"
 		set pid [exp_pid]
 		system "kill $pid"

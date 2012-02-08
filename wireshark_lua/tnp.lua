@@ -10,7 +10,7 @@
 -- doc about LUA support in wireshark:
 -- https://www.wireshark.org/docs/wsug_html_chunked/wsluarm.html
 --
--- script version: 20111207
+-- script version: 20120208
 --
 -- TODO:
 -- - check TODO in the code ;)
@@ -20,6 +20,9 @@
 -- - optimize,
 -- - add preferences for some features,
 --
+-- ChangeLog:
+-- 20120208 - added support for decoding ethertype 0x88b5
+
 
 tnp_proto  = Proto("TNP","Trivial Networking Protocol")
 
@@ -629,5 +632,24 @@ function sntp_proto.dissector(buf,pinfo,tree)
   subtree:add(sf.txts,buf(40,8))
 end
 
+
+
+-- This is a internal ethertype, it looks like it just adds additional two bytes
+-- data before the correct ethertype
+
+lclexpjnpr_proto = Proto("LEE1","Local Experimental EtherType1")
+
+function lclexpjnpr_proto.dissector(buf,pinfo,tree)
+  if (tostring(buf(0,2)) == "8850") then
+    tnp_proto.dissector:call (buf(2):tvb(), pinfo, tree)
+--  elseif (tostring(buf(0,2)) == "0800") then
+--    inside_dis = Dissector.get ("ip")
+--    inside_dis:call (buf(2):tvb(), pinfo, tree)
+  end
+end  
+
+
+-- binds to the wireshark dissector table
 ether_table = DissectorTable.get("ethertype")
 ether_table:add(0x8850,tnp_proto)
+ether_table:add(0x88b5,lclexpjnpr_proto)

@@ -66,10 +66,10 @@ if fs_exists("/proc/acpi/battery/BAT1/"):
 
   if bstat == "discharging":
     h = cur/rate
-    txt+="-"+str(round((cur/cmax)*100,2))+"%:"+str(round(h,2))
+    txt+="-"+str(round((cur/cmax)*100,2))+"%:"+str(round(h,2)).zfill(4)
   elif bstat == "charging":
     h = (cmax-cur)/rate
-    txt+="+"+str(round((cur/cmax)*100,2))+"%:"+str(round(h,2))   #str(int(h))+"."+str(int(60*(h-int(h))))
+    txt+="+"+str(round((cur/cmax)*100,2))+"%:"+str(round(h,2)).zfill(4)   #str(int(h))+"."+str(int(60*(h-int(h))))
   elif bstat == "charged":
     txt+="="+str(round((cur/dmax)*100,2))+"%"
 

@@ -4,6 +4,7 @@ cisco/            - scripts for cisco devices/software
 cisco_tcl/        - cisco tcl scripts
 configs/          - configurations for various things
 dsbl_cleanup/     - dsbl cleanup - doesn't work anymore
+expect/           - Expect scripts
 home_stuff/       - some scripts that I use at home
 jnpr/             - scripts for juniper devices/software
 other/            - other 

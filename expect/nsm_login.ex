@@ -107,7 +107,7 @@ expect "*#" {
 expect "*#" {
   if { $os == "Linux" } {
     if { $app == "nsm" } {
-      send -s "unset TMOUT;ln -sf /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime;ntpdate -u 172.30.73.133;hwclock --systohc\r"
+      send -s "export DB_HOME=\"/var/netscreen/GuiSvr/xdb/\";unset TMOUT;ln -sf /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime;ntpdate -u 172.30.73.133;hwclock --systohc\r"
     }
   } elseif { $os eq "SunOS" } {
     send "ntpdate -u 172.30.73.133\r"
@@ -137,7 +137,7 @@ if { $app == "nsm" } {
 
 if { $app == "nsm" } {
   expect "*#" {
-    send "DBXML_DIR=`ls -1 -t /usr/netscreen/GuiSvr/utils|grep dbxml| head -n 1`;LD_LIBRARY_PATH=/usr/netscreen/GuiSvr/utils/\$DBXML_DIR/lib:\$LD_LIBRARY_PATH;export LD_LIBRARY_PATH\r"
+    send "DBXML_DIR=`ls -1 -t /usr/netscreen/GuiSvr/utils|grep dbxml| head -n 1`;LD_LIBRARY_PATH=/usr/netscreen/GuiSvr/utils/\$DBXML_DIR/lib:\$LD_LIBRARY_PATH;PATH=/usr/netscreen/GuiSvr/utils/\$DBXML_DIR/bin/:\$PATH;export LD_LIBRARY_PATH PATH\r"
   }
 }
 

@@ -1,13 +1,29 @@
 #!/usr/bin/expect -f
 
-# $Id$
+# ver: 20120215
+#
+# ChangeLog:
+# 20120215:
+# - added all the /usr/netscreen/*/utils to the PATH,
+# - added menu item to export and import the db,
+# - added possible env variable NSM_LOGIN_ARCH to specify 
+#   where to save the session logs,
+# - various small fixes,
+# 20120213:
+# - added env support for easier usage of dbxml,
+
 
 #### TO DO:
 #
 # - auto installation of NSM possible from inside this client,
 # - auto log monitoring and doing an action once a pattern is found,
 
-set logdir "/home/case/store/work/_archives_worklogs/"
+
+if {[info exists env(NSM_LOGIN_ARCH)]} {
+  set logdir "$env(NSM_LOGIN_ARCH)"
+} else {
+  set logdir "$env(HOME)/store/work/_archives_worklogs/"
+}
 
 set send_slow {10 .01}
 set timeout 60
@@ -39,7 +55,7 @@ My suggestion is to use ~/.ssh/config for any non standard options.
 
 spawn ssh $user@$host
 
-set stime     [ timestamp -format "%Y/%m/%d %H:%M:%S"]
+set stime    [ timestamp -format "%Y/%m/%d %H:%M:%S"]
 set filetime [ timestamp -format "%Y%m%d_%H%M%S"]
 
 puts "\033]0;$host $filetime\007"
@@ -137,7 +153,10 @@ if { $app == "nsm" } {
 
 if { $app == "nsm" } {
   expect "*#" {
-    send "DBXML_DIR=`ls -1 -t /usr/netscreen/GuiSvr/utils|grep dbxml| head -n 1`;LD_LIBRARY_PATH=/usr/netscreen/GuiSvr/utils/\$DBXML_DIR/lib:\$LD_LIBRARY_PATH;PATH=/usr/netscreen/GuiSvr/utils/\$DBXML_DIR/bin/:\$PATH;export LD_LIBRARY_PATH PATH\r"
+    send "DBXML_DIR=`ls -1 -t /usr/netscreen/GuiSvr/utils|grep dbxml| head -n 1`;\
+    LD_LIBRARY_PATH=/usr/netscreen/GuiSvr/utils/\$DBXML_DIR/lib:\$LD_LIBRARY_PATH;\
+    PATH=/usr/netscreen/GuiSvr/utils/\$DBXML_DIR/bin/:\$PATH:/usr/netscreen/DevSvr/utils/:/usr/netscreen/GuiSvr/utils/:/usr/netscreen/HaSvr/utils/;\
+    export LD_LIBRARY_PATH PATH\r"
   }
 }
 
@@ -193,7 +212,7 @@ Ctrl+a c - menu choice, including removal, cleanup, db changes and corrections,
 #Ctrl+a d - download and do a clean install of a given NSM version,
 Ctrl+a i - can be entered during the nsm installation will answer all the questions (clean install Gui+Dev if installing from scratch or just refresh otherwise),
 Ctrl+a x - stop/status/start/restart/version on all three services,
-Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S sutaible for naming backups/copies of files,
+Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for naming backups/copies of files,
 #Ctrl+a f - trigger an action based on a pattern match, if pattern is found, a script on the remote machine will be run /root/data.sh
 "
       send "\r"
@@ -219,6 +238,8 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S sutaible for nami
  2 - truncate the schema,
  3 - correct the customer db (super password, IPs),
  4 - prepare a command that will uninstall all NSM packages and remove all the NSM data from the server, the command is printed without \\r at the end,
+ 5 - print the command needed to export the db to xdif ($filetime),
+ 6 - print the command needed to import the db from xdif ($filetime),
 
  input: "
       stty cooked echo 
@@ -276,6 +297,11 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S sutaible for nami
         } elseif { $os == "SunOS" } {
           send -s "pkgrm -n `pkginfo -c application | grep -i netscreen | grep -v NSCNpostgres | awk '{print \$2}' | xargs` &&  rm -rf /var/netscreen/ /usr/netscreen/"
         } 
+      } elseif { $action == 5 } {
+        send -s "/usr/netscreen/GuiSvr/utils/xdbExporter.sh /var/netscreen/GuiSvr/xdb/ /var/tmp/xdif_$filetime.txt "
+
+      } elseif { $action == 6 } {  
+        send -s "/usr/netscreen/GuiSvr/utils/xdifImporter.sh /var/tmp/xdif_$backuptime.txt /var/netscreen/GuiSvr/xdb/init/ "
 
       # default - unknown choice
       } else {

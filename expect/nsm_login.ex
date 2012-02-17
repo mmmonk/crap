@@ -1,8 +1,10 @@
 #!/usr/bin/expect -f
 
-# ver: 20120215
+# ver: 20120217
 #
 # ChangeLog:
+# 20120217
+# - added env variable NS_PRINTER_LEVEL set to debug to print more logs,
 # 20120215:
 # - added all the /usr/netscreen/*/utils to the PATH,
 # - added menu item to export and import the db,
@@ -156,7 +158,8 @@ if { $app == "nsm" } {
     send "DBXML_DIR=`ls -1 -t /usr/netscreen/GuiSvr/utils|grep dbxml| head -n 1`;\
     LD_LIBRARY_PATH=/usr/netscreen/GuiSvr/utils/\$DBXML_DIR/lib:\$LD_LIBRARY_PATH;\
     PATH=/usr/netscreen/GuiSvr/utils/\$DBXML_DIR/bin/:\$PATH:/usr/netscreen/DevSvr/utils/:/usr/netscreen/GuiSvr/utils/:/usr/netscreen/HaSvr/utils/;\
-    export LD_LIBRARY_PATH PATH\r"
+    NS_PRINTER_LEVEL=debug;\
+    export LD_LIBRARY_PATH PATH NS_PRINTER_LEVEL\r"
   }
 }
 

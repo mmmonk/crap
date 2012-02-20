@@ -236,19 +236,31 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for nami
    
     \001d {
       send -s "cd /usr/netscreen/GuiSvr/utils/ && ./debugConsole\n"
+      
       expect "Server mgtsvr is now connected phase" { send -s "\n" }
-      expect "relay>" { send -s "mgtsvr\n" }
+      
+      expect "relay>" { 
+        send -s "mgtsvr\n" 
+      } "*#" {
+        send -s "\n"
+      }
+      
       expect "mgtsvr>" { 
         send -s "set printer levels debug\n" 
       } "No command" { 
         send -s "devsvr\n" 
+      } "*#" {
+        send -s "\n"
       }
+      
       expect "mgtsvr>" { 
         send -s "devsvr\n"
         exp_continue
       } "devsvr>" {
         send -s "set printer levels debug\n"
       } "No command" {
+        send -s "\n"
+      } "*#" {
         send -s "\n"
       }
 
@@ -260,6 +272,8 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for nami
         exp_continue
       } "relay>" {
         send -s "quit really\n"
+      } "*#" {
+        send -s "\n"
       }
 
       expect "*#" { send -s "/usr/netscreen/GuiSvr/utils/guiSvrCli.sh --gdh-debug --debug\n"}

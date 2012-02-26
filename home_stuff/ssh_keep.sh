@@ -8,7 +8,7 @@ fi
 
 CT=`date +%s`
 LT=$CT
-DEFAULTSLEEP=5
+DEFAULTSLEEP=2
 SLEEP=$DEFAULTSLEEP
 C=0
 
@@ -26,7 +26,7 @@ do
   fi
 
   if [ $SLEEP -le 300 ]; then
-    if [ $C -ge 3 ]; then
+    if [ $C -ge 2 ]; then
       SLEEP=`expr $SLEEP \* 2`  
       C=0
     fi

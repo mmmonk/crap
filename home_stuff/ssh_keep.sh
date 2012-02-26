@@ -23,6 +23,7 @@ do
   LT=$CT
   if [ $DIFF -ge 1800 ]; then
     SLEEP=$DEFAULTSLEEP
+    C=0
   fi
 
   if [ $SLEEP -le 300 ]; then

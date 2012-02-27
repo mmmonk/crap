@@ -4,7 +4,7 @@ from time import strftime,tzset
 from os import environ, statvfs
 from os.path import exists as fs_exists, ismount
 
-tzlist = ["America/Los_Angeles","America/New_York", "GMT", "Asia/Kolkata","Pacific/Auckland"]
+tzlist = ["America/Los_Angeles","America/New_York", "GMT", "Asia/Kolkata","Asia/Tokyo","Pacific/Auckland"]
 mntlist = ["/","/home"]
 
 txt = ""
@@ -29,6 +29,7 @@ for path in mntlist:
 
 
 ## battery information
+## TODO: maybe use the /sys/ filesystem to dig out this information?
 if fs_exists("/proc/acpi/battery/BAT1/"):
 
   try:

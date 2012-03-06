@@ -30,7 +30,7 @@ if {[info exists env(NSM_LOGIN_ARCH)]} {
 }
 
 set send_slow {10 .01}
-set timeout 60
+set timeout 90
 set app nsm
 set os "Linux"
 
@@ -293,6 +293,7 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for nami
  4 - prepare a command that will uninstall all NSM packages and remove all the NSM data from the server, the command is printed without \\r at the end,
  5 - print the command needed to export the db to xdif ($filetime),
  6 - print the command needed to import the db from xdif ($filetime),
+ 7 - disables encryption between devSvr and the devices,
 
  input: "
       stty cooked echo 
@@ -301,7 +302,7 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for nami
       set action $expect_out(1,string)
 
       send "\r"
-
+      
       # devsvr.cfg corrections of whitespaces
       if { $action == 1 } {
       
@@ -362,6 +363,10 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for nami
 
       } elseif { $action == 6 } {  
         send -s "/usr/netscreen/GuiSvr/utils/xdifImporter.sh /var/tmp/xdif_$backuptime.txt /var/netscreen/GuiSvr/xdb/init/ "
+
+      } elseif { $action == 7 } {
+        set backuptime [ timestamp -format "%Y%m%d_%H%M%S"]
+        send -s "perl -pi\".$backuptime\" -e 's/(devSvrManager.cryptoKeyLength\\s*) \\d+/\$1 0/' /usr/netscreen/DevSvr/var/devSvr.cfg && /etc/init.d/devSvr restart\r"
 
       # default - unknown choice
       } else {

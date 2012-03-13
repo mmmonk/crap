@@ -133,7 +133,8 @@ interact {
 				"sc \"save config from tftp 172.30.73.133\""
         "sh \"get\""
 				"wr \"save\""
-				"reload \"reset no-prompt\""} {
+				"reload \"reset no-prompt\""
+        "q \"exit\""} {
 			send -s "set alias $alias\r"
 			expect "$prompt"
 		}

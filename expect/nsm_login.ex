@@ -1,12 +1,13 @@
 #!/usr/bin/expect -f
 
-# ver: 20120217
+# ver: 20120313
 #
 # ChangeLog:
-# 20120217
+# 20120313
 # - added env variables NS_PRINTER_LEVEL,NSMUSER, NSMPASSWD,
 # - removed the commands run automatically from history,
 # - added shortcut for turning debugging without restarting,
+# - option to disable encryption between the devSvr and devices,
 # 20120215:
 # - added all the /usr/netscreen/*/utils to the PATH,
 # - added menu item to export and import the db,
@@ -307,7 +308,7 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for nami
       if { $action == 1 } {
       
         set backuptime [ timestamp -format "%Y%m%d_%H%M%S"]
-        send "perl -pi\".$backuptime\" -e 's/  +/ /g' /usr/netscreen/DevSvr/var/devSvr.cfg && /etc/init.d/devSvr restart\r" 
+        send "/etc/init.d/devSvr stop; perl -pi\".$backuptime\" -e 's/  +/ /g' /usr/netscreen/DevSvr/var/devSvr.cfg && /etc/init.d/devSvr start\r" 
      
       # truncate schema
       } elseif { $action == 2 } {
@@ -331,6 +332,7 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for nami
       } elseif { $action == 3 } {
         send "history -w ~/.bash_history\r"
         expect "*# " { send "/etc/init.d/haSvr stop\r"}
+        expect "*# " { send "/etc/init.d/devSvr stop\r"}
         expect "*# " { send "/etc/init.d/guiSvr stop\r"}
         expect "*# " { send "/usr/netscreen/GuiSvr/utils/setperms.sh GuiSvr > /dev/null\r"}
         expect "*# " { send "/bin/chmod +s /usr/netscreen/GuiSvr/utils/.installIdTool\r"}
@@ -349,6 +351,7 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for nami
         s/(ourRsaPrivateKey|theirRsaPublicKey)/#\$1/i;\
         s/(guiSvrDirectiveHandler.max.heap|devSvrDirectiveHandler.max.heap\\s*) \\d+/\$1 1536000000/i' /var/netscreen/*Svr/*Svr.cfg > /dev/null\r"}
         expect "*# " { send "/etc/init.d/haSvr restart\r"}
+        expect "*# " { send "/etc/init.d/devSvr restart\r"}
         expect "*# " { send "/etc/init.d/guiSvr restart;history -r ~/.bash_history\r"}
 
       # NSM removal
@@ -366,7 +369,7 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for nami
 
       } elseif { $action == 7 } {
         set backuptime [ timestamp -format "%Y%m%d_%H%M%S"]
-        send -s "perl -pi\".$backuptime\" -e 's/(devSvrManager.cryptoKeyLength\\s*) \\d+/\$1 0/' /usr/netscreen/DevSvr/var/devSvr.cfg && /etc/init.d/devSvr restart\r"
+        send -s "/etc/init.d/devSvr stop; perl -pi\".$backuptime\" -e 's/(devSvrManager.cryptoKeyLength\\s*) \\d+/\$1 0/' /usr/netscreen/DevSvr/var/devSvr.cfg && /etc/init.d/devSvr start\r"
 
       # default - unknown choice
       } else {

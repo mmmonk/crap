@@ -1,23 +1,34 @@
 #!/usr/bin/python
 
 import sys
+from time import sleep 
 
-fname = sys.argv[1]
-nump  = int(sys.argv[2])
-numn  = int(sys.argv[3])
+fname = sys.argv[1] # file to share
+nump  = int(sys.argv[2]) # total number of people
+numn  = int(sys.argv[3]) # number of people needed to decrypt
 
+if nump < numn:
+  sys.exit(1)
 
 m = open(fname).read()
-print "m0 : "+m.encode('hex')
-for enc in xrange(1,nump): 
-  p = open("/dev/urandom").read(len(m))
+print "m0  : "+m.encode('hex')
 
-  i = 0
-  ct = ""
-  while i < len(m):
-    ct += chr(ord(m[i])^ord(p[i]))
-    i += 1
+for i in xrange(1,nump): 
+  
+  ct = m 
+  
+  for j in xrange(1,numn):
+    #sleep(1)
+    p = open("/dev/urandom").read(len(m))
 
-  print "p"+str(enc)+" : "+p.encode('hex')
-  print "ct"+str(enc)+": "+ct.encode('hex')
+    x = 0
+    temp = ""
+    while x < len(ct):
+      temp += chr(ord(ct[x])^ord(p[x]))
+      x += 1
+
+    ct = temp
+    print "p"+str(i)+str(j)+" : "+p.encode('hex')
+  
+  print "ct"+str(i)+" : "+ct.encode('hex')
 

@@ -99,7 +99,7 @@ if __name__ == '__main__':
     host = addrbeg
 
     try:
-      while host < addrend:
+      while host <= addrend:
         ip = int2addr(host , ip6)
         pkt.dst = ip  # FIXME
         pkt.seq = seqgen(ip+":"+str(port)+salt)

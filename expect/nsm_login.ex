@@ -165,6 +165,10 @@ if { $app == "nsm" } {
     NSMUSER=\"global/super\";\
     NSMPASSWD=\"netscreen\";\
     export LD_LIBRARY_PATH PATH NS_PRINTER_LEVEL NSMUSER NSMPASSWD;\
+    if \[ -f /home/admin/.info \]; then\
+    echo;echo \"###################################################\";\
+    cat /home/admin/.info;\
+    echo \"###################################################\";echo;fi;\
     history -r ~/.bash_history\r"
   }
 }

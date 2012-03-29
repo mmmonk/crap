@@ -59,6 +59,15 @@ def hostquery(found,snmpcommh,snmpver,host)
   data = Array.new
   neighbors = Hash.new
 
+  # below we have standard OIDs that should be supported by almost all systems
+  #  1.3.6.1.2.1.1.1 - sysDescr
+  #  1.3.6.1.2.1.1.2 - sysObjectID
+  #  1.3.6.1.2.1.1.3 - sysUpTime
+  #  1.3.6.1.2.1.1.4 - sysContact
+  #  1.3.6.1.2.1.1.5 - sysName
+  #  1.3.6.1.2.1.1.6 - sysLocation
+  #  1.3.6.1.2.1.1.7 - sysServices 
+
   query = ["1.3.6.1.2.1.1.1","1.3.6.1.2.1.1.2","1.3.6.1.2.1.1.3","1.3.6.1.2.1.1.4","1.3.6.1.2.1.1.5","1.3.6.1.2.1.1.6","1.3.6.1.2.1.1.7",]
  
   gotanswer = 0

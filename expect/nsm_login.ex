@@ -1,8 +1,15 @@
 #!/usr/bin/expect -f
 
-# ver: 20120313
+# ver: 20120403
 #
 # ChangeLog:
+# 20120403
+# - added some aliases for often used commands,
+# - backup is automatically disabled in xdifImporter.sh,
+# - less garbage on the screen while login in,
+# - reads the /home/admin/.info file used in EMEA,
+# - removal of the "safe" aliases for rm, mv and cp,
+# - some small code improvements,
 # 20120313
 # - added env variables NS_PRINTER_LEVEL,NSMUSER, NSMPASSWD,
 # - removed the commands run automatically from history,
@@ -11,7 +18,7 @@
 # 20120215:
 # - added all the /usr/netscreen/*/utils to the PATH,
 # - added menu item to export and import the db,
-# - added possible env variable NSM_LOGIN_ARCH to specify 
+# - added possible env variable NSM_LOGIN_ARCH to specify
 #   where to save the session logs,
 # - various small fixes,
 # 20120213:
@@ -22,6 +29,31 @@
 #
 # - auto installation of NSM possible from inside this client,
 # - auto log monitoring and doing an action once a pattern is found,
+
+
+proc backuptimeproc { } {
+  return [ timestamp -format "%Y%m%d_%H%M%S"]
+}
+
+proc online_help {ourip} {
+      send_user "
+--- Help ---
+
+IP that will be used during the installation is: $ourip
+
+Ctrl+a h - this message,
+Ctrl+a ? - also this message ;),
+Ctrl+a c - menu choice, including removal, cleanup, db changes and corrections,
+Ctrl+a d - turning on all possible debugging while the processes are running,
+Ctrl+a i - can be entered during the nsm installation will answer all the questions (clean install Gui+Dev if installing from scratch or just refresh otherwise),
+Ctrl+a x - stop/status/start/restart/version on all three services,
+Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for naming backups/copies of files,
+
+and check also jtac_ cli commands
+
+"
+      send "\r"
+}
 
 
 if {[info exists env(NSM_LOGIN_ARCH)]} {
@@ -41,9 +73,9 @@ Usage: $argv0 <username@>host <password>
 
 If not specified username defaults to \"root\" and password to \"netscreen\".
 
-The connection to target host is done with normal ssh command without any arguments. 
+The connection to target host is done with normal ssh command without any arguments.
 My suggestion is to use ~/.ssh/config for any non standard options.
-" 
+"
   exit
 } else {
   set host [lindex $argv 0]
@@ -81,7 +113,7 @@ expect timeout {
   send -s "$pass\r"
   exp_continue
 } "Run NSMXPress system setup" {
-  set app nsm 
+  set app nsm
   send -s "n"
   exp_continue
 } "1-6,QR" {
@@ -99,6 +131,7 @@ expect timeout {
   send "echo \${SHELL}\r"
 }
 
+log_user 0
 
 ### make sure we are running bash
 expect "*#" {
@@ -128,7 +161,8 @@ expect "*#" {
 expect "*#" {
   if { $os == "Linux" } {
     if { $app == "nsm" } {
-      send -s "export DB_HOME=\"/var/netscreen/GuiSvr/xdb/\";unset TMOUT;ln -sf /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime;ntpdate -u 172.30.73.133;hwclock --systohc\r"
+      # export DB_HOME=\"/var/netscreen/GuiSvr/xdb/\" # <- this causes issues during install
+      send -s "unset TMOUT;ln -sf /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime;ntpdate -u 172.30.73.133;hwclock --systohc\r"
     }
   } elseif { $os eq "SunOS" } {
     send "ntpdate -u 172.30.73.133\r"
@@ -165,13 +199,26 @@ if { $app == "nsm" } {
     NSMUSER=\"global/super\";\
     NSMPASSWD=\"netscreen\";\
     export LD_LIBRARY_PATH PATH NS_PRINTER_LEVEL NSMUSER NSMPASSWD;\
-    if \[ -f /home/admin/.info \]; then\
-    echo;echo \"###################################################\";\
+    perl -i -pe 's/(^gzip|^tar)/#\$1/' /usr/netscreen/GuiSvr/utils/xdifImporter.sh;\
+    alias jtac_export_import_xdb='/usr/netscreen/GuiSvr/utils/xdbExporter.sh /var/netscreen/GuiSvr/xdb/ /var/tmp/xdif_$filetime.txt && /usr/netscreen/GuiSvr/utils/xdifImporter.sh /var/tmp/xdif_$filetime.txt /var/netscreen/GuiSvr/xdb/init/';\
+    function jtac_all() { /etc/init.d/guiSvr \$1; /etc/init.d/devSvr \$1; /etc/init.d/haSvr \$1; };\
+    alias jtac_debug_env='export NS_PRINTER_LEVEL=debug';\
+    alias jtac_undebug_env='unset NS_PRINTER_LEVEL';\
+    alias xdbViewEdit=/usr/netscreen/GuiSvr/utils/.xdbViewEdit.sh;\
+    alias jtac_db_size='ls -l /var/netscreen/GuiSvr/xdb/data/ | sort -nk5';\
+    unalias rm;unalias mv;unalias cp;\r"
+  }
+  expect "*#" {
+    send "if \[ -f /home/admin/.info \]; then\
+    echo;echo \"+++++++++++++++++++++++++++++++++++++++++++++++++++\";\
     cat /home/admin/.info;\
-    echo \"###################################################\";echo;fi;\
-    history -r ~/.bash_history\r"
+    echo \"+++++++++++++++++++++++++++++++++++++++++++++++++++\";echo;fi;\
+    history -r ~/.bash_history\r" 
   }
 }
+
+set send_slow {5 .01}
+log_user 1
 
 expect "*# " {
   log_file "$logdir/$host-$filetime.log"
@@ -179,7 +226,8 @@ expect "*# " {
 
   send_user "
 --- Help key ---
-Ctrl+a h - all shortcuts\n"
+Ctrl+a h - all shortcuts
+and remember the jtac_ commands\n"
 
   send "\r"
 
@@ -187,9 +235,9 @@ Ctrl+a h - all shortcuts\n"
   interact {
 
     \003  { send "\003" }
-    \004  { send "exit\r" 
+    \004  { send "exit\r"
       set timeout 10
-      if { $app == "nsm" } { 
+      if { $app == "nsm" } {
         expect timeout {
           set timeout 60
         } eof {
@@ -197,12 +245,12 @@ Ctrl+a h - all shortcuts\n"
         } "*# " {
           send "exit\r"
           exp_continue
-        } "*$ " { 
-          send "exit\r" 
+        } "*$ " {
+          send "exit\r"
           sleep 1
           return
         }
-      } 
+      }
       if { $app == "space" } {
         expect timeout {
           set timeout 60
@@ -214,51 +262,42 @@ Ctrl+a h - all shortcuts\n"
       }
     }
 
-    \001h { 
-      send_user "
---- Help ---
-
-IP that will be used during the installation is: $ourip
-
-Ctrl+a h - this message,
-Ctrl+a c - menu choice, including removal, cleanup, db changes and corrections,  
-Ctrl+a d - turning on all possible debugging while the processes are running, 
-Ctrl+a i - can be entered during the nsm installation will answer all the questions (clean install Gui+Dev if installing from scratch or just refresh otherwise),
-Ctrl+a x - stop/status/start/restart/version on all three services,
-Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for naming backups/copies of files,
-"
-      send "\r"
+    \001h {
+      online_help $ourip
+    }
+    \001? {
+      online_help $ourip
     }
 
-    \001x { 
+    \001x {
       send_user "\nType the action (stop/status/start/restart/version):"
-      stty cooked echo 
+      stty cooked echo
       expect_user -re "(.*)\n"
       stty raw -echo
       set action $expect_out(1,string)
       send -s "/etc/init.d/guiSvr $action; /etc/init.d/devSvr $action; /etc/init.d/haSvr $action\n"
     }
-   
+
     \001d {
       send -s "cd /usr/netscreen/GuiSvr/utils/ && ./debugConsole\n"
-      
+
       expect "Server mgtsvr is now connected phase" { send -s "\n" }
-      
-      expect "relay>" { 
-        send -s "mgtsvr\n" 
+
+      expect "relay>" {
+        send -s "mgtsvr\n"
       } "*#" {
         send -s "\n"
       }
-      
-      expect "mgtsvr>" { 
-        send -s "set printer levels debug\n" 
-      } "No command" { 
-        send -s "devsvr\n" 
+
+      expect "mgtsvr>" {
+        send -s "set printer levels debug\n"
+      } "No command" {
+        send -s "devsvr\n"
       } "*#" {
         send -s "\n"
       }
-      
-      expect "mgtsvr>" { 
+
+      expect "mgtsvr>" {
         send -s "devsvr\n"
         exp_continue
       } "devsvr>" {
@@ -286,8 +325,7 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for nami
 
     }
     \001t {
-      set backuptime [ timestamp -format "%Y%m%d_%H%M%S"]
-      send -s "$backuptime"
+      send -s [backuptimeproc]
     }
 
     \001c {
@@ -301,79 +339,72 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for nami
  7 - disables encryption between devSvr and the devices,
 
  input: "
-      stty cooked echo 
+      stty cooked echo
       expect_user -re "(.*)\n"
       stty raw -echo
       set action $expect_out(1,string)
 
       send "\r"
-      
+
       # devsvr.cfg corrections of whitespaces
       if { $action == 1 } {
-      
-        set backuptime [ timestamp -format "%Y%m%d_%H%M%S"]
-        send "/etc/init.d/devSvr stop; perl -pi\".$backuptime\" -e 's/  +/ /g' /usr/netscreen/DevSvr/var/devSvr.cfg && /etc/init.d/devSvr start\r" 
-     
+        send "/etc/init.d/devSvr stop; perl -pi\".[backuptimeproc]\" -e 's/  +/ /g' /usr/netscreen/DevSvr/var/devSvr.cfg && /etc/init.d/devSvr start\r"
+
       # truncate schema
       } elseif { $action == 2 } {
-        send "history -w ~/.bash_history\r"
-        expect "*# " { send "/etc/init.d/haSvr stop\r"}
-        expect "*# " { send "/etc/init.d/guiSvr stop\r"}
-        expect "*# " { send "/etc/init.d/devSvr stop\r"}
-        #expect "*# " { send "mv -f /usr/netscreen/GuiSvr/var/dmi-schema-stage /usr/netscreen/GuiSvr/var/dmi-schema-stage.old\r"}
-        expect "*# " { send "rm -rf /usr/netscreen/GuiSvr/var/dmi-schema-stage\r"}
-        expect "*# " { send "cp --reply=yes -fpr /usr/netscreen/GuiSvr/lib/initVar/dmi-schema-stage /usr/netscreen/GuiSvr/var/dmi-schema-stage\r"}
-        expect "*# " { send "rm -f /usr/netscreen/GuiSvr/var/xdb/init/*\r"}
-        expect "*# " { send "rm -rf /tmp/Schemas*\r"}
-        expect "*# " { send "rm -rf /usr/netscreen/GuiSvr/var/Schemas-GDH/*\r"}
-        expect "*# " { send "sh /usr/netscreen/GuiSvr/utils/.truncateSchemaTables.sh /usr/netscreen/GuiSvr/var/xdb\r"}
-        expect "*# " { send "cp --reply=yes -fpr /usr/netscreen/GuiSvr/lib/initVar/xdb/init/* /usr/netscreen/GuiSvr/var/xdb/init/\r"}
-        expect "*# " { send "/etc/init.d/haSvr start\r"}
-        expect "*# " { send "/etc/init.d/guiSvr start\r"}
-        expect "*# " { send "/etc/init.d/devSvr start;history -r ~/.bash_history\r"}
+        send -s "history -w ~/.bash_history\r"
+        expect "*# " { send -s "/etc/init.d/haSvr stop\r"}
+        expect "*# " { send -s "/etc/init.d/guiSvr stop\r"}
+        expect "*# " { send -s "/etc/init.d/devSvr stop\r"}
+        #expect "*# " { send -s "mv -f /usr/netscreen/GuiSvr/var/dmi-schema-stage /usr/netscreen/GuiSvr/var/dmi-schema-stage.old\r"}
+        expect "*# " { send -s "rm -rf /usr/netscreen/GuiSvr/var/dmi-schema-stage\r"}
+        expect "*# " { send -s "cp --reply=yes -fpr /usr/netscreen/GuiSvr/lib/initVar/dmi-schema-stage /usr/netscreen/GuiSvr/var/dmi-schema-stage\r"}
+        expect "*# " { send -s "rm -f /usr/netscreen/GuiSvr/var/xdb/init/*\r"}
+        expect "*# " { send -s "rm -rf /tmp/Schemas*\r"}
+        expect "*# " { send -s "rm -rf /usr/netscreen/GuiSvr/var/Schemas-GDH/*\r"}
+        expect "*# " { send -s "sh /usr/netscreen/GuiSvr/utils/.truncateSchemaTables.sh /usr/netscreen/GuiSvr/var/xdb\r"}
+        expect "*# " { send -s "cp --reply=yes -fpr /usr/netscreen/GuiSvr/lib/initVar/xdb/init/* /usr/netscreen/GuiSvr/var/xdb/init/\r"}
+        expect "*# " { send -s "history -r ~/.bash_history\r"}
 
       # correct the customer db (super password, IPs)
       } elseif { $action == 3 } {
-        send "history -w ~/.bash_history\r"
-        expect "*# " { send "/etc/init.d/haSvr stop\r"}
-        expect "*# " { send "/etc/init.d/devSvr stop\r"}
-        expect "*# " { send "/etc/init.d/guiSvr stop\r"}
-        expect "*# " { send "/usr/netscreen/GuiSvr/utils/setperms.sh GuiSvr > /dev/null\r"}
-        expect "*# " { send "/bin/chmod +s /usr/netscreen/GuiSvr/utils/.installIdTool\r"}
-        expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb admin 1 0 /__/password \"glee/aW9bOYEewkD/6Ri8sHh2mU=\" > /dev/null\r"}
+        send -s "history -w ~/.bash_history\r"
+        expect "*# " { send -s "/etc/init.d/haSvr stop\r"}
+        expect "*# " { send -s "/etc/init.d/devSvr stop\r"}
+        expect "*# " { send -s "/etc/init.d/guiSvr stop\r"}
+        expect "*# " { send -s "/usr/netscreen/GuiSvr/utils/setperms.sh GuiSvr > /dev/null\r"}
+        expect "*# " { send -s "/bin/chmod +s /usr/netscreen/GuiSvr/utils/.installIdTool\r"}
+        expect "*# " { send -s "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb admin 1 0 /__/password \"glee/aW9bOYEewkD/6Ri8sHh2mU=\" > /dev/null\r"}
         sleep 1
-        expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb server 0 0 /__/ip \"$ourip\" > /dev/null\r"}
+        expect "*# " { send -s "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb server 0 0 /__/ip \"$ourip\" > /dev/null\r"}
         sleep 1
-        expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb server 0 1 /__/ip \"$ourip\" > /dev/null\r"}
+        expect "*# " { send -s "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb server 0 1 /__/ip \"$ourip\" > /dev/null\r"}
         sleep 1
-        expect "*# " { send "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb shadow_server 0 1 /__/clientOneTimePassword \"dk2003ns\" > /dev/null\r"} 
+        expect "*# " { send -s "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb shadow_server 0 1 /__/clientOneTimePassword \"dk2003ns\" > /dev/null\r"}
         sleep 1
-        set backuptime [ timestamp -format "%Y%m%d_%H%M%S"]
-        expect "*# " { send "perl -npi\".old_$backuptime\" -e 's/ +/ /g;\
+        expect "*# " { send -s "perl -npi\".old_[backuptimeproc]\" -e 's/ +/ /g;\
         s/(clientOneTimePassword\\s+)\\S*/\$1 dk2003ns/i;\
         s/(default.printLevel\\s+)\\S*/\$1 debug/i;\
         s/(ourRsaPrivateKey|theirRsaPublicKey)/#\$1/i;\
-        s/(guiSvrDirectiveHandler.max.heap|devSvrDirectiveHandler.max.heap\\s*) \\d+/\$1 1536000000/i' /var/netscreen/*Svr/*Svr.cfg > /dev/null\r"}
-        expect "*# " { send "/etc/init.d/haSvr restart\r"}
-        expect "*# " { send "/etc/init.d/devSvr restart\r"}
-        expect "*# " { send "/etc/init.d/guiSvr restart;history -r ~/.bash_history\r"}
+        s/(guiSvrDirectiveHandler.max.heap|devSvrDirectiveHandler.max.heap\\s*) \\d+/\$1 1536000000/i' /var/netscreen/*Svr/*Svr.cfg > /dev/null;\
+        perl -i -pe 's/(^gzip|^tar)/#\$1/' /usr/netscreen/GuiSvr/utils/xdifImporter.sh;\
+        history -r ~/.bash_history\r"}
 
       # NSM removal
       } elseif { $action == 4 } {
         if { $os == "Linux" } {
-          send -s "rpm -qa | grep netscreen | xargs -r rpm -e ; rm -rf /var/netscreen/*/* /usr/netscreen/*" 
+          send -s "rpm -qa | grep netscreen | xargs -r rpm -e ; rm -rf /var/netscreen/*/* /usr/netscreen/*"
         } elseif { $os == "SunOS" } {
           send -s "pkgrm -n `pkginfo -c application | grep -i netscreen | grep -v NSCNpostgres | awk '{print \$2}' | xargs` &&  rm -rf /var/netscreen/ /usr/netscreen/"
-        } 
+        }
       } elseif { $action == 5 } {
-        send -s "/usr/netscreen/GuiSvr/utils/xdbExporter.sh /var/netscreen/GuiSvr/xdb/ /var/tmp/xdif_$filetime.txt "
+        send -s "unset NS_PRINTER_LEVEL;/usr/netscreen/GuiSvr/utils/xdbExporter.sh /var/netscreen/GuiSvr/xdb/ /var/tmp/xdif_$filetime.txt; export NS_PRINTER_LEVEL=debug"
 
-      } elseif { $action == 6 } {  
-        send -s "/usr/netscreen/GuiSvr/utils/xdifImporter.sh /var/tmp/xdif_$backuptime.txt /var/netscreen/GuiSvr/xdb/init/ "
+      } elseif { $action == 6 } {
+        send -s "/usr/netscreen/GuiSvr/utils/xdifImporter.sh /var/tmp/xdif_$filetime.txt /var/netscreen/GuiSvr/xdb/init/ "
 
       } elseif { $action == 7 } {
-        set backuptime [ timestamp -format "%Y%m%d_%H%M%S"]
-        send -s "/etc/init.d/devSvr stop; perl -pi\".$backuptime\" -e 's/(devSvrManager.cryptoKeyLength\\s*) \\d+/\$1 0/' /usr/netscreen/DevSvr/var/devSvr.cfg && /etc/init.d/devSvr start\r"
+        send -s "/etc/init.d/devSvr stop; perl -pi\".[backuptimeproc]\" -e 's/(devSvrManager.cryptoKeyLength\\s*) \\d+/\$1 0/' /usr/netscreen/DevSvr/var/devSvr.cfg && /etc/init.d/devSvr start\r"
 
       # default - unknown choice
       } else {
@@ -381,36 +412,40 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for nami
       }
     }
 
-    \001i { 
-      send  "\r"
+    \001i {
+      send "\r"
       expect timeout {
         send_user " "
       } "Do you want to do NSM installation with base license? (y/n) *>" {
-        send "y\r" 
+        send "y\r"
         exp_continue
       } "Enter selection (1-2)*>" {
         send "2\r"
         exp_continue
+      } "Hit Ctrl-C to abort upgrade or ENTER to continue" {
+        send "\r"
+      } "Hit Ctrl-C to abort installation or ENTER to continue" {
+        send "\r"
       } "Will server(s) need to be reconfigured during the refresh? (y/n) *>" {
         send "n\r"
-        exp_continue 
+        exp_continue
       } "Enter selection (1-3)*>" {
-        send "3\r" 
+        send "3\r"
         exp_continue
       } "Enter base directory location for management servers " {
         send "\r"
-        exp_continue 
+        exp_continue
       } "Enable FIPS Support? (y/n)*>" {
         send "n\r"
         exp_continue
       } "Will this machine participate in an HA cluster? (y/n) *>" {
         send "n\r"
-        exp_continue 
+        exp_continue
       } "Enter database log directory location *>" {
         send "\r"
         exp_continue
       } "Enter the management IP address of this server *>" {
-        send "$ourip\r"
+        send -s "$ourip\r"
         exp_continue
       } "Enter the https port for NBI service *>" {
         send "\r"
@@ -419,13 +454,13 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for nami
         send "\r"
         exp_continue
       } "Enter password (password will not display as you type)>" {
-        send "$pass\r"
+        send -s "$pass\r"
         exp_continue
       } "Will a Statistical Report Server be used with this GUI Server? (y/n) *>" {
         send "n\r"
         exp_continue
       } "UNIX password: " {
-        send "$pass\r"
+        send -s "$pass\r"
         exp_continue
       } "Will server processes need to be restarted automatically in case of a failure? (y/n) *>" {
         send "n\r"
@@ -439,10 +474,10 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for nami
       } "Enter Postgres DevSvr Db super user *> " {
         send "\r"
         exp_continue
-      } "Start server(s) when finished? (y/n) *> " {
-        send "y\r"
+      } "Start server(s) when finished? (y/n)*" {
+        send "n\r"
         exp_continue
-      } "Are the above actions correct? (y/n)> " {
+      } "Are the above actions correct? (y/n)" {
         send "y\r"
         exp_continue
       } "Specify location of PostgreSQL * bin *> " {
@@ -457,6 +492,6 @@ set time     [ timestamp -format "%Y/%m/%d %H:%M:%S"]
 send_log "\n---------- log close at $time ----------\n"
 log_file
 exec /bin/bzip2 $logdir/$host-$filetime.log
-send_user "\n\[+\] session lasted from $stime to $time\n\[+\] logfile: $logdir/$host-$filetime.log.bz2\n" 
+send_user "\n\[+\] session lasted from $stime to $time\n\[+\] logfile: $logdir/$host-$filetime.log.bz2\n"
 exit
 

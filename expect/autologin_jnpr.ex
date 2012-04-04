@@ -67,7 +67,7 @@ send_user "\033]2;$name $filetime\007"
 set fp [open "/etc/hosts" r]
 while { [gets $fp line] >=0 } {
 	if {[regexp $name $line]} {
-		set line [split $line "\t"]
+		set line [split $line " "]
 		set ip [lindex $line 0]
 	}
 }

@@ -4,7 +4,7 @@
 #
 # ChangeLog:
 # 20120403
-# - added some aliases for often used commands,
+# - added some aliases for often used commands (jtac_),
 # - backup is automatically disabled in xdifImporter.sh,
 # - less garbage on the screen while login in,
 # - reads the /home/admin/.info file used in EMEA,
@@ -30,6 +30,9 @@
 # - auto installation of NSM possible from inside this client,
 # - auto log monitoring and doing an action once a pattern is found,
 
+proc curtime { } {
+  return [ timestamp -format "%Y/%m/%d %H:%M:%S"]
+}
 
 proc backuptimeproc { } {
   return [ timestamp -format "%Y%m%d_%H%M%S"]
@@ -131,7 +134,7 @@ expect timeout {
   send "echo \${SHELL}\r"
 }
 
-log_user 0
+log_user 0 
 
 ### make sure we are running bash
 expect "*#" {
@@ -162,7 +165,7 @@ expect "*#" {
   if { $os == "Linux" } {
     if { $app == "nsm" } {
       # export DB_HOME=\"/var/netscreen/GuiSvr/xdb/\" # <- this causes issues during install
-      send -s "unset TMOUT;ln -sf /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime;ntpdate -u 172.30.73.133;hwclock --systohc\r"
+      send -s "unset TMOUT;ln -sf /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime;date -s \"[curtime]\";hwclock --systohc\r"
     }
   } elseif { $os eq "SunOS" } {
     send "ntpdate -u 172.30.73.133\r"
@@ -195,7 +198,7 @@ if { $app == "nsm" } {
     send "DBXML_DIR=`ls -1 -t /usr/netscreen/GuiSvr/utils|grep dbxml| head -n 1`;\
     LD_LIBRARY_PATH=/usr/netscreen/GuiSvr/utils/\$DBXML_DIR/lib:\$LD_LIBRARY_PATH;\
     PATH=/usr/netscreen/GuiSvr/utils/\$DBXML_DIR/bin/:\$PATH:/usr/netscreen/DevSvr/utils/:/usr/netscreen/GuiSvr/utils/:/usr/netscreen/HaSvr/utils/;\
-    NS_PRINTER_LEVEL=debug;\
+    NS_PRINTER_LEVEL=debugr;\
     NSMUSER=\"global/super\";\
     NSMPASSWD=\"netscreen\";\
     export LD_LIBRARY_PATH PATH NS_PRINTER_LEVEL NSMUSER NSMPASSWD;\
@@ -206,8 +209,14 @@ if { $app == "nsm" } {
     alias jtac_undebug_env='unset NS_PRINTER_LEVEL';\
     alias xdbViewEdit=/usr/netscreen/GuiSvr/utils/.xdbViewEdit.sh;\
     alias jtac_db_size='ls -l /var/netscreen/GuiSvr/xdb/data/ | sort -nk5';\
+    function jtac_import() { /usr/netscreen/GuiSvr/utils/xdifImporter.sh \$1 /var/netscreen/GuiSvr/xdb/init/; };\
+    alias jtac_export=/usr/netscreen/GuiSvr/utils/xdbExporter.sh /var/netscreen/GuiSvr/xdb/;\
+    alias jtac_edit=/usr/netscreen/GuiSvr/utils/.xdbViewEdit.sh;\
+    function jtac_extract_contariner_from_xdif() { perl -e '\$a=0;\$b=shift;while(<>){\$a=0 if (/^END/); \$a=1 if (/^\$b/);print if (\$a==1);}' \$1 \$2; };\
+    function jtac_container_xdif_to_init() { perl -ne 'if (/^\\)/){ print \"#####TUPLE_DATA_END#####\\n\"; next; } if (/^\\((.{8})(.{4})(.{4})\\s*/){ print \"#####TUPLE_DATA_BEGIN#####\\n\"; print hex(\$1),\"\\n\",hex(\$3),\"\\n\"; next; } next if (/^\\S+/); s/^\\t//; s/^: \\d+\\s+//; print;' \$1; };\
     unalias rm;unalias mv;unalias cp;\r"
   }
+  sleep 0.5;
   expect "*#" {
     send "if \[ -f /home/admin/.info \]; then\
     echo;echo \"+++++++++++++++++++++++++++++++++++++++++++++++++++\";\

@@ -198,7 +198,7 @@ if { $app == "nsm" } {
     send "DBXML_DIR=`ls -1 -t /usr/netscreen/GuiSvr/utils|grep dbxml| head -n 1`;\
     LD_LIBRARY_PATH=/usr/netscreen/GuiSvr/utils/\$DBXML_DIR/lib:\$LD_LIBRARY_PATH;\
     PATH=/usr/netscreen/GuiSvr/utils/\$DBXML_DIR/bin/:\$PATH:/usr/netscreen/DevSvr/utils/:/usr/netscreen/GuiSvr/utils/:/usr/netscreen/HaSvr/utils/;\
-    NS_PRINTER_LEVEL=debugr;\
+    NS_PRINTER_LEVEL=debug;\
     NSMUSER=\"global/super\";\
     NSMPASSWD=\"netscreen\";\
     export LD_LIBRARY_PATH PATH NS_PRINTER_LEVEL NSMUSER NSMPASSWD;\

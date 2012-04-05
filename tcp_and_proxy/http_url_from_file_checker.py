@@ -11,7 +11,7 @@ try:
   (proto,undef,host,baseurl) = sys.argv[1].split("/",3)
   filename = sys.argv[2]  
 except:
-  print "Usage:"
+  print "Usage: base_url file_with_all_urls_to_check"
   sys.exit(1)
 
 if "https" in proto:

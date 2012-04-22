@@ -26,6 +26,7 @@ if ($?prompt) then
   unset autocorrect
   unset autoexpand
   unset autologout
+  set autorehash
   set addsuffix
   set autolist
   set color
@@ -35,13 +36,16 @@ if ($?prompt) then
   set filec
   set histdup = 'erase'
   set history = 200
+  set implicitcd
   set mail = (/var/mail/$USER)
   set matchebeep = 'never'
   set noclobber
   set noding
   set nokanji
   set notify
+  set padhour
   set prompt = "[%n@%M %Y/%W/%D %P]\n%/ %# "
+  set printexitvalue
   set rmstar
   set savehist = 0
   set symlinks = 'ignore'

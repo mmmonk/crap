@@ -218,6 +218,8 @@ if { $app == "nsm" } {
     alias i='egrep -I -i --color=auto';\
     alias e='i -v';\
     alias findf='find . -type f -iname';\
+    alias less='less -sWr';\
+    alias pstree='ps axjf';\
     alias difft='diff --strip-trailing-cr -ibBw';\
     function ttail() { tail -f \$* | while read; do echo \"\$(date +%T) \$REPLY\"; done; };\
     function jtac_extract_contariner_from_xdif() { perl -e '\$a=0;\$b=shift;while(<>){\$a=0 if (/^END/); \$a=1 if (/^\$b/);print if (\$a==1);}' \$1 \$2; };\

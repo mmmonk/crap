@@ -3,6 +3,7 @@
 # ver: 20120403
 #
 # ChangeLog:
+# - more aliases,
 # 20120403
 # - added some aliases for often used commands (jtac_),
 # - backup is automatically disabled in xdifImporter.sh,
@@ -204,14 +205,21 @@ if { $app == "nsm" } {
     export LD_LIBRARY_PATH PATH NS_PRINTER_LEVEL NSMUSER NSMPASSWD;\
     perl -i -pe 's/(^gzip|^tar)/#\$1/' /usr/netscreen/GuiSvr/utils/xdifImporter.sh;\
     alias jtac_export_import_xdb='/usr/netscreen/GuiSvr/utils/xdbExporter.sh /var/netscreen/GuiSvr/xdb/ /var/tmp/xdif_$filetime.txt && /usr/netscreen/GuiSvr/utils/xdifImporter.sh /var/tmp/xdif_$filetime.txt /var/netscreen/GuiSvr/xdb/init/';\
-    function jtac_all() { /etc/init.d/guiSvr \$1; /etc/init.d/devSvr \$1; /etc/init.d/haSvr \$1; };\
+    function jtac_all_proc() { /etc/init.d/guiSvr \$1; /etc/init.d/devSvr \$1; /etc/init.d/haSvr \$1; };\
+    alias ls='ls -A --time-style=long-iso --color=auto -F';\
     alias jtac_debug_env='export NS_PRINTER_LEVEL=debug';\
     alias jtac_undebug_env='unset NS_PRINTER_LEVEL';\
+    alias jtac_nsm_ps='ps -U nsm -u nsm u';\
     alias xdbViewEdit=/usr/netscreen/GuiSvr/utils/.xdbViewEdit.sh;\
-    alias jtac_db_size='ls -l /var/netscreen/GuiSvr/xdb/data/ | sort -nk5';\
+    alias jtac_db_size='ls -lrhS /var/netscreen/GuiSvr/xdb/data/';\
     function jtac_import() { /usr/netscreen/GuiSvr/utils/xdifImporter.sh \$1 /var/netscreen/GuiSvr/xdb/init/; };\
     alias jtac_export=/usr/netscreen/GuiSvr/utils/xdbExporter.sh /var/netscreen/GuiSvr/xdb/;\
     alias jtac_edit=/usr/netscreen/GuiSvr/utils/.xdbViewEdit.sh;\
+    alias i='egrep -I -i --color=auto';\
+    alias e='i -v';\
+    alias findf='find . -type f -iname';\
+    alias difft='diff --strip-trailing-cr -ibBw';\
+    function ttail() { tail -f \$* | while read; do echo \"\$(date +%T) \$REPLY\"; done; };\
     function jtac_extract_contariner_from_xdif() { perl -e '\$a=0;\$b=shift;while(<>){\$a=0 if (/^END/); \$a=1 if (/^\$b/);print if (\$a==1);}' \$1 \$2; };\
     function jtac_container_xdif_to_init() { perl -ne 'if (/^\\)/){ print \"#####TUPLE_DATA_END#####\\n\"; next; } if (/^\\((.{8})(.{4})(.{4})\\s*/){ print \"#####TUPLE_DATA_BEGIN#####\\n\"; print hex(\$1),\"\\n\",hex(\$3),\"\\n\"; next; } next if (/^\\S+/); s/^\\t//; s/^: \\d+\\s+//; print;' \$1; };\
     unalias rm;unalias mv;unalias cp;\r"

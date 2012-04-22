@@ -5,12 +5,15 @@ unalias *
 where mc > /dev/null    && alias mc mc -b
 where grep > /dev/null  && alias i grep -i
 where egrep > /dev/null && alias i egrep -i
-egrep --color a ~/.aliases >& /dev/null && alias i egrep -i --color
+egrep --color a ~/.aliases >& /dev/null && alias i egrep -I -i --color=auto
 alias e       i -v
-ls-F -l >& /dev/null && alias ls ls-F
-alias ll      ls -lA
-alias l       ls -lA
-alias lstd    "ls -lFA --time-style=+%D | grep `date +%D`"
+alias ls "ls -FA --time-style=long-iso"
+ls-F -l >& /dev/null && alias ls "ls-F -A --time-style=long-iso"
+alias ll      ls -l 
+alias l       ls -l
+alias lstd    "ls -l --time-style=+%D | grep `date +%D`"
+alias lstm    ls -lt 
+alias lstc    ls -ltc
 alias mv      mv -i
 alias ms      man -k
 alias p       ping
@@ -24,25 +27,17 @@ alias sfm     ssh -O forward
 alias t       telnet
 alias h       history 25
 alias j       jobs -l
-where colordiff > /dev/null && alias diff colordiff
-alias difft   diff --strip-trailing-cr -ibBw
-alias tgz     "tar -czvf \!:1 \!:2"
-alias untgz   "tar -xzvf \!:1"
-alias tbz2    "tar -cjvf \!:1 \!:2"
-alias untbz   "tar -xjvf \!:1"
+where colordiff > /dev/null && alias diffc colordiff
+alias difft   diffc --strip-trailing-cr -ibBw
 alias bin2dec 'echo "ibase=2; \!:1" |bc'
 alias bin2hex 'echo "obase=16;ibase=2; \!:1" |bc'
 alias dec2bin 'echo "obase=2; \!:1" |bc'
 alias dec2hex 'echo "obase=16; \!:1" |bc'
 alias hex2bin 'echo "ibase=16;obase=2;" `echo \!:1 |tr "[:lower:]" "[:upper:]"` |bc'
 alias hex2dec 'echo "ibase=16;" `echo \!:1 |tr "[:lower:]" "[:upper:]"` |bc'
+alias findf   find . -type f -iname
 
 where vim > /dev/null && alias vi  vim
-
-## sshhosts
-if ( -f ~/.ssh/config) then
-  set sshhosts = (`awk '/^host /{gsub(/host /,"");print}' ~/.ssh/config`)
-endif
 
 ## local aliases specific to this host
 if ( -f ~/.aliases_local) then

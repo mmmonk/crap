@@ -1,5 +1,5 @@
 Mrxvt.noSysConfig:              True
-Mrxvt.background:               black
+Mrxvt.background:               #000044
 Mrxvt.bottomTabbar:             False
 Mrxvt.cursorBlink:              False
 Mrxvt.cursorColor:              red
@@ -11,7 +11,7 @@ Mrxvt.hideButtons:              True
 Mrxvt.highlightColor:           darkorange
 Mrxvt.highlightTabOnBell:       True
 Mrxvt.itabForeground:           cyan
-Mrxvt.itabBackground:           black
+Mrxvt.itabBackground:           #000044
 Mrxvt.loginShell:               False
 Mrxvt.meta8:                    True
 Mrxvt.multichar_encoding:       terminus-iso8859-2-14
@@ -19,18 +19,20 @@ Mrxvt.saveLines:                500
 Mrxvt.scrollBar:                False
 Mrxvt.shading:                  50
 Mrxvt.showMenu:                 False
-Mrxvt.tabBackground:            black
+Mrxvt.tabBackground:            #000044
 Mrxvt.tabForeground:            green
 Mrxvt.smartResize:              true
 Mrxvt.smoothResize:             false
 #Mrxvt.termName:                 xterm
 Mrxvt.textShadowMode:           none
 Mrxvt.title:                    term
-Mrxvt.transparent:              True
-Mrxvt.transparentMenubar:       True
-Mrxvt.transparentTabbar:        True
-Mrxvt.visualBell:               True
+Mrxvt.transparent:              False
+Mrxvt.transparentMenubar:       False
+Mrxvt.transparentTabbar:        False
+Mrxvt.currentTabVBell:          True
+#Mrxvt.visualBell:               True
 Mrxvt.syncTabTitle:             True
+Mrxvt.bellCommand:              ogg123 -q /home/case/store/msx/dialog-warning.oga 
 Mrxvt.color0:                   #000000
 Mrxvt.color1:                   #A80000
 Mrxvt.color2:                   #00A800
@@ -52,5 +54,5 @@ Mrxvt.macro.Ctrl+Shift+Right:   GotoTab +1
 Mrxvt.macro.Ctrl+Shift+t:       NewTab
 Mrxvt.macro.Primary+Ctrl+Shift+s:       Str tmux_start.sh 0 \n 
 Mrxvt.macro.Primary+Add+Ctrl+Shift+s:   NewTab
-Mrxvt.macro.Primary+Add+Ctrl+Shift+s:   Str ssh_keep.sh x \n
+Mrxvt.macro.Primary+Add+Ctrl+Shift+s:   Str ssh_keep.sh xls \n
 Mrxvt.macro.Ctrl+Shift+f:       Exec ff %s

@@ -30,6 +30,7 @@ if ($?prompt) then
   set autolist
   set color
   set colorcat
+  set complete = "Enhance" 
   set dunique
   set filec
   set histdup = 'erase'
@@ -58,7 +59,7 @@ if ($?prompt) then
   # ssh-agent
   if ( -f ~/.ssh/ssh_agent ) then
 
-    set TPID = `pgrep -nu $USER ssh-agent`
+    set TPID = `pgrep -nU $USER ssh-agent`
 
     if ($TPID == "") then
       ssh-agent -c | grep SSH >! ~/.ssh/ssh_agent
@@ -80,21 +81,21 @@ if ($?prompt) then
   # gpg-agent
   if ( -f ~/.gpg-agent-info ) then
     setenv GPG_TTY `tty`
-    set TPID = `pgrep -nu $USER gpg-agent`
+    set TPID = `pgrep -nU $USER gpg-agent`
 
     if ($TPID == "") then
       gpg-agent -q --daemon -c >! ~/.gpg-agent-info
-      echo "setenv GPG_AGENT_PID `pgrep -u $USER gpg-agent`" >> ~/.gpg-agent-info
+      echo "setenv GPG_AGENT_PID `pgrep -U $USER gpg-agent`" >> ~/.gpg-agent-info
     else
       source ~/.gpg-agent-info
       if ($?GPG_AGENT_PID) then
         if ($GPG_AGENT_PID != $TPID) then
           gpg-agent -q --daemon -c >! ~/.gpg-agent-info
-          echo "setenv GPG_AGENT_PID `pgrep -u $USER gpg-agent`" >> ~/.gpg-agent-info
+          echo "setenv GPG_AGENT_PID `pgrep -U $USER gpg-agent`" >> ~/.gpg-agent-info
         endif
       else
         gpg-agent -q --daemon -c >! ~/.gpg-agent-info
-        echo "setenv GPG_AGENT_PID `pgrep -u $USER gpg-agent`" >> ~/.gpg-agent-info
+        echo "setenv GPG_AGENT_PID `pgrep -U $USER gpg-agent`" >> ~/.gpg-agent-info
       endif
     endif
     source ~/.gpg-agent-info
@@ -129,21 +130,31 @@ if ($?prompt) then
     echo ""
   endif
 
+  ## sshhosts
+  if ( -f ~/.ssh/config) then
+    set sshhosts = (`awk '/^host /{gsub(/host /,"");print}' ~/.ssh/config`)
+  endif
+
   complete alias 'p/1/a/'
-  complete dpkg 'p/1/(-I -l -L)/' 'n/-{I,l,L}/`dpkg -l | awk \{print\ \$2\}`/'
+  complete dpkg 'p/1/(-I -l -L)/' 'n/-L/`dpkg -l | awk \{print\ \$2\}`/'
   complete last 'p/1/u/'
   complete man 'p/*/c/'
   complete menv 'p/1/$sshhosts/'
-  complete scp 'p/2/$sshhosts/'
+  #complete scp 'p/*/$sshhosts/'
   complete setenv 'p/1/e/'
   complete set 'p/1/s/'
   complete sftp 'p/1/$sshhosts/'
   complete skm 'p/1/$sshhosts/'
-  complete sfm 'p/2/(-L -R -D)/' 'p/1/$sshhosts/'
+  complete sfm 'p/1/(-L -R -D)/' 'p/*/$sshhosts/'
   complete sk 'p/*/$sshhosts/'
   complete s 'p/*/$sshhosts/'
   complete ssh 'p/*/$sshhosts/'
   complete which 'p/1/c/'
+
+  if ( -f ~/.lftp/bookmarks) then
+    set lftphosts = (`awk \{print\ \$1\} ~/.lftp/bookmarks`) 
+    complete lftp 'p/1/$lftphosts/'
+  endif
 
   if ($uid == 0) then
     complete aptitude 'p/1/(show search versions update install upgrade dist-upgrade)/' 'p/2/`dpkg -l | awk \{print\ \$2\}`/'

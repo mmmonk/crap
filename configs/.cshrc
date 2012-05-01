@@ -10,6 +10,7 @@ set path = (/sbin /bin /usr/sbin /usr/bin /usr/games /usr/local/sbin /usr/local/
 
 #setenv LC_ALL		  "en_US.ISO8859-1"
 setenv LC_CTYPE	  "pl_PL.ISO8859-2"
+#setenv LC_CTYPE   "pl_PL.UTF-8"
 #setenv	LC_MESSAGES	"en_US.ISO8859-1"
 #setenv LC_TIME		  "en_US.ISO8859-1"
 
@@ -136,35 +137,57 @@ if ($?prompt) then
 
   ## sshhosts
   if ( -f ~/.ssh/config) then
-    set sshhosts = (`awk '/^host /{gsub(/host /,"");print}' ~/.ssh/config`)
+    set sshhosts = (`awk '/^host /{gsub(/host /,"");gsub(/\S*\*\S*/,"");print}' $HOME/.ssh/config`)
+    set sshhostsandusers = ($sshhosts `awk '/User /{gsub(/\s*$/,"@")};/User /{gsub(/\s+User /,"");print}' $HOME/.ssh/config | sort -u`)
   endif
 
   complete alias 'p/1/a/'
-  complete dpkg 'p/1/(-I -l -L)/' 'n/-L/`dpkg -l | awk \{print\ \$2\}`/'
+  complete unalias 'p/1/a/'
+  complete cd 'p/1/d/'
+  complete rmdir 'p/1/d/'
+  complete dpkg 'p/1/(-I -l -L)/' 'n/-L/`dpkg -l | awk \{print\ \$2\}`/' 'n/-i/f:*.deb/'
   complete last 'p/1/u/'
   complete man 'p/*/c/'
   complete menv 'p/1/$sshhosts/'
-  #complete scp 'p/*/$sshhosts/'
+  complete env 'c/*=/f/' 'p/1/e/=/' 'p/2/c/'
   complete setenv 'p/1/e/'
+  complete unsetenv 'p/1/e/'
   complete set 'p/1/s/'
-  complete sftp 'p/1/$sshhosts/'
-  complete skm 'p/1/$sshhosts/'
-  complete sfm 'p/1/(-L -R -D)/' 'p/*/$sshhosts/'
-  complete sk 'p/*/$sshhosts/'
-  complete s 'p/*/$sshhosts/'
-  complete ssh 'p/*/$sshhosts/'
+  complete unset 'p/1/s/'
   complete which 'p/1/c/'
+  complete chown 'c/*:/g/' 'p/1/u/:' 
+  complete uncomplete 'p/*/X/'
+
+  complete t 'p@1@`cat /etc/hosts | awk \{print\ \$2\}`@'
+  complete tc 'p@1@`cat /etc/hosts | awk \{print\ \$2\}`@' 
+  complete sc 'p@1@`cat /etc/hosts | awk \{print\ \$2\}`@'
+  complete scp "c,*:/,F:/," "c,*:,F:$HOME," 'c/*@/$sshhosts/:/'
+  complete s 'c/*@/$sshhosts/' 'p/*/$sshhostsandusers//' 
+  complete sfm 'p/1/(-L -R -D)/' 'p@*@`ls 1 ~/.ssh/sockets/ | sed "s/=//g;s/:.*//g"`@'
+  complete sftp 'p/*/$sshhosts/'
+  complete skm 'p@*@`ls -1 ~/.ssh/sockets/ | sed "s/=//g;s/:.*//g"`@'
+  complete sk 'p/*/$sshhosts/'
+  complete ssh 'c/*@/$sshhosts/' 'p/*/$sshhostsandusers//'
+
+  ## some docs handling
+  complete epdfview 'p/1/f:*.{pdf,PDF}/'
+  complete xchm 'p/1/f:*.{chm,CHM}/'
+  complete geeqie 'p/1/f:*.{jpg,JPG}/'
+  complete unzip 'p/1/f:*.{zip,ZIP}/'
+  complete FBReader 'p/1/f:*.{epub,EPUB}/'
+  complete tar 'p/2/f:*.{tar.gz,TAR.GZ,tgz,TGZ,tar.bz2,TAR.BZ2,tbz2,TBZ2}/'
 
   if ( -f ~/.lftp/bookmarks) then
-    set lftphosts = (`awk \{print\ \$1\} ~/.lftp/bookmarks`) 
-    complete lftp 'p/1/$lftphosts/'
+    complete lftp 'p@1@`awk \{print\ \$1\} ~/.lftp/bookmarks`@'
   endif
 
   if ($uid == 0) then
     complete aptitude 'p/1/(show search versions update install upgrade dist-upgrade)/' 'p/2/`dpkg -l | awk \{print\ \$2\}`/'
-    complete kill 'n/-s/S/' 'p/*/`ps ax | awk \{print\ \$1\}`/'
+    complete kill 'c/-/(s)/' 'n/-s/S/' 'p/*/`ps achx | awk \{print\ \$1\}`/'
+    complete killall 'c/-/(s)/' 'n/-s/S/' 'p/*/`ps achx | awk \{print\ \$5\}`/'
   else
     complete aptitude 'p/1/(show search versions)/' 'p/2/`dpkg -l | awk \{print\ \$2\}`/'
-    complete kill 'n/-s/S/' 'p/*/`ps | awk \{print\ \$1\}`/'
+    complete kill 'c/-/(s)/' 'n/-s/S/' 'p/*/`ps chx | awk \{print\ \$1\}`/'
+    complete killall 'c/-/(s)/' 'n/-s/S/' 'p/*/`ps chx | awk \{print\ \$5\}`/'
   endif
 endif

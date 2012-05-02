@@ -138,7 +138,7 @@ if ($?prompt) then
   ## sshhosts
   if ( -f ~/.ssh/config) then
     set sshhosts = (`awk '/^host /{gsub(/host /,"");gsub(/\S*\*\S*/,"");print}' $HOME/.ssh/config`)
-    set sshhostsandusers = ($sshhosts `awk '/User /{gsub(/\s*$/,"@")};/User /{gsub(/\s+User /,"");print}' $HOME/.ssh/config | sort -u`)
+    set sshhostsandusers = ($sshhosts `awk '/^\s*#/ {gsub(/.*/,"")}; /User /{gsub(/\s*$/,"@")};/User /{gsub(/\s*User /,"");print}' $HOME/.ssh/config | sort -u`)
   endif
 
   complete alias 'p/1/a/'
@@ -147,6 +147,7 @@ if ($?prompt) then
   complete chown 'c/*:/g/' 'p/1/u/:' 
   complete dpkg 'p/1/(-I -l -L)/' 'n/-L/`dpkg -l | awk \{print\ \$2\}`/' 'n/-i/f:*.deb/'
   complete env 'c/*=/f/' 'p/1/e/=/' 'p/2/c/'
+  complete find 'p/1/d/'
   complete last 'p/1/u/'
   complete ln 'c/-/(s)/' 
   complete man 'p/*/c/'
@@ -160,9 +161,9 @@ if ($?prompt) then
   complete unset 'p/1/s/'
   complete which 'p/1/c/'
 
-  complete t 'p@1@`cat /etc/hosts | awk \{print\ \$2\}`@'
-  complete tc 'p@1@`cat /etc/hosts | awk \{print\ \$2\}`@' 
-  complete sc 'p@1@`cat /etc/hosts | awk \{print\ \$2\}`@'
+  complete t 'p@1@`awk \$0\ \!\~\ \/^\\s\*#\/\ \{print\ \$2\} /etc/hosts`@'
+  complete tc 'p@1@`awk \$0\ \!\~\ \/^\\s\*#\/\ \{print\ \$2\} /etc/hosts`@' 
+  complete sc 'p@1@`awk \$0\ \!\~\ \/^\\s\*#\/\ \{print\ \$2\} /etc/hosts`@'
   complete scp "c,*:/,F:/," "c,*:,F:$HOME," 'c/*@/$sshhosts/:/'
   complete s 'c/*@/$sshhosts/' 'p/*/$sshhostsandusers//' 
   complete sfm 'p/1/(-L -R -D)/' 'p@*@`ls 1 ~/.ssh/sockets/ | sed "s/=//g;s/:.*//g"`@'
@@ -177,7 +178,7 @@ if ($?prompt) then
   complete geeqie 'p/1/f:*.{jpg,JPG}/'
   complete unzip 'p/1/f:*.{zip,ZIP}/'
   complete FBReader 'p/1/f:*.{epub,EPUB}/'
-  complete tar 'p/2/f:*.{tar.gz,TAR.GZ,tgz,TGZ,tar.bz2,TAR.BZ2,tbz2,TBZ2}/'
+  complete tar 'p/2/f:*.{tar,TAR,tar.gz,TAR.GZ,tgz,TGZ,tar.bz2,TAR.BZ2,tbz2,TBZ2}/'
 
   if ( -f ~/.lftp/bookmarks) then
     complete lftp 'p@1@`awk \{print\ \$1\} ~/.lftp/bookmarks`@'

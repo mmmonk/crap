@@ -6,7 +6,7 @@ from fcntl import fcntl,F_SETFL
 from OpenSSL.SSL import WantReadError as SSL_WantReadError,SysCallError as SSL_SysCallError,ZeroReturnError as SSL_ZeroReturnError,Context as SSL_Context,SSLv3_METHOD,Connection as SSL_Connection
 from select import select
 from socket import socket,has_ipv6,SHUT_RDWR,AF_INET,AF_INET6,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,SOL_SOCKET,SO_REUSEADDR,error as socket_error 
-from os import chdir,getuid,setgid,setuid,umask,O_NONBLOCK,WNOHANG,fork,waitpid,getpid,getppid
+from os import chdir,getuid,setgid,setuid,umask,O_NONBLOCK,WNOHANG,fork,waitpid,getpid,getppid,chroot,makedirs,path
 from sys import exit 
 import pwd, grp
 
@@ -14,7 +14,7 @@ phost = ''
 pport = 443
 dhost = '::1'
 dport = 80
-ver = "20111130"
+ver = "20111208"
 
 def plog(msg, childpid = 0):
   global mainpid
@@ -27,9 +27,9 @@ def plog(msg, childpid = 0):
 
 def deamonsetup(uid_name='nobody', gid_name='nogroup'):
 
-  # chroot("/usr/local/certs/")
-
-  chdir("/")
+  if not path.exists("/var/run/sammael/"):
+    makedirs("/var/run/sammael/")
+  chdir("/var/run/sammael/")
 
   if getuid() != 0:
     # We're not root so, like, whatever dude
@@ -38,6 +38,8 @@ def deamonsetup(uid_name='nobody', gid_name='nogroup'):
   # Get the uid/gid from the name
   running_uid = pwd.getpwnam(uid_name).pw_uid
   running_gid = grp.getgrnam(gid_name).gr_gid
+
+  #chroot("/var/run/sammael")
 
   # Try setting the new uid/gid
   setgid(running_gid)
@@ -48,7 +50,6 @@ def deamonsetup(uid_name='nobody', gid_name='nogroup'):
 
   # Ensure a very conservative umask
   umask(077)
-
 
 # main data exchnage function
 def exchange(s,c): 
@@ -131,7 +132,8 @@ def main():
 
   ctx.use_privatekey_file('/usr/local/certs/server.key')
   ctx.use_certificate_file('/usr/local/certs/server.crt')
-  ctx.set_cipher_list('RC4-MD5')
+  ctx.set_cipher_list('RC4:-aNULL')
+ 
 
   plog("SSL context ready")
   plog("listening for connections")
@@ -161,6 +163,7 @@ def main():
         try:
           ssl.do_handshake()
         except:
+          plog("ssl handshake failed/not done",chpid)
           exit()        
 
         plog("ssl handshake done",chpid)

@@ -9,6 +9,16 @@ my $file2 = shift;
 
 my $tdiff = shift || 0;
 
+unless ($file2) {
+  print "Usage: $0 file1 file2 [time_in_seconds]
+  
+  This will try to compare counters between file1 and file2.
+  It will also calculate delta between those counters.
+  If the time_in_seconds is specified it will divde delta 
+  by this value.\n";
+  exit(1);
+}
+
 open(F1,$file1) or die "$!";
 open(F2,$file2) or die "$!";
 

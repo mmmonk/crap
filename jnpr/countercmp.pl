@@ -26,6 +26,12 @@ my $l1; my $l2;
 
 while($l1=<F1>){
   $l2 = <F2>;
+  
+  $l1=~s/(\t|\n|\r)/ /g;
+  $l1=~s/^\s+//;
+  $l2=~s/(\t|\n|\r)/ /g;
+  $l2=~s/^\s+//;
+
   my $haveit=0;
   my $nl1=" "; my $cl1=0;
   my $nl2=" "; my $cl2=0;

@@ -341,6 +341,9 @@ function tnp_proto.dissector(buf,pinfo,tree)
     -- if this is a fragment we don't go any further
     if (tnpfrag == "number") then
       pinfo.cols.info:append(", fragment")
+      -- just normal data
+      local inside_dis = Dissector.get ("data")
+      inside_dis:call (buf(offset):tvb(), pinfo, tree)
       return
     end
 
@@ -383,33 +386,35 @@ function tnp_proto.dissector(buf,pinfo,tree)
     elseif (tnpprotoname == "udp") then
       ------------
       --- udp type -- standard UDP - mostly
-      
+    
       local tnpudp = subtree:add("TNP UDP msg")
       tnpudp:add(f.usport,buf(offset,2))
       tnpudp:add(f.udport,buf(offset+2,2))
       tnpudp:add(f.ulen,buf(offset+4,2))
       tnpudp:add(f.uchks,buf(offset+6,2))
-      tnpudp:add(f.udata,buf(offset+8))
+      -- tnpudp:add(f.udata,buf(offset+8))
 
       local srcport = buf(offset,2):uint()
       local dstport = buf(offset+2,2):uint()
+      local tsrcport = srcport 
+      local tdstport = dstport
       if tnp_proto_udp_known_ports[srcport] ~= nil then
-        srcport = srcport .. " (" ..tnp_proto_udp_known_ports[srcport] ..")"
+        tsrcport = srcport .. " (" ..tnp_proto_udp_known_ports[srcport] ..")"
       end
       if tnp_proto_udp_known_ports[dstport] ~= nil then
-        dstport = dstport .. " (" ..tnp_proto_udp_known_ports[dstport] ..")"
+        tdstport = dstport .. " (" ..tnp_proto_udp_known_ports[dstport] ..")"
       end
 
-      pinfo.cols.info:append(", " .. srcport .. " > " .. dstport )
+      pinfo.cols.info:append(", " .. tsrcport .. " > " .. tdstport )
 
       -- our own SNTP dissector
       if srcport == 123 or dstport == 123 then
         sntp_proto.dissector:call (buf(offset+8):tvb(), pinfo, tree)  
+      else
+        -- just normal data
+        local inside_dis = Dissector.get ("data")
+        inside_dis:call (buf(offset+8):tvb(), pinfo, tree)
       end
-
-      -- standard dissector for UDP
-      -- udp_dissector = Dissector.get ("udp")
-      -- udp_dissector:call (buf(offset):tvb(), pinfo, tree)
       
     elseif (tnpprotoname == "rdp") then
       -----------------------------------
@@ -500,7 +505,10 @@ function tnp_proto.dissector(buf,pinfo,tree)
         rdp:add(f.rdata,buf(offset+18))
       else
         rdp:add(f.rpad,buf(offset+12,2))
-        rdp:add(f.rdata,buf(offset+14))
+        -- rdp:add(f.rdata,buf(offset+14))
+        -- just normal data
+        local inside_dis = Dissector.get ("data")
+        inside_dis:call (buf(offset+14):tvb(), pinfo, tree)
       end
 
     elseif (tnpprotoname == "control") then
@@ -525,7 +533,6 @@ function tnp_proto.dissector(buf,pinfo,tree)
     elseif (tnpprotoname == "tunnel") then
       --------------
       -- tunnel type 
-      -- ttp_proto.dissector:call(buf(offset,tnpdatalen):tvb(), pinfo, tree, tnpver) 
       jttp_proto.dissector:call(buf(offset):tvb(), pinfo, tree, tnpver)
 
     elseif (tnpprotoname == "stp") then
@@ -638,8 +645,7 @@ jttpf.thrsd_picpeer3 = ProtoField.uint32("jttp.hint.rsd_picpeer3","rsd_picpeer3"
 jttpf.thselect_q = ProtoField.uint32("jttp.hint.select_q","select_q",nil,nil,0x10000000)
 jttpf.thkeepalive = ProtoField.uint32("jttp.hint.keepalive","keepalive",nil,nil,0x40000000)
 jttpf.thdebug = ProtoField.uint32("jttp.hint.debug","debug",nil,nil,0x80000000)
-
-jttpf.tdata  = ProtoField.bytes("jttp.data","data")
+-- jttpf.tdata  = ProtoField.bytes("jttp.data","data")
 
 function jttp_proto.dissector(buf,pinfo,tree,tnpver)
 
@@ -713,50 +719,45 @@ function jttp_proto.dissector(buf,pinfo,tree,tnpver)
       thint:add(jttpf.thkeepalive,buf(thintoffset,4))
       thint:add(jttpf.thdebug,buf(thintoffset,4))
 
-      tunnel:add(jttpf.tdata,buf(offset+20))
+      -- tunnel:add(jttpf.tdata,buf(offset+20))
 
       local inside_proto = buf(offset+2,1):uint()
 
-      -- TODO: add shitload of checks here which will probably 
-      -- depend on the hints from above
-
-      if inside_proto == 2 then
-        local inside_dis = Dissector.get ("ip")
-        inside_dis:call (buf(offset+20):tvb(), pinfo, tree)
-      elseif inside_proto == 6 then 
-        local inside_dis = Dissector.get ("ip6")
-        inside_dis:call (buf(offset+20):tvb(), pinfo, tree)
+      local inside_dis = Dissector.get ("data")
+      local cookie = 0
+      
+      if inside_proto == 2 or inside_proto == 3  then
+        inside_dis = Dissector.get ("ip")
+      elseif inside_proto == 6 or inside_proto == 7 then 
+        inside_dis = Dissector.get ("ip6")
       elseif inside_proto == 0 then
-        -- TODO: this is one huuuuuugee hack, this has to calculated and not guessed
-        -- no idea how to do it for now will try to test this later
+        -- TODO: this is one huuuuuugee hack, this has to be calculated and 
+        -- not guessed, no idea how to do it currently 
         if (buf(offset,1):uint() == 1 ) then 
-          local inside_dis = Dissector.get ("eth")
-          inside_dis:call (buf(offset+20):tvb(), pinfo, tree)
+          inside_dis = Dissector.get ("eth")
         elseif (buf(offset,1):uint() == 2 ) then
           if (buf(offset+46,1):uint() == 69) then
-            local inside_dis = Dissector.get ("eth")
-            inside_dis:call (buf(offset+32):tvb(), pinfo, tree)
+            inside_dis = Dissector.get ("eth")
+            cookie = 12
           elseif (buf(offset+28,1):uint() == 69) then
-            local inside_dis = Dissector.get ("ip")
-            inside_dis:call (buf(offset+28):tvb(), pinfo, tree)
+            inside_dis = Dissector.get ("ip")
+            cookie = 8
           elseif (buf(offset+38,1):uint() == 69) then
-            local inside_dis = Dissector.get ("eth")
-            inside_dis:call (buf(offset+24):tvb(), pinfo, tree)
+            inside_dis = Dissector.get ("eth")
+            cookie = 4
           else
-            local inside_dis = Dissector.get ("eth")
-            inside_dis:call (buf(offset+32):tvb(), pinfo, tree)
+            inside_dis = Dissector.get ("eth")
+            cookie = 12
           end
         end
-      elseif inside_proto == 4 or inside_proto == 5 or inside_proto == 8 then
-        local inside_dis = Dissector.get ("mpls")
-        inside_dis:call (buf(offset+20):tvb(), pinfo, tree)
---       elseif inside_proto == 0 and ttptype == 1 then
---         local inside_dis = Dissector.get ("eth")
---         inside_dis:call (buf(offset+24):tvb(), pinfo, tree)
---      elseif inside_proto == 9 then
---        local inside_dis = Dissector.get ("arp")
---        inside_dis:call (buf(offset+20):tvb(), pinfo, tree)
+      elseif inside_proto == 4 or inside_proto == 5 or inside_proto == 8 or inside_proto == 32 then
+        inside_dis = Dissector.get ("mpls")
+      elseif inside_proto == 10 then
+        inside_dis = Dissector.get ("clnp")
+      elseif inside_proto == 9 then
+        inside_dis = Dissector.get ("arp")
       end
+      inside_dis:call (buf(offset+20+cookie):tvb(), pinfo, tree)
 end
 
 -- This is a internal ethertype, it looks like it just adds additional two bytes

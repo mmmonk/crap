@@ -1,21 +1,46 @@
 #!/usr/bin/python
 
-import time
 from cookielib import CookieJar
-from urllib import urlencode
+from urllib import urlencode,unquote
 import urllib2 
-import sgmllib 
+from sgmllib import SGMLParser 
 import sys
 import os
 import re
-#import stat
 
 conffile='/home/case/.nsmauth.conf'
 maindir="/home/case/store/jj/"
-caseid=sys.argv[1]
+
+
+not_my_case = 0
+
+# usage printout
+def usage():
+  print "\nUsage: "+str(sys.argv[0])+" Case-IDCa-seID [n]\n\
+\n\
+If n is set then the script will download the files to a temp folder.\n"
+  sys.exit(1)
+
+try:
+  caseid=sys.argv[1]
+except:
+  usage()
+
+try:
+  if sys.argv[2]:
+    not_my_case = 1 
+except:
+  pass
+
+if not re.match("^\d{4}-\d{4}-\d{4}$",caseid):
+  usage()
 
 def LoadConf(filename):
-
+  '''
+  This loads the configuration settings from a file
+  the syntax of the file looks like:
+  attributename=attributevalue
+  '''
   global confvar
 
   confvar = {} 
@@ -32,14 +57,16 @@ def LoadConf(filename):
     confvar[conft[0]]=conft[1]
     line = conf.readline() 
 
-
-class LoginForm(sgmllib.SGMLParser):
+class LoginForm(SGMLParser):
+  '''
+  This class analyses the Login form
+  '''
   def parse(self, s):
     self.feed(s)
     self.close()
 
   def __init__(self, verbose=0):
-    sgmllib.SGMLParser.__init__(self, verbose)
+    SGMLParser.__init__(self, verbose)
     self.form = {} 
     self.inside_auth_form=0
 
@@ -61,13 +88,16 @@ class LoginForm(sgmllib.SGMLParser):
     return self.form
 
 
-class CaseForm(sgmllib.SGMLParser):
+class CaseForm(SGMLParser):
+  '''
+  This class analyses the Case search form
+  '''
   def parse(self, s):
     self.feed(s)
     self.close()
 
   def __init__(self, verbose=0):
-    sgmllib.SGMLParser.__init__(self, verbose)
+    SGMLParser.__init__(self, verbose)
     self.form = {} 
     self.inside_form=0
 
@@ -88,13 +118,16 @@ class CaseForm(sgmllib.SGMLParser):
   def get_form(self):
     return self.form
 
-class CaseDetailsForm(sgmllib.SGMLParser):
+class CaseDetailsForm(SGMLParser):
+  '''
+  This class analyses the Case details form
+  '''
   def parse(self, s):
     self.feed(s)
     self.close()
 
   def __init__(self, verbose=0):
-    sgmllib.SGMLParser.__init__(self, verbose)
+    SGMLParser.__init__(self, verbose)
     self.form = {}
     self.inside_form=0
 
@@ -115,13 +148,16 @@ class CaseDetailsForm(sgmllib.SGMLParser):
   def get_form(self):
     return self.form
 
-class CaseAttachForm(sgmllib.SGMLParser):
+class CaseAttachForm(SGMLParser):
+  '''
+  This class analyses the Case attachments form
+  '''
   def parse(self, s):
     self.feed(s)
     self.close()
 
   def __init__(self, verbose=0):
-    sgmllib.SGMLParser.__init__(self, verbose)
+    SGMLParser.__init__(self, verbose)
     self.form = {}
     self.inside_form=0
 
@@ -150,46 +186,73 @@ urllib2.install_opener(opener)
 
 dat = urllib2.urlopen("https://tools.online.juniper.net/cm/")
 
-fparser = LoginForm()
-fparser.parse(dat.read())
-form = fparser.get_form()
-form['USER']=confvar['schemauser']
-form['PASSWORD']=confvar['schemapass']
-dat = urllib2.urlopen(dat.geturl(),urlencode(form))
+print "[+] logging into the cm\r",
+try:
+  fparser = LoginForm()
+  fparser.parse(dat.read())
+  form = fparser.get_form()
+  form['USER']=confvar['schemauser']
+  form['PASSWORD']=confvar['schemapass']
+  dat = urllib2.urlopen(dat.geturl(),urlencode(form))
+except:
+  print "[-] error while logging into cm"
+  sys.exit(1)
 
-fparser = CaseForm()
-fparser.parse(dat.read())
-form = fparser.get_form()
-form['keyword']=caseid
-form['fr']="5"
-dat = urllib2.urlopen("https://tools.online.juniper.net/cm/case_results.jsp",urlencode(form))
+print "[+] searching for case "+str(caseid)+"\r",
+try:
+  fparser = CaseForm()
+  fparser.parse(dat.read())
+  form = fparser.get_form()
+  form['keyword']=caseid
+  form['fr']="5"
+  dat = urllib2.urlopen("https://tools.online.juniper.net/cm/case_results.jsp",urlencode(form))
+except:
+  print "[-] error while searching for the case "+str(caseid)+"."
+  sys.exit(1)
 
-text = dat.read()
-cid = re.search("href=\"javascript:setCid\(\'(.+?)\'",text)
-fparser = CaseDetailsForm()
-fparser.parse(text)
-form = fparser.get_form()
-form['cid']=cid.group(1)
-dat = urllib2.urlopen("https://tools.online.juniper.net/cm/case_detail.jsp",urlencode(form))
+print "[+] "+str(caseid)+": getting case details\r",
+try:
+  text = dat.read()
+  cid = re.search("href=\"javascript:setCid\(\'(.+?)\'",text)
+  fparser = CaseDetailsForm()
+  fparser.parse(text)
+  form = fparser.get_form()
+  form['cid']=cid.group(1)
+  dat = urllib2.urlopen("https://tools.online.juniper.net/cm/case_detail.jsp",urlencode(form))
+except:
+  print "[-] error while trying to get case "+str(caseid)+" details."
+  sys.exit(1)
 
-fparser = CaseAttachForm()
-fparser.parse(dat.read())
-form = fparser.get_form()
-dat = urllib2.urlopen("https://tools.online.juniper.net/cm/case_attachments.jsp",urlencode(form))
+print "[+] "+str(caseid)+": searching for case attachments\r",
+try:
+  fparser = CaseAttachForm()
+  fparser.parse(dat.read())
+  form = fparser.get_form()
+  dat = urllib2.urlopen("https://tools.online.juniper.net/cm/case_attachments.jsp",urlencode(form))
+except:
+  print "[-] error while searching for case "+str(caseid)+" attachments."
+  sys.exit(1)
 
 text = dat.read()
 attach = re.findall("href=\"(AttachDown/.+?)\"",text)
 
+casedir = str(maindir)+"/"+str(caseid)+"/"
+if not_my_case == 1:
+  casedir = str(maindir)+"/"+"temp/"+str(caseid)+"/" 
+
+print "[+] "+str(caseid)+": will download to "+str(casedir)
+
 for att in attach:
   filename = re.search("AttachDown/(.+?)\?OBJID=(.+?)\&",att)
-  casedir = str(maindir)+"/"+str(caseid)+"/"
+  
   if not os.path.exists(casedir):
-    os.makedir(casedir)
+    os.makedirs(casedir)
 
-  caseatt = casedir+str(filename.group(2))+"_"+str(filename.group(1))
+  caseatt = str(filename.group(2))+"_"+str(filename.group(1))
+  caseatt = re.sub("%3D","",caseatt)
   exists = 0
   try:
-    save = open(caseatt,"r")
+    save = open(casedir+caseatt,"r")
     save.close()
     exists = 1
   except:
@@ -200,7 +263,7 @@ for att in attach:
     
     csize = 0
     try:
-      save = open(caseatt,"w")
+      save = open(casedir+caseatt,"w")
       while 1:
         data = att.read(10000)
         csize = csize + len(data)
@@ -209,10 +272,10 @@ for att in attach:
           break
         save.write(data)
       save.close()
-      print "[+] Download "+str(caseatt)+" size:"+str(csize/1024)+" Kbytes completed"
+      print "[+] Download of "+str(caseatt)+" size:"+str(csize/1024)+" Kbytes completed"
     except:
-      os.unlink(caseatt)
-      print "error while downloading file: "+str(caseatt)
+      os.unlink(casedir+caseatt)
+      print "[-] error while downloading file: "+str(caseatt)
   else:
     print "[+] Attachment already exists: "+str(caseatt)
 

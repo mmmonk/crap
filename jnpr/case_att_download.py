@@ -39,7 +39,7 @@ cmuser=YOUR_USERNAME_FOR_CM\n\
 cmpass=YOUR_PASSWORD_FOR_CM\n\
 cmdir=THE_MAIN_DIRECTORY_WHERE_TO_DOWNLOAD_ATTACHMENTS\n\n\
 By default this script will download all the attachments for a given case\n\
-to the case directory inside current directory.\n\
+from case manager and from ftp server to the case directory inside current directory.\n\
 Options -i (include) and -e (exclude) can be specified together. In that case first filenames\n\
 will be matched against the include regexp and later against the exclude regexp.\n"
   sys.exit(1)

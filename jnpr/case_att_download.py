@@ -316,7 +316,7 @@ if __name__ == '__main__':
 
     sleep(0.25)
     
-    print "[+] searching for case "+str(caseid)+"\r",
+    print "[+] searching for "+str(caseid)+"\r",
     try:
       fparser = CaseForm()
       fparser.parse(dat.read())
@@ -330,7 +330,7 @@ if __name__ == '__main__':
 
     sleep(0.25)
 
-    print "[+] "+str(caseid)+": getting case details\r",
+    print "[+] "+str(caseid)+": getting details\r",
     try:
       text = dat.read()
       cid = re.search("href=\"javascript:setCid\(\'(.+?)\'",text)
@@ -348,7 +348,7 @@ if __name__ == '__main__':
 
     sleep(0.25)
 
-    print "[+] "+str(caseid)+": searching for case attachments\r",
+    print "[+] "+str(caseid)+": searching for files\r",
     try:
       fparser = CaseAttachForm()
       fparser.parse(dat.read())
@@ -370,8 +370,10 @@ if __name__ == '__main__':
     if opt_ucwd == 1:
       casedir = os.curdir+os.sep 
 
+    print "[+] "+str(caseid)+": found "+str(len(attach))+" attachment(s)",
     if opt_list == 0:
-      print "[+] "+str(caseid)+": found "+str(len(attach))+" attachment(s) and will download to "+str(casedir)
+      print "and will download to "+str(casedir)+"",
+    print ""
 
     filelist = dict()
 
@@ -457,15 +459,17 @@ if __name__ == '__main__':
           print "[+] File already exists: "+str(caseatt)
    
     ### FTP SERVER
-    print "[+] checking ftp server for files for case "+caseid
+    print "[+] Checking ftp server \r",
     ftp = FTP('svl-jtac-tool01.juniper.net')
     ftp.login(opt_user,opt_pass)
     try:
       ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
     except error_perm:
       sys.exit(0)
-   
-    for filename in ftp.nlst():
+  
+    ftplist = ftp.nlst()
+    print "[+] "+str(caseid)+": found "+str(len(ftplist))+" file(s) on ftp" 
+    for filename in ftplist:
       # downloading attachments
       if not opt_incl == "":
         if not re.search(opt_incl,filename):

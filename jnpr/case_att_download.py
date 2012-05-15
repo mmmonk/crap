@@ -8,8 +8,9 @@ import sys
 import os
 import re
 from time import sleep
+from ftplib import FTP,error_perm
 
-version = "20120513"
+version = "20120515a"
 
 def usage():
   '''
@@ -55,13 +56,13 @@ def LoadConf(filename):
   try:
     conf = open(filename,'r')
   except:
-    print "error during conf file read: "+str(filename)
-    sys.exit(1)
+    print "[-] error during conf file read: "+str(filename)
+    usage()
 
   line = conf.readline()
 
   while line:
-    conft = line.replace('\n','').split("=")
+    conft = line.replace(os.linesep,'').split("=")
     confvar[conft[0]] = conft[1]
     line = conf.readline() 
 
@@ -188,7 +189,8 @@ class CaseAttachForm(SGMLParser):
  
 if __name__ == '__main__':
 
-  conffile = str(os.environ['HOME'])+'/.cm.conf'
+  if os.name == "posix":
+    conffile = str(os.environ['HOME'])+os.sep+'.cm.conf'
   urlcm = "https://tools.online.juniper.net/cm/"
 
   caseid = ""
@@ -200,17 +202,24 @@ if __name__ == '__main__':
   opt_over = 0
   opt_user = ""
   opt_pass = ""
-  
+  opt_ucwd = 0
+
   try:
     LoadConf(conffile)
+    
     try:
-      if confvar['cmuser']:
-        opt_user = confvar['cmuser']
-      if confvar['cmpass']:
-        opt_pass = confvar['cmpass']
-      if confvar['cmdir']:
-        opt_dir = confvar['cmdir']
-    except:
+      opt_user = confvar['cmuser']
+    except KeyError:
+      pass
+    
+    try:
+      opt_pass = confvar['cmpass']
+    except KeyError:
+      pass
+
+    try:
+      opt_dir = confvar['cmdir']
+    except KeyError:
       pass
 
     # options parsing 
@@ -260,6 +269,12 @@ if __name__ == '__main__':
           usage()
       i += 1
 
+    if caseid == "":
+      if re.match("^\d{4}-\d{4}-\d{4}$",os.path.basename(os.getcwd())):
+        caseid = os.path.basename(os.getcwd())
+        opt_dir = ""
+        opt_ucwd = 1
+
     # just to check we have enough information to go further
     if caseid == "" or opt_user == "" or opt_pass == "":
       print "[-] error: either case id or user name or password was not defined"
@@ -270,8 +285,8 @@ if __name__ == '__main__':
     urllib2.install_opener(opener)
     try:
       dat = urllib2.urlopen(urlcm)
-    except urllib2.URLError:
-      print "[-] problem with connecting to the CM"
+    except urllib2.URLError as errstr:
+      print "[-] problem with connecting to the CM, ERROR:"+str(errstr)
       sys.exit(1)
     
     sleep(0.5)
@@ -284,8 +299,8 @@ if __name__ == '__main__':
       form['USER'] = opt_user
       form['PASSWORD'] = opt_pass
       dat = urllib2.urlopen(dat.geturl(),urlencode(form))
-    except urllib2.URLError:
-      print "[-] error while logging into cm"
+    except urllib2.URLError as errstr:
+      print "[-] error while logging into cm, ERROR:"+str(errstr)
       sys.exit(1)
 
     sleep(0.25)
@@ -298,8 +313,8 @@ if __name__ == '__main__':
       form['keyword'] = caseid
       form['fr'] = "5"
       dat = urllib2.urlopen(urlcm+"case_results.jsp",urlencode(form))
-    except urllib2.URLError:
-      print "[-] error while searching for the case "+str(caseid)+"."
+    except urllib2.URLError as errstr:
+      print "[-] error while searching for the case "+str(caseid)+", ERROR:"+str(errstr)
       sys.exit(1)
 
     sleep(0.25)
@@ -313,8 +328,11 @@ if __name__ == '__main__':
       form = fparser.get_form()
       form['cid'] = cid.group(1)
       dat = urllib2.urlopen(urlcm+"case_detail.jsp",urlencode(form))
-    except AttributeError,urllib2.URLError:
-      print "[-] error while trying to get case "+str(caseid)+" details."
+    except AttributeError as errstr:
+      print "[-] error while trying to get case "+str(caseid)+" details, ERROR:"+str(errstr)
+      sys.exit(1)
+    except urllib2.URLError as errstr:
+      print "[-] error while trying to get case "+str(caseid)+" details, ERROR:"+str(errstr) 
       sys.exit(1)
 
     sleep(0.25)
@@ -333,12 +351,17 @@ if __name__ == '__main__':
     text = dat.read()
     attach = re.findall("href=\"(AttachDown/.+?)\"",text)
 
-    casedir = str(opt_dir)+"/"+str(caseid)+"/"
+    casedir = str(opt_dir)+os.sep+str(caseid)+os.sep
     if opt_temp == 1:
-      casedir = str(opt_dir)+"/"+"temp/"+str(caseid)+"/" 
+      casedir = str(opt_dir)+os.sep+"temp"+os.sep+str(caseid)+os.sep
+
+    if opt_ucwd == 1:
+      casedir = os.curdir+os.sep 
 
     if opt_list == 0:
-      print "[+] "+str(caseid)+": found "+str(len(attach))+" attachments and will download to "+str(casedir)
+      print "[+] "+str(caseid)+": found "+str(len(attach))+" attachment(s) and will download to "+str(casedir)
+
+    filelist = dict()
 
     # looping through the attachments
     for att in attach:
@@ -357,8 +380,8 @@ if __name__ == '__main__':
 
         print "[+] ObjID: "+str(unquote(filename.group(2)))+"  Filename: "+str(filename.group(1))
       else:
+
         # downloading attachments
-        
         if not opt_incl == "":
           if not re.search(opt_incl,filename.group(1)):
             continue
@@ -370,8 +393,21 @@ if __name__ == '__main__':
         if not os.path.exists(casedir):
           os.makedirs(casedir)
 
-        caseatt = str(filename.group(2))+"_"+str(filename.group(1))
-        caseatt = re.sub("%3D","",caseatt)
+        caseatt = str(filename.group(1))
+        try:
+          filelist[caseatt] += 1
+        except KeyError:
+          filelist[caseatt] = 0
+
+        if filelist[caseatt] > 0:
+          name = re.search("^(.+)(\.\S{1,4})$",caseatt)
+          if name:
+            temp = name.group(1)+"_"+str(filelist[caseatt])+name.group(2)
+            caseatt = temp
+          else:
+            temp = caseatt + "_"+str(filelist[caseatt])
+            caseatt = temp
+
         exists = 0
         
         # do we overwrite or not?
@@ -384,8 +420,12 @@ if __name__ == '__main__':
             pass
 
         if exists == 0:
-          att = urllib2.urlopen(urlcm+att)
-          
+          try:
+            att = urllib2.urlopen(urlcm+att)
+          except urllib2.HTTPError as errstr:
+            print "[-] HTTP error while downloading "+str(caseatt)+" ERROR:"+str(errstr)
+            continue
+
           csize = 0
           try:
             save = open(casedir+caseatt,"w")
@@ -398,11 +438,78 @@ if __name__ == '__main__':
               save.write(data)
             save.close()
             print "[+] Download of "+str(caseatt)+" size:"+str(csize/1024)+" Kbytes completed"
-          except IOError:
+          except IOError as errstr:
             os.unlink(casedir+caseatt)
-            print "[-] error while downloading file: "+str(caseatt)
+            print "[-] error while downloading file: "+str(caseatt)+" ERROR:"+str(errstr)
         else:
           print "[+] File already exists: "+str(caseatt)
+   
+    ### FTP SERVER
+    print "[+] checking ftp server for files for case "+caseid
+    ftp = FTP('svl-jtac-tool01.juniper.net')
+    ftp.login(opt_user,opt_pass)
+    try:
+      ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
+    except error_perm:
+      sys.exit(0)
+   
+    for filename in ftp.nlst():
+      # downloading attachments
+      if not opt_incl == "":
+        if not re.search(opt_incl,filename):
+          continue
+      
+      if not opt_excl == "":
+        if re.search(opt_excl,filename):
+          continue
+      
+      if opt_list == 1:
+        print "[+] Filename: "+str(filename)
+        continue
+
+      if not os.path.exists(casedir):
+        os.makedirs(casedir)
+
+      caseatt = str(filename)
+      try:
+        filelist[caseatt] += 1
+      except KeyError:
+        filelist[caseatt] = 0
+
+      if filelist[caseatt] > 0:
+        name = re.search("^(.+)(\.\S{1,4})$",caseatt)
+        if name:
+          temp = name.group(1)+"_"+str(filelist[caseatt])+name.group(2)
+          caseatt = temp
+        else:
+          temp = caseatt + "_"+str(filelist[caseatt])
+          caseatt = temp
+
+      exists = 0
+      
+      # do we overwrite or not?
+      if opt_over == 0:
+        try:
+          save = open(casedir+caseatt,"r")
+          save.close()
+          exists = 1
+        except IOError:
+          pass
+     
+      if exists == 0:
+        print "[+] Downloading "+str(caseatt)+"\r",
+        try:
+          ftp.retrbinary("RETR "+str(caseatt),open(casedir+caseatt,"wb").write)
+        except:
+          os.unlink(casedir+caseatt)
+          print "[-] error while downloading file: "+str(caseatt)
+          continue
+
+        print "[+] Download of "+str(caseatt)+" completed"
+      else:
+        print "[+] File already exists: "+str(caseatt)
+    ftp.quit()
+        
   except KeyboardInterrupt:
     print "[-] program interrupted, exiting"
     sys.exit(1)

@@ -10,7 +10,7 @@ import re
 from time import sleep
 from ftplib import FTP,error_perm
 
-version = "20120515a"
+version = "20120516"
 
 def usage():
   '''
@@ -65,6 +65,17 @@ def LoadConf(filename):
     conft = line.replace(os.linesep,'').split("=")
     confvar[conft[0]] = conft[1]
     line = conf.readline() 
+
+
+def ftpcallback(data):
+  '''
+  call back function used while retriving data via ftplib
+  '''
+  global fcount
+  global ftpfile
+  fcount+=len(data)
+  ftpfile.write(data)
+  print "[+] Downloading "+str(caseatt)+" : "+str(fcount/1024)+" Kbytes\r",
 
 class LoginForm(SGMLParser):
   '''
@@ -198,7 +209,7 @@ if __name__ == '__main__':
   opt_excl = ""
   opt_list = 0
   opt_temp = 0
-  opt_dir = 0 
+  opt_dir = "" 
   opt_over = 0
   opt_user = ""
   opt_pass = ""
@@ -351,6 +362,7 @@ if __name__ == '__main__':
     text = dat.read()
     attach = re.findall("href=\"(AttachDown/.+?)\"",text)
 
+    opt_dir = opt_dir.rstrip(os.sep)
     casedir = str(opt_dir)+os.sep+str(caseid)+os.sep
     if opt_temp == 1:
       casedir = str(opt_dir)+os.sep+"temp"+os.sep+str(caseid)+os.sep
@@ -470,44 +482,50 @@ if __name__ == '__main__':
       if not os.path.exists(casedir):
         os.makedirs(casedir)
 
-      caseatt = str(filename)
+      global ftpatt 
+      ftpatt = str(filename)
       try:
-        filelist[caseatt] += 1
+        filelist[ftpatt] += 1
       except KeyError:
-        filelist[caseatt] = 0
+        filelist[ftpatt] = 0
 
-      if filelist[caseatt] > 0:
-        name = re.search("^(.+)(\.\S{1,4})$",caseatt)
+      if filelist[ftpatt] > 0:
+        name = re.search("^(.+)(\.\S{1,4})$",ftpatt)
         if name:
-          temp = name.group(1)+"_"+str(filelist[caseatt])+name.group(2)
-          caseatt = temp
+          temp = name.group(1)+"_"+str(filelist[ftpatt])+name.group(2)
+          ftpatt = temp
         else:
-          temp = caseatt + "_"+str(filelist[caseatt])
-          caseatt = temp
+          temp = ftpatt + "_"+str(filelist[ftpatt])
+          ftpatt = temp
 
       exists = 0
       
       # do we overwrite or not?
       if opt_over == 0:
         try:
-          save = open(casedir+caseatt,"r")
+          save = open(casedir+ftpatt,"r")
           save.close()
           exists = 1
         except IOError:
           pass
      
       if exists == 0:
-        print "[+] Downloading "+str(caseatt)+"\r",
+        print "[+] Downloading "+str(ftpatt)+"\r",
         try:
-          ftp.retrbinary("RETR "+str(caseatt),open(casedir+caseatt,"wb").write)
+          global ftpfile 
+          ftpfile = open(casedir+ftpatt,"wb")
+          global fcount 
+          fcount = 0
+          ftp.retrbinary("RETR "+str(filename),ftpcallback,blocksize=10240)
+          ftpfile.close() 
         except:
-          os.unlink(casedir+caseatt)
-          print "[-] error while downloading file: "+str(caseatt)
+          os.unlink(casedir+ftpatt)
+          print "[-] error while downloading file: "+str(ftpatt)
           continue
 
-        print "[+] Download of "+str(caseatt)+" completed"
+        print "[+] Download of "+str(ftpatt)+" size:"+str(fcount/1024)+" Kbytes completed"
       else:
-        print "[+] File already exists: "+str(caseatt)
+        print "[+] File already exists: "+str(ftpatt)
     ftp.quit()
         
   except KeyboardInterrupt:

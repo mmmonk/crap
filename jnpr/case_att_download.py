@@ -10,7 +10,7 @@ import re
 from time import sleep
 from ftplib import FTP,error_perm
 
-version = "20120516"
+version = "20120517"
 
 def usage():
   '''
@@ -56,7 +56,7 @@ def LoadConf(filename):
   try:
     conf = open(filename,'r')
   except:
-    print "[-] error during conf file read: "+str(filename)
+    print "[!] error during conf file read: "+str(filename)
     usage()
 
   line = conf.readline()
@@ -66,16 +66,26 @@ def LoadConf(filename):
     confvar[conft[0]] = conft[1]
     line = conf.readline() 
 
+def progressindicator(sign):
+  if sign == "|":
+    sign = "/"
+  elif sign == "/":
+    sign = "-"
+  elif sign == "-":
+    sign = "\\" 
+  else:
+    sign = "|"
+  return sign
 
 def ftpcallback(data):
   '''
   call back function used while retriving data via ftplib
   '''
-  global fcount
-  global ftpfile
+  global fcount, ftpfile, ftpprogind
   fcount+=len(data)
   ftpfile.write(data)
-  print "[+] Downloading "+str(caseatt)+" : "+str(fcount/1024)+" Kbytes\r",
+  ftpprogind = progressindicator(ftpprogind)
+  print "[+] Getting "+str(ftpatt)+" "+str(fcount/1024)+" kB ("+str(int((float(fcount)/fsize)*100))+"%)\r",
 
 class LoginForm(SGMLParser):
   '''
@@ -203,6 +213,7 @@ if __name__ == '__main__':
   if os.name == "posix":
     conffile = str(os.environ['HOME'])+os.sep+'.cm.conf'
   urlcm = "https://tools.online.juniper.net/cm/"
+  ftpserver = ""
 
   caseid = ""
   opt_incl = ""
@@ -288,7 +299,7 @@ if __name__ == '__main__':
 
     # just to check we have enough information to go further
     if caseid == "" or opt_user == "" or opt_pass == "":
-      print "[-] error: either case id or user name or password was not defined"
+      print "[!] error: either case id or user name or password was not defined"
       usage()
 
     cj = CookieJar()
@@ -297,7 +308,7 @@ if __name__ == '__main__':
     try:
       dat = urllib2.urlopen(urlcm)
     except urllib2.URLError as errstr:
-      print "[-] problem with connecting to the CM, ERROR:"+str(errstr)
+      print "[!] problem with connecting to the CM, ERROR:"+str(errstr)
       sys.exit(1)
     
     sleep(0.5)
@@ -311,7 +322,7 @@ if __name__ == '__main__':
       form['PASSWORD'] = opt_pass
       dat = urllib2.urlopen(dat.geturl(),urlencode(form))
     except urllib2.URLError as errstr:
-      print "[-] error while logging into cm, ERROR:"+str(errstr)
+      print "[!] error while logging into cm, ERROR:"+str(errstr)
       sys.exit(1)
 
     sleep(0.25)
@@ -325,7 +336,7 @@ if __name__ == '__main__':
       form['fr'] = "5"
       dat = urllib2.urlopen(urlcm+"case_results.jsp",urlencode(form))
     except urllib2.URLError as errstr:
-      print "[-] error while searching for the case "+str(caseid)+", ERROR:"+str(errstr)
+      print "[!] error while searching for the case "+str(caseid)+", ERROR:"+str(errstr)
       sys.exit(1)
 
     sleep(0.25)
@@ -340,10 +351,10 @@ if __name__ == '__main__':
       form['cid'] = cid.group(1)
       dat = urllib2.urlopen(urlcm+"case_detail.jsp",urlencode(form))
     except AttributeError as errstr:
-      print "[-] error while trying to get case "+str(caseid)+" details, ERROR:"+str(errstr)
+      print "[!] error while trying to get case "+str(caseid)+" details, ERROR:"+str(errstr)
       sys.exit(1)
     except urllib2.URLError as errstr:
-      print "[-] error while trying to get case "+str(caseid)+" details, ERROR:"+str(errstr) 
+      print "[!] error while trying to get case "+str(caseid)+" details, ERROR:"+str(errstr) 
       sys.exit(1)
 
     sleep(0.25)
@@ -355,7 +366,7 @@ if __name__ == '__main__':
       form = fparser.get_form()
       dat = urllib2.urlopen(urlcm+"case_attachments.jsp",urlencode(form))
     except urllib2.URLError:
-      print "[-] error while searching for case "+str(caseid)+" attachments."
+      print "[!] error while searching for case "+str(caseid)+" attachments."
       sys.exit(1)
 
     sleep(0.25)
@@ -370,10 +381,10 @@ if __name__ == '__main__':
     if opt_ucwd == 1:
       casedir = os.curdir+os.sep 
 
-    print "[+] "+str(caseid)+": found "+str(len(attach))+" attachment(s)",
     if opt_list == 0:
-      print "and will download to "+str(casedir)+"",
-    print ""
+      print "[+] "+str(caseid)+": will download to "+str(casedir)
+
+    print "[+] "+str(caseid)+": found total of "+str(len(attach))+" attachment(s)"
 
     filelist = dict()
 
@@ -437,24 +448,26 @@ if __name__ == '__main__':
           try:
             att = urllib2.urlopen(urlcm+att)
           except urllib2.HTTPError as errstr:
-            print "[-] HTTP error while downloading "+str(caseatt)+" ERROR:"+str(errstr)
+            print "[!] HTTP error while downloading "+str(caseatt)+" ERROR:"+str(errstr)
             continue
 
           csize = 0
           try:
             save = open(casedir+caseatt,"w")
+            progind = "|"
             while 1:
-              data = att.read(10240)
+              data = att.read(16192)
               csize = csize + len(data)
-              print "[+] Downloading "+str(caseatt)+" : "+str(csize/1024)+" Kbytes\r",
+              progind = progressindicator(progind) 
+              print "["+str(progind)+"] Getting "+str(caseatt)+" : "+str(csize/1024)+" kB\r",
               if not data:
                 break
               save.write(data)
             save.close()
-            print "[+] Download of "+str(caseatt)+" size:"+str(csize/1024)+" Kbytes completed"
+            print "[+] Download of "+str(caseatt)+" size: "+str(csize/1024)+" kB done"
           except IOError as errstr:
             os.unlink(casedir+caseatt)
-            print "[-] error while downloading file: "+str(caseatt)+" ERROR:"+str(errstr)
+            print "[!] error while downloading file: "+str(caseatt)+" ERROR:"+str(errstr)
         else:
           print "[+] File already exists: "+str(caseatt)
    
@@ -480,7 +493,8 @@ if __name__ == '__main__':
           continue
       
       if opt_list == 1:
-        print "[+] Filename: "+str(filename)
+        ftp.sendcmd("TYPE i")
+        print "[+] Filename: "+str(filename)+" size: "+str(int(ftp.size(str(filename)))/1024)+" kB"
         continue
 
       if not os.path.exists(casedir):
@@ -516,22 +530,24 @@ if __name__ == '__main__':
       if exists == 0:
         print "[+] Downloading "+str(ftpatt)+"\r",
         try:
-          global ftpfile 
+          global ftpfile, fcount, fsize, ftpprogind 
           ftpfile = open(casedir+ftpatt,"wb")
-          global fcount 
           fcount = 0
-          ftp.retrbinary("RETR "+str(filename),ftpcallback,blocksize=10240)
+          ftp.sendcmd("TYPE i")
+          fsize = ftp.size(str(filename))
+          ftpprogind = "|"
+          ftp.retrbinary("RETR "+str(filename),ftpcallback,blocksize=16192)
           ftpfile.close() 
         except:
           os.unlink(casedir+ftpatt)
-          print "[-] error while downloading file: "+str(ftpatt)
+          print "[!] error while downloading file: "+str(ftpatt)
           continue
 
-        print "[+] Download of "+str(ftpatt)+" size:"+str(fcount/1024)+" Kbytes completed"
+        print "[+] Download of "+str(ftpatt)+" size: "+str(fcount/1024)+" kB done"
       else:
         print "[+] File already exists: "+str(ftpatt)
     ftp.quit()
         
   except KeyboardInterrupt:
-    print "[-] program interrupted, exiting"
+    print "[!] program interrupted, exiting"
     sys.exit(1)

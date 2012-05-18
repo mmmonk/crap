@@ -27,6 +27,7 @@
 -- - figure out how TTP knows what protocol is inside under what offset
 --
 -- ChangeLog:
+-- 20120517 - more logic to decode TTP,
 -- 20120504 - some small fixes, 
 --          - added ugly hack to decode/guess more protocols,
 -- 20120503 - added more protocols that can be decoded in TTP,
@@ -745,9 +746,15 @@ function jttp_proto.dissector(buf,pinfo,tree,tnpver)
           elseif (buf(offset+38,1):uint() == 69) then
             inside_dis = Dissector.get ("eth")
             cookie = 4
+          elseif (buf(offset+44,1):uint() == 69) then
+            inside_dis = Dissector.get ("ip")
+            cookie = 24 
+          elseif (buf(offset+40,1):uint() == 69) then
+            inside_dis = Dissector.get ("eth")
+            cookie = 6
           else
             inside_dis = Dissector.get ("eth")
-            cookie = 12
+            cookie = 12 -- 12 
           end
         end
       elseif inside_proto == 4 or inside_proto == 5 or inside_proto == 8 or inside_proto == 32 then

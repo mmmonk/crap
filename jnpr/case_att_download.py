@@ -1,7 +1,7 @@
 #!/usr/bin/python -u
 
 from cookielib import CookieJar
-from urllib import urlencode,unquote
+from urllib import urlencode,unquote,quote
 import urllib2 
 from sgmllib import SGMLParser 
 import sys
@@ -10,7 +10,7 @@ import re
 from time import sleep
 from ftplib import FTP,error_perm
 
-version = "20120517"
+version = "20120518"
 
 def usage():
   '''
@@ -67,6 +67,9 @@ def LoadConf(filename):
     line = conf.readline() 
 
 def progressindicator(sign):
+  '''
+  rotating sign, progress indicator
+  '''
   if sign == "|":
     sign = "/"
   elif sign == "/":
@@ -79,13 +82,86 @@ def progressindicator(sign):
 
 def ftpcallback(data):
   '''
-  call back function used while retriving data via ftplib
+  call back function used while getting data via ftplib
   '''
   global fcount, ftpfile, ftpprogind
   fcount+=len(data)
   ftpfile.write(data)
   ftpprogind = progressindicator(ftpprogind)
-  print "[+] Getting "+str(ftpatt)+" "+str(fcount/1024)+" kB ("+str(int((float(fcount)/fsize)*100))+"%)\r",
+  print "["+str(ftpprogind)+"] Getting "+str(ftpatt)+" "+str(fcount/1024)+" kB ("+str(int((float(fcount)/fsize)*100))+"%)\r",
+
+
+def ftpcheck(caseid,casedir,ftp):
+  '''
+  this checks for files inside the specific folder
+  of the ftp server, it also makes sure not to overwrite files
+  '''
+  ftplist = ftp.nlst()
+  print "[+] "+str(caseid)+": found "+str(len(ftplist))+" file(s) on ftp" 
+  for filename in ftplist:
+    # downloading attachments
+    if not opt_incl == "":
+      if not re.search(opt_incl,filename):
+        continue
+    
+    if not opt_excl == "":
+      if re.search(opt_excl,filename):
+        continue
+    
+    if opt_list == 1:
+      ftp.sendcmd("TYPE i")
+      print "[+] Filename: "+str(filename)+" size: "+str(int(ftp.size(str(filename)))/1024)+" kB"
+      continue
+
+    if not os.path.exists(casedir):
+      os.makedirs(casedir)
+
+    global ftpatt 
+    ftpatt = str(filename)
+    try:
+      filelist[ftpatt] += 1
+    except KeyError:
+      filelist[ftpatt] = 0
+
+    if filelist[ftpatt] > 0:
+      name = re.search("^(.+)(\.\S{1,4})$",ftpatt)
+      if name:
+        temp = name.group(1)+"_"+str(filelist[ftpatt])+name.group(2)
+        ftpatt = temp
+      else:
+        temp = ftpatt + "_"+str(filelist[ftpatt])
+        ftpatt = temp
+
+    exists = 0
+    
+    # do we overwrite or not?
+    if opt_over == 0:
+      try:
+        save = open(casedir+ftpatt,"r")
+        save.close()
+        exists = 1
+      except IOError:
+        pass
+   
+    if exists == 0:
+      print "[+] Downloading "+str(ftpatt)+"\r",
+      try:
+        global ftpfile, fcount, fsize, ftpprogind 
+        ftpfile = open(casedir+ftpatt,"wb")
+        fcount = 0
+        ftp.sendcmd("TYPE i")
+        fsize = ftp.size(str(filename))
+        ftpprogind = "|"
+        ftp.retrbinary("RETR "+str(filename),ftpcallback,blocksize=16192)
+        ftpfile.close() 
+      except:
+        os.unlink(casedir+ftpatt)
+        print "[!] error while downloading file: "+str(ftpatt)
+        continue
+
+      print "[+] Download of "+str(ftpatt)+" size: "+str(fcount/1024)+" kB done"
+    else:
+      print "[+] File already exists: "+str(ftpatt)
 
 class LoginForm(SGMLParser):
   '''
@@ -214,6 +290,9 @@ if __name__ == '__main__':
     conffile = str(os.environ['HOME'])+os.sep+'.cm.conf'
   urlcm = "https://tools.online.juniper.net/cm/"
   ftpserver = ""
+
+  global caseid,opt_incl,opt_excl,opt_list,opt_temp
+  global opt_over,opt_user,opt_pass,opt_ucwd,opt_dir
 
   caseid = ""
   opt_incl = ""
@@ -446,9 +525,9 @@ if __name__ == '__main__':
 
         if exists == 0:
           try:
-            att = urllib2.urlopen(urlcm+att)
+            att = urllib2.urlopen(urlcm+quote(att))
           except urllib2.HTTPError as errstr:
-            print "[!] HTTP error while downloading "+str(caseatt)+" ERROR:"+str(errstr)
+            print "[!] HTTP error while downloading "+str(caseatt)+" ERROR:"+str(errstr).replace(os.linesep," ")
             continue
 
           csize = 0
@@ -473,79 +552,21 @@ if __name__ == '__main__':
    
     ### FTP SERVER
     print "[+] Checking ftp server \r",
-    ftp = FTP('svl-jtac-tool01.juniper.net')
+    ftp = FTP('svl-jtac-tool02.juniper.net')
     ftp.login(opt_user,opt_pass)
     try:
       ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
+      ftpcheck(caseid,casedir,ftp)
     except error_perm:
-      sys.exit(0)
-  
-    ftplist = ftp.nlst()
-    print "[+] "+str(caseid)+": found "+str(len(ftplist))+" file(s) on ftp" 
-    for filename in ftplist:
-      # downloading attachments
-      if not opt_incl == "":
-        if not re.search(opt_incl,filename):
-          continue
-      
-      if not opt_excl == "":
-        if re.search(opt_excl,filename):
-          continue
-      
-      if opt_list == 1:
-        ftp.sendcmd("TYPE i")
-        print "[+] Filename: "+str(filename)+" size: "+str(int(ftp.size(str(filename)))/1024)+" kB"
-        continue
+      pass
+    
+    ### checking sftp folder
+    try:
+      ftp.cwd("/volume/sftp/pub/incoming/"+caseid)
+      ftpcheck(caseid,casedir,ftp)
+    except error_perm:
+      pass
 
-      if not os.path.exists(casedir):
-        os.makedirs(casedir)
-
-      global ftpatt 
-      ftpatt = str(filename)
-      try:
-        filelist[ftpatt] += 1
-      except KeyError:
-        filelist[ftpatt] = 0
-
-      if filelist[ftpatt] > 0:
-        name = re.search("^(.+)(\.\S{1,4})$",ftpatt)
-        if name:
-          temp = name.group(1)+"_"+str(filelist[ftpatt])+name.group(2)
-          ftpatt = temp
-        else:
-          temp = ftpatt + "_"+str(filelist[ftpatt])
-          ftpatt = temp
-
-      exists = 0
-      
-      # do we overwrite or not?
-      if opt_over == 0:
-        try:
-          save = open(casedir+ftpatt,"r")
-          save.close()
-          exists = 1
-        except IOError:
-          pass
-     
-      if exists == 0:
-        print "[+] Downloading "+str(ftpatt)+"\r",
-        try:
-          global ftpfile, fcount, fsize, ftpprogind 
-          ftpfile = open(casedir+ftpatt,"wb")
-          fcount = 0
-          ftp.sendcmd("TYPE i")
-          fsize = ftp.size(str(filename))
-          ftpprogind = "|"
-          ftp.retrbinary("RETR "+str(filename),ftpcallback,blocksize=16192)
-          ftpfile.close() 
-        except:
-          os.unlink(casedir+ftpatt)
-          print "[!] error while downloading file: "+str(ftpatt)
-          continue
-
-        print "[+] Download of "+str(ftpatt)+" size: "+str(fcount/1024)+" kB done"
-      else:
-        print "[+] File already exists: "+str(ftpatt)
     ftp.quit()
         
   except KeyboardInterrupt:

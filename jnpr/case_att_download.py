@@ -10,7 +10,7 @@ import re
 from time import sleep
 from ftplib import FTP,error_perm
 
-version = "20120518"
+version = "20120518a"
 
 def usage():
   '''
@@ -18,6 +18,7 @@ def usage():
   '''
   print "\nUsage: "+str(sys.argv[0])+" <options> Case-IDCa-seID\n\
 \n\
+Author: Marek Lukaszuk\n\
 Version: "+str(version)+"\n\n\
 Options:\n\
 -d directory  directory where to download attachments,\n\
@@ -57,7 +58,7 @@ def LoadConf(filename):
     conf = open(filename,'r')
   except:
     print "[!] error during conf file read: "+str(filename)
-    usage()
+    return
 
   line = conf.readline()
 
@@ -299,7 +300,7 @@ if __name__ == '__main__':
   opt_excl = ""
   opt_list = 0
   opt_temp = 0
-  opt_dir = "" 
+  opt_dir = os.curdir 
   opt_over = 0
   opt_user = ""
   opt_pass = ""

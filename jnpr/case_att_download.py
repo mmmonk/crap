@@ -532,7 +532,10 @@ if __name__ == '__main__':
 
         if exists == 0:
           try:
-            att = urllib2.urlopen(urlcm+quote(att))
+            att = quote(att)
+            # this is to encode dot ".", otherwise we get 500
+            att = re.sub("\.","%46",att)
+            att = urllib2.urlopen(urlcm+att)
           except urllib2.HTTPError as errstr:
             print "[!] HTTP error while downloading "+str(caseatt)+" ERROR:"+str(errstr).replace(os.linesep," ")
             continue

@@ -10,7 +10,7 @@ import re
 from time import sleep
 from ftplib import FTP,error_perm
 
-version = "20120518a"
+version = "20120521"
 
 def usage():
   '''
@@ -98,7 +98,7 @@ def ftpcheck(caseid,casedir,ftp):
   of the ftp server, it also makes sure not to overwrite files
   '''
   ftplist = ftp.nlst()
-  print "[+] "+str(caseid)+": found "+str(len(ftplist))+" file(s) on ftp" 
+  print "[+] "+str(caseid)+": found "+str(len(ftplist))+" file(s) in "+str(ftp.pwd()) 
   for filename in ftplist:
     # downloading attachments
     if not opt_incl == "":
@@ -452,6 +452,8 @@ if __name__ == '__main__':
     sleep(0.25)
     text = dat.read()
     attach = re.findall("href=\"(AttachDown/.+?)\"",text)
+    attssize = re.findall("<td class=\"tbc\" width=\"\d+%\">\s*(\d+)\s*<\/td>",text)
+    attssize.reverse()
 
     opt_dir = opt_dir.rstrip(os.sep)
     casedir = str(opt_dir)+os.sep+str(caseid)+os.sep
@@ -471,7 +473,11 @@ if __name__ == '__main__':
     # looping through the attachments
     for att in attach:
       filename = re.search("AttachDown/(.+?)\?OBJID=(.+?)\&",att)
-    
+      try:
+        attsize = int(attssize.pop())
+      except IndexError:
+        attsize = "?"
+
       # just listing attachments
       if opt_list == 1:
         
@@ -483,7 +489,7 @@ if __name__ == '__main__':
           if re.search(opt_excl,filename.group(1)):
             continue
 
-        print "[+] ObjID: "+str(unquote(filename.group(2)))+"  Filename: "+str(filename.group(1))
+        print "[+] ObjID: "+str(unquote(filename.group(2)))+"  Filename: "+str(filename.group(1))+"  Size: "+str(attsize)+" KB"
       else:
 
         # downloading attachments
@@ -538,8 +544,11 @@ if __name__ == '__main__':
             while 1:
               data = att.read(16192)
               csize = csize + len(data)
-              progind = progressindicator(progind) 
-              print "["+str(progind)+"] Getting "+str(caseatt)+" : "+str(csize/1024)+" kB\r",
+              progind = progressindicator(progind)
+              if attsize == "?":
+                print "["+str(progind)+"] Getting "+str(caseatt)+" : "+str(csize/1024)+" kB\r",
+              else:
+                print "["+str(progind)+"] Getting "+str(caseatt)+" : "+str(csize/1024)+" kB ("+str(int((float(csize)/(attsize*1000))*100))+"%)\r",
               if not data:
                 break
               save.write(data)

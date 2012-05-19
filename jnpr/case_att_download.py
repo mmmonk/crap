@@ -10,6 +10,9 @@ import re
 from time import sleep
 from ftplib import FTP,error_perm
 
+### TODO
+# - add check for unicode,
+
 version = "20120521"
 
 def usage():
@@ -290,7 +293,7 @@ if __name__ == '__main__':
   if os.name == "posix":
     conffile = str(os.environ['HOME'])+os.sep+'.cm.conf'
   urlcm = "https://tools.online.juniper.net/cm/"
-  ftpserver = ""
+  ftpserver = "svl-jtac-tool02.juniper.net"
 
   global caseid,opt_incl,opt_excl,opt_list,opt_temp
   global opt_over,opt_user,opt_pass,opt_ucwd,opt_dir
@@ -537,7 +540,10 @@ if __name__ == '__main__':
             att = re.sub("\.","%46",att)
             att = urllib2.urlopen(urlcm+att)
           except urllib2.HTTPError as errstr:
-            print "[!] HTTP error while downloading "+str(caseatt)+" ERROR:"+str(errstr).replace(os.linesep," ")
+            if "302" in str(errstr):
+              print "[+] Got HTTP 302 for "+str(caseatt)+", this is probably from sftp, will get it later"
+            else:
+              print "[!] HTTP error while downloading "+str(caseatt)+" ERROR:"+str(errstr).replace(os.linesep," ")
             continue
 
           csize = 0
@@ -564,8 +570,8 @@ if __name__ == '__main__':
           print "[+] File already exists: "+str(caseatt)
    
     ### FTP SERVER
-    print "[+] Checking ftp server \r",
-    ftp = FTP('svl-jtac-tool02.juniper.net')
+    print "[+] Checking ftp server "+str(ftpserver)
+    ftp = FTP(ftpserver)
     ftp.login(opt_user,opt_pass)
     try:
       ftp.cwd("/volume/ftp/pub/incoming/"+caseid)

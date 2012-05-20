@@ -27,6 +27,23 @@ for path in mntlist:
       percent = 0
     txt+=str(path)+":"+str(percent)+"% "
 
+## thermal information
+## laptop 
+try:
+  txt += str(int(open("/sys/devices/virtual/thermal/thermal_zone0/temp").readline())/1000)+"C "
+except:
+  pass
+
+## thermal work
+## 
+try:
+  t1 = int(open("/sys/devices/platform/coretemp.0/temp2_input").readline())/1000
+  t2 = int(open("/sys/devices/platform/coretemp.0/temp3_input").readline())/1000
+  t3 = int(open("/sys/devices/platform/coretemp.3/temp2_input").readline())/1000
+  t4 = int(open("/sys/devices/platform/coretemp.3/temp3_input").readline())/1000
+  txt += str((t1+t2+t3+t4)/4)+"C "
+except:
+  pass
 
 ## battery information
 ## TODO: maybe use the /sys/ filesystem to dig out this information?

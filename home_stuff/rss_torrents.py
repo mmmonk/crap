@@ -53,7 +53,7 @@ socket.setdefaulttimeout(timeout)
 DEBUG=0
 
 HTTPHEADERS = {
-  'User-Agent':	'Mozilla/5.0 (Windows; U; Windows NT 5.1; en; rv:1.8.1.3) Gecko/20070309 Firefox/2.0.0.3',
+  'User-Agent':    'Mozilla/5.0 (Windows; U; Windows NT 5.1; en; rv:1.8.1.3) Gecko/20070309 Firefox/2.0.0.3',
   'Connection': 'close'
 }
 
@@ -66,11 +66,11 @@ def DbPrint(debugstr,errorvar=0):
   input: string to print
   '''
   if DEBUG == 1:
-	errorsign = '+'
-	if errorvar == 1:
-	  errorsign = '-'
-	
-	print '[%c] %s' % (errorsign,debugstr)
+    errorsign = '+'
+    if errorvar == 1:
+      errorsign = '-'
+    
+    print '[%c] %s' % (errorsign,debugstr)
 
 def MapNewLineClean(a):
   '''
@@ -87,12 +87,12 @@ def AddToDataFile(str):
   intput: string containing the feed url and the link to the torrent file that we have already downloaded
   '''
   try: 
-	datatmpfile = open(DATATMPFILE,'a')
-	datatmpfile.write(str+'\n')
-	datatmpfile.close()
+    datatmpfile = open(DATATMPFILE,'a')
+    datatmpfile.write(str+'\n')
+    datatmpfile.close()
   except:
-	DbPrint('error while writing '+DATATMPFILE,1)
-	os._exit(os.EX_CANTCREAT)
+    DbPrint('error while writing '+DATATMPFILE,1)
+    os._exit(os.EX_CANTCREAT)
 
 def LoadDataFile(file):
   '''
@@ -107,10 +107,10 @@ def LoadDataFile(file):
   DbPrint('Loading data file '+file)
 
   try:
-	datafile = open(file,'r')
+    datafile = open(file,'r')
   except:
-	DbPrint('No old data file present',0)
-	return
+    DbPrint('No old data file present',0)
+    return
 
   SEENTORRENTS = map(MapNewLineClean,datafile.readlines())
 
@@ -123,13 +123,13 @@ def GetFile(feed,url):
 
   '''
   if 'http://' in url:
-	url = url.replace('http://','',1)
+    url = url.replace('http://','',1)
 
 
   if feed+"|"+url in SEENTORRENTS:
-	DbPrint('already seen torrent ('+url+')')
-	AddToDataFile(feed+"|"+url)	
-	return
+    DbPrint('already seen torrent ('+url+')')
+    AddToDataFile(feed+"|"+url)    
+    return
 
   # url[0] - hostname
   # url[2] - file path part of url
@@ -143,17 +143,17 @@ def GetFile(feed,url):
   http_connection.request('GET',"/"+url[2],'',HTTPHEADERS)
   
   try:
-	http_response = http_connection.getresponse();
+    http_response = http_connection.getresponse();
   except: 
-	DbPrint('Connection timed out')
-	return
+    DbPrint('Connection timed out')
+    return
 
   data = http_response.read()
   http_connection.close()
 
   if not len(data) > 0:
-	DbPrint('length of the response is 0')
-	return
+    DbPrint('length of the response is 0')
+    return
 
   try:
     DbPrint('response is "'+repr(http_response.status)+' '+http_response.reason+'" and it is '+http_response.getheader('Content-Type'))
@@ -161,19 +161,19 @@ def GetFile(feed,url):
     pass
 
   if http_response.status != 200:
-	DbPrint('HTTP response not 200, ignoring link',1)
-	return
+    DbPrint('HTTP response not 200, ignoring link',1)
+    return
 
   # if this is not bittorrent file then we are not intrested
   if 'x-bittorrent'not in http_response.getheader('Content-Type'):
-	DbPrint('not bittorrent file, ignore',1)
-	return
+    DbPrint('not bittorrent file, ignore',1)
+    return
 
   # first use the last part of the url for the filename
   filename = (url[2].rpartition('/'))[2]
 
   if '\.torrent' not in filename:
-	filename = filename+'.torrent'
+    filename = filename+'.torrent'
 
   # then check if the server send us Content-Disposition header with the filename
   try:
@@ -183,31 +183,31 @@ def GetFile(feed,url):
     pass 
 
   try:
-	filename = str(filename)
+    filename = str(filename)
   except UnicodeEncodeError:
-	filename = filename.encode('ascii', 'ignore')
+    filename = filename.encode('ascii', 'ignore')
 
   filename = filename.lower().replace(' ','_').strip('?\/*+!"')
 
   DbPrint('saving torrent to file '+TORRENTSDIR+filename)
 
   try:
-	open(TORRENTSDIR+filename,'r')
-	DbPrint('torrent file already exists',1)
-	return
+    open(TORRENTSDIR+filename,'r')
+    DbPrint('torrent file already exists',1)
+    return
   except:
-	pass
+    pass
 
   try:
-	torrent = open(TORRENTSDIR+filename,'wb')
-	torrent.write(data);
-	torrent.close()
-	DbPrint('  completed')
-	AddToDataFile(feed+"|"+url[0]+'/'+url[2])
+    torrent = open(TORRENTSDIR+filename,'wb')
+    torrent.write(data);
+    torrent.close()
+    DbPrint('  completed')
+    AddToDataFile(feed+"|"+url[0]+'/'+url[2])
 
   except:
-	DbPrint('  error while saving',1)
-	
+    DbPrint('  error while saving',1)
+    
 def ReadFeed(url):
   ''' 
   reads RSS feed, filters for intresting things and gets the links to the torrent files
@@ -222,53 +222,53 @@ def ReadFeed(url):
   host = (host.partition('/'))[0]
 
   try:
-	rssfeed = feedparser.parse(url)
+    rssfeed = feedparser.parse(url)
   except:
-	DbPrint('Connection problems')
-	for torrentlink in SEENTORRENTS:
-	  if host in torrentlink:
+    DbPrint('Connection problems')
+    for torrentlink in SEENTORRENTS:
+      if host in torrentlink:
             AddToDataFile(url+"|"+torrentlink)
-	return
+    return
 
   for rssentry in rssfeed.entries:
-	DbPrint('---------------------- start new link ----------------------')
-	DbPrint('torrent title - "'+rssentry.title+'"')
+    DbPrint('---------------------- start new link ----------------------')
+    DbPrint('torrent title - "'+rssentry.title+'"')
 
-	title = rssentry.title.lower()
+    title = rssentry.title.lower()
 
-	DbPrint('torrent title for checking against the filters - "'+title+'"')
+    DbPrint('torrent title for checking against the filters - "'+title+'"')
 
-	torrentdenied = False
+    torrentdenied = False
 
-	if url in RSSALLOW:
-	  DbPrint('feed in RSSALLOW')
-	  for text in RSSALLOW[url]:
-  		if text not in title: 
-		  torrentdenied = True
-		else:
-		  torrentdenied = False
-		  break
+    if url in RSSALLOW:
+      DbPrint('feed in RSSALLOW')
+      for text in RSSALLOW[url]:
+          if text not in title: 
+          torrentdenied = True
+        else:
+          torrentdenied = False
+          break
 
-	if url in RSSDENY and not torrentdenied:
-	  DbPrint('feed in RSSDENY:')
-	  for text in RSSDENY[url]:
-		if text in title: 
-		  torrentdenied = True
-		  break
-		else:
-		  torrentdenied = False
+    if url in RSSDENY and not torrentdenied:
+      DbPrint('feed in RSSDENY:')
+      for text in RSSDENY[url]:
+        if text in title: 
+          torrentdenied = True
+          break
+        else:
+          torrentdenied = False
 
-	if not torrentdenied:
-	  pass
-	  if host in RSSDOWNLOAD:
-		DbPrint('host in the RSSDOWNLOAD list')
-		DbPrint('  orginal link '+rssentry.link)
-		rssentry.link = re.sub(RSSDOWNLOAD[host][0],RSSDOWNLOAD[host][1],rssentry.link)
-		DbPrint('  new link '+rssentry.link)
-	  
-	  GetFile(url,rssentry.link)
-	else:
-	  DbPrint('not intrested in this torrent')
+    if not torrentdenied:
+      pass
+      if host in RSSDOWNLOAD:
+        DbPrint('host in the RSSDOWNLOAD list')
+        DbPrint('  orginal link '+rssentry.link)
+        rssentry.link = re.sub(RSSDOWNLOAD[host][0],RSSDOWNLOAD[host][1],rssentry.link)
+        DbPrint('  new link '+rssentry.link)
+      
+      GetFile(url,rssentry.link)
+    else:
+      DbPrint('not intrested in this torrent')
 
 
 
@@ -282,19 +282,19 @@ if __name__ == '__main__':
   LoadDataFile(DATAFILE)
 
   try:
-	for feed in RSSFEEDS:
-	  DbPrint('====================== start new feed ======================')
-	  ReadFeed(feed)
-	  sleeptime=random.randint(2,15)
-	  DbPrint('sleeping for '+str(sleeptime)+' seconds')
-	  time.sleep(sleeptime)
+    for feed in RSSFEEDS:
+      DbPrint('====================== start new feed ======================')
+      ReadFeed(feed)
+      sleeptime=random.randint(2,15)
+      DbPrint('sleeping for '+str(sleeptime)+' seconds')
+      time.sleep(sleeptime)
 
   except KeyboardInterrupt:
-	DbPrint('interupted exiting')
+    DbPrint('interupted exiting')
  
   try:
-	tempfile = open(DATATMPFILE,'r')
+    tempfile = open(DATATMPFILE,'r')
         tempfile.close()
         os.rename(DATATMPFILE,DATAFILE)
   except:
-	pass
+    pass

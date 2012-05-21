@@ -10,8 +10,10 @@ import re
 from time import sleep
 from ftplib import FTP,error_perm
 
-### TODO
+### TODO:
 # - add check for unicode,
+# - add check if the filename is not anything funny, like for example "~/.ssh/config"
+# - and in general try to verify all the data from the server 
 
 version = "20120521"
 
@@ -156,7 +158,7 @@ def ftpcheck(caseid,casedir,ftp):
         ftp.sendcmd("TYPE i")
         fsize = ftp.size(str(filename))
         ftpprogind = "|"
-        ftp.retrbinary("RETR "+str(filename),ftpcallback,blocksize=16192)
+        ftp.retrbinary("RETR "+str(filename),ftpcallback,blocksize=32768)
         ftpfile.close() 
       except:
         os.unlink(casedir+ftpatt)
@@ -466,6 +468,7 @@ if __name__ == '__main__':
     if opt_ucwd == 1:
       casedir = os.curdir+os.sep 
 
+    casedir = os.path.normpath(casedir)
     if opt_list == 0:
       print "[+] "+str(caseid)+": will download to "+str(casedir)
 
@@ -551,7 +554,7 @@ if __name__ == '__main__':
             save = open(casedir+caseatt,"w")
             progind = "|"
             while 1:
-              data = att.read(16192)
+              data = att.read(32768)
               csize = csize + len(data)
               progind = progressindicator(progind)
               if attsize == "?":

@@ -15,7 +15,7 @@ from ftplib import FTP,error_perm
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
 # - and in general try to verify all the data from the server 
 
-version = "20120521"
+version = "20120523"
 
 def usage():
   '''
@@ -31,6 +31,7 @@ Options:\n\
 -i regexp     (include) download or list only attachments which filenames match regexp,\n\
 -e regexp     (exclude) skip attachments which filenames match regexp,\n\
 -h            this help,\n\
+-n value      number of newest attachments to download/list from CM, this will skip FTP and SFTP,\n\
 -l            just list case attachments without downloading,\n\
 -o            force overwrite of the files,\n\
 -p pass       password used for the CM,\n\
@@ -68,8 +69,11 @@ def LoadConf(filename):
   line = conf.readline()
 
   while line:
-    conft = line.replace(os.linesep,'').split("=")
-    confvar[conft[0]] = conft[1]
+    try: 
+      conft = line.replace(os.linesep,'').split("=")
+      confvar[conft[0]] = conft[1]
+    except:
+      pass
     line = conf.readline() 
 
 def progressindicator(sign):
@@ -109,11 +113,11 @@ def ftpcheck(caseid,casedir,ftp):
     if not opt_incl == "":
       if not re.search(opt_incl,filename):
         continue
-    
+
     if not opt_excl == "":
       if re.search(opt_excl,filename):
         continue
-    
+
     if opt_list == 1:
       ftp.sendcmd("TYPE i")
       print "[+] Filename: "+str(filename)+" size: "+str(int(ftp.size(str(filename)))/1024)+" kB"
@@ -139,21 +143,21 @@ def ftpcheck(caseid,casedir,ftp):
         ftpatt = temp
 
     exists = 0
-    
+
     # do we overwrite or not?
     if opt_over == 0:
       try:
-        save = open(casedir+ftpatt,"r")
+        save = open(casedir+os.sep+ftpatt,"r")
         save.close()
         exists = 1
       except IOError:
         pass
-   
+
     if exists == 0:
       print "[+] Downloading "+str(ftpatt)+"\r",
       try:
         global ftpfile, fcount, fsize, ftpprogind 
-        ftpfile = open(casedir+ftpatt,"wb")
+        ftpfile = open(casedir+os.sep+ftpatt,"wb")
         fcount = 0
         ftp.sendcmd("TYPE i")
         fsize = ftp.size(str(filename))
@@ -289,7 +293,7 @@ class CaseAttachForm(SGMLParser):
 
   def get_form(self):
     return self.form
- 
+
 if __name__ == '__main__':
 
   if os.name == "posix":
@@ -310,15 +314,16 @@ if __name__ == '__main__':
   opt_user = ""
   opt_pass = ""
   opt_ucwd = 0
+  opt_news = 0
 
   try:
     LoadConf(conffile)
-    
+
     try:
       opt_user = confvar['cmuser']
     except KeyError:
       pass
-    
+
     try:
       opt_pass = confvar['cmpass']
     except KeyError:
@@ -332,49 +337,57 @@ if __name__ == '__main__':
     # options parsing 
     i = 1
     imax = len(sys.argv)
-    while 1:
-      if i >= imax:
-        break
-      arg = sys.argv[i]
-      if arg == "-t":
-        opt_temp = 1
-      elif arg == "-l":
-        opt_list = 1
-      elif arg == "-o":
-        opt_over = 1
-      elif arg == "-i":
-        i += 1
+    try:
+      while 1:
         if i >= imax:
+          break
+        arg = sys.argv[i]
+        if arg == "-t":
+          opt_temp = 1
+        elif arg == "-l":
+          opt_list = 1
+        elif arg == "-o":
+          opt_over = 1
+        elif arg == "-i":
+          i += 1
+          if i >= imax:
+            usage()
+          opt_incl = sys.argv[i]
+        elif arg == "-e":
+          i += 1
+          if i >= imax:
+            usage()
+          opt_excl = sys.argv[i]
+        elif arg == "-h":
           usage()
-        opt_incl = sys.argv[i]
-      elif arg == "-e":
-        i += 1
-        if i >= imax:
-          usage()
-        opt_excl = sys.argv[i]
-      elif arg == "-h":
-        usage()
-      elif arg == "-d":
-        i += 1
-        if i >= imax:
-          usage()
-        opt_dir = sys.argv[i]
-      elif arg == "-u":
-        i += 1
-        if i >= imax:
-          usage()
-        opt_user = sys.argv[i]
-      elif arg == "-p":
-        i += 1
-        if i >= imax:
-          usage()
-        opt_pass = sys.argv[i]
-      else:
-        if re.match("^\d{4}-\d{4}-\d{4}$",arg):
-          caseid = arg
+        elif arg == "-d":
+          i += 1
+          if i >= imax:
+            usage()
+          opt_dir = sys.argv[i]
+        elif arg == "-u":
+          i += 1
+          if i >= imax:
+            usage()
+          opt_user = sys.argv[i]
+        elif arg == "-n":
+          i += 1
+          if i >= imax:
+            usage()
+          opt_news = int(sys.argv[i])
+        elif arg == "-p":
+          i += 1
+          if i >= imax:
+            usage()
+          opt_pass = sys.argv[i]
         else:
-          usage()
-      i += 1
+          if re.match("^\d{4}-\d{4}-\d{4}$",arg):
+            caseid = arg
+          else:
+            usage()
+        i += 1
+    except:
+      usage()
 
     if caseid == "":
       if re.match("^\d{4}-\d{4}-\d{4}$",os.path.basename(os.getcwd())):
@@ -395,7 +408,7 @@ if __name__ == '__main__':
     except urllib2.URLError as errstr:
       print "[!] problem with connecting to the CM, ERROR:"+str(errstr)
       sys.exit(1)
-    
+
     sleep(0.5)
 
     print "[+] logging into the cm\r",
@@ -411,7 +424,7 @@ if __name__ == '__main__':
       sys.exit(1)
 
     sleep(0.25)
-    
+
     print "[+] searching for "+str(caseid)+"\r",
     try:
       fparser = CaseForm()
@@ -472,10 +485,12 @@ if __name__ == '__main__':
     if opt_list == 0:
       print "[+] "+str(caseid)+": will download to "+str(casedir)
 
-    print "[+] "+str(caseid)+": found total of "+str(len(attach))+" attachment(s)"
+    maxcmatt = len(attach)
+    print "[+] "+str(caseid)+": found total of "+str(maxcmatt)+" attachment(s)"
 
     filelist = dict()
 
+    curcmatt = 1
     # looping through the attachments
     for att in attach:
       filename = re.search("AttachDown/(.+?)\?OBJID=(.+?)\&",att)
@@ -486,27 +501,43 @@ if __name__ == '__main__':
 
       # just listing attachments
       if opt_list == 1:
-        
+
+        # filtering - include
         if not opt_incl == "":
           if not re.search(opt_incl,filename.group(1)):
             continue
-         
+
+        #filtering - exclude
         if not opt_excl == "":
           if re.search(opt_excl,filename.group(1)):
+            continue
+
+        # download N newest attachements
+        if opt_news > 0:
+          if curcmatt <= maxcmatt - opt_news:
+            curcmatt += 1
             continue
 
         print "[+] ObjID: "+str(unquote(filename.group(2)))+"  Filename: "+str(filename.group(1))+"  Size: "+str(attsize)+" KB"
       else:
 
         # downloading attachments
+        # filtering - include
         if not opt_incl == "":
           if not re.search(opt_incl,filename.group(1)):
             continue
-        
+
+        # filtering - exclude
         if not opt_excl == "":
           if re.search(opt_excl,filename.group(1)):
             continue
-        
+
+        # download N newest attachements
+        if opt_news > 0:
+          if curcmatt <= maxcmatt - opt_news:
+            curcmatt += 1
+            continue
+
         if not os.path.exists(casedir):
           os.makedirs(casedir)
 
@@ -526,11 +557,11 @@ if __name__ == '__main__':
             caseatt = temp
 
         exists = 0
-        
+
         # do we overwrite or not?
         if opt_over == 0:
           try:
-            save = open(casedir+caseatt,"r")
+            save = open(casedir+os.sep+caseatt,"r")
             save.close()
             exists = 1
           except IOError:
@@ -551,7 +582,7 @@ if __name__ == '__main__':
 
           csize = 0
           try:
-            save = open(casedir+caseatt,"w")
+            save = open(casedir+os.sep+caseatt,"w")
             progind = "|"
             while 1:
               data = att.read(32768)
@@ -571,26 +602,32 @@ if __name__ == '__main__':
             print "[!] error while downloading file: "+str(caseatt)+" ERROR:"+str(errstr)
         else:
           print "[+] File already exists: "+str(caseatt)
-   
-    ### FTP SERVER
-    print "[+] Checking ftp server "+str(ftpserver)
-    ftp = FTP(ftpserver)
-    ftp.login(opt_user,opt_pass)
-    try:
-      ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
-      ftpcheck(caseid,casedir,ftp)
-    except error_perm:
-      pass
-    
-    ### checking sftp folder
-    try:
-      ftp.cwd("/volume/sftp/pub/incoming/"+caseid)
-      ftpcheck(caseid,casedir,ftp)
-    except error_perm:
-      pass
 
-    ftp.quit()
-        
+    ### FTP SERVER
+    if opt_news == 0:
+      print "[+] Checking ftp server "+str(ftpserver)
+      try:
+        ftp = FTP(ftpserver)
+        ftp.login(opt_user,opt_pass)
+      except:
+        print "[!] error while connecting to the ftp server"
+        sys.exit(1)
+
+      try:
+        ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
+        ftpcheck(caseid,casedir,ftp)
+      except error_perm:
+        pass
+
+      ### checking sftp folder
+      try:
+        ftp.cwd("/volume/sftp/pub/incoming/"+caseid)
+        ftpcheck(caseid,casedir,ftp)
+      except error_perm:
+        pass
+
+      ftp.quit()
+
   except KeyboardInterrupt:
     print "[!] program interrupted, exiting"
     sys.exit(1)

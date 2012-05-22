@@ -1,1 +1,0 @@
-../expect/remove_folders.ex

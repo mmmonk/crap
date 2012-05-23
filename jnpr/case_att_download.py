@@ -15,7 +15,7 @@ from ftplib import FTP,error_perm
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
 # - and in general try to verify all the data from the server 
 
-version = "20120523"
+version = "20120523a"
 
 def usage():
   '''
@@ -406,7 +406,7 @@ if __name__ == '__main__':
     try:
       dat = urllib2.urlopen(urlcm)
     except urllib2.URLError as errstr:
-      print "[!] problem with connecting to the CM, ERROR:"+str(errstr)
+      print "[!] problem with connecting to the CM,\nERROR:"+str(errstr)
       sys.exit(1)
 
     sleep(0.5)
@@ -420,7 +420,7 @@ if __name__ == '__main__':
       form['PASSWORD'] = opt_pass
       dat = urllib2.urlopen(dat.geturl(),urlencode(form))
     except urllib2.URLError as errstr:
-      print "[!] error while logging into cm, ERROR:"+str(errstr)
+      print "[!] error while logging into cm,\nERROR:"+str(errstr)
       sys.exit(1)
 
     sleep(0.25)
@@ -434,7 +434,7 @@ if __name__ == '__main__':
       form['fr'] = "5"
       dat = urllib2.urlopen(urlcm+"case_results.jsp",urlencode(form))
     except urllib2.URLError as errstr:
-      print "[!] error while searching for the case "+str(caseid)+", ERROR:"+str(errstr)
+      print "[!] error while searching for the case "+str(caseid)+",\nERROR:"+str(errstr)
       sys.exit(1)
 
     sleep(0.25)
@@ -449,10 +449,10 @@ if __name__ == '__main__':
       form['cid'] = cid.group(1)
       dat = urllib2.urlopen(urlcm+"case_detail.jsp",urlencode(form))
     except AttributeError as errstr:
-      print "[!] error while trying to get case "+str(caseid)+" details, ERROR:"+str(errstr)
+      print "[!] error while trying to get case "+str(caseid)+" details. >>> Probably your password and/or username are incorrect <<< .\nERROR:"+str(errstr)
       sys.exit(1)
     except urllib2.URLError as errstr:
-      print "[!] error while trying to get case "+str(caseid)+" details, ERROR:"+str(errstr) 
+      print "[!] error while trying to get case "+str(caseid)+" details,\nERROR:"+str(errstr) 
       sys.exit(1)
 
     sleep(0.25)

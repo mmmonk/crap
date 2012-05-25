@@ -90,6 +90,22 @@ def progressindicator(sign):
     sign = "|"
   return sign
 
+def ts2time(ts,withseconds=0):
+  ts = int(ts)
+
+  if ts < 60:
+    return str(ts)+"s"
+  elif ts < 3600:
+    if withseconds == 1:
+      return str(ts/60)+"m "+str(ts%60)+"s"
+    else:
+      return str(ts/60)+"m"
+  else:
+    if withseconds == 1:
+      return str(ts/3600)+"h "+str((ts%3600)/60)+"m "+str((ts%3600)%60)+"s"
+    else:
+      return str(ts/3600)+"h "+str((ts%3600)/60)+"m"
+
 def ftpcallback(data):
   '''
   call back function used while getting data via ftplib
@@ -98,12 +114,12 @@ def ftpcallback(data):
   fcount+=len(data)
   ftpfile.write(data)
   ftpprogind = progressindicator(ftpprogind)
-  done = int((float(fcount)/fsize)*100)
+  done = (float(fcount)/fsize)*100
   if done == 0:
     eta = "?"
   else:
-    eta = int(((time()-ftpstime)/done)*(100-done))
-  print "["+str(ftpprogind)+"] Getting "+str(ftpatt)+" "+str(fcount/1024)+" kB ("+str(done)+"% : ETA "+str(eta)+" s) \r",
+    eta = ts2time(int(((time()-ftpstime)/done)*(100-done)))
+  print "["+str(ftpprogind)+"] Getting "+str(ftpatt)+" "+str(fcount/1024)+" kB ("+str(int(done))+"% ETA:"+str(eta)+")        \r",
 
 
 def ftpcheck(caseid,casedir,ftp):
@@ -175,7 +191,7 @@ def ftpcheck(caseid,casedir,ftp):
         print "[!] error while downloading file: "+str(ftpatt)
         continue
 
-      print "[+] Download of "+str(ftpatt)+" size: "+str(fcount/1024)+" kB done in "+str(int(time()-ftpstime))+" seconds"
+      print "[+] Download of "+str(ftpatt)+" size: "+str(fcount/1024)+" kB done in "+str(ts2time(int(time()-ftpstime),1))
     else:
       print "[+] File already exists: "+str(ftpatt)
 
@@ -598,17 +614,17 @@ if __name__ == '__main__':
               if attsize == "?":
                 print "["+str(progind)+"] Getting "+str(caseatt)+" : "+str(csize/1024)+" kB\r",
               else:
-                done = int((float(csize)/(attsize*1000))*100)
+                done = (float(csize)/(attsize*1000))*100
                 if done == 0:
                   eta = "?"
                 else:
-                  eta = int(((time()-stime)/done)*(100-done))
-                print "["+str(progind)+"] Getting "+str(caseatt)+" : "+str(csize/1024)+" kB ("+str(done)+"% : ETA "+str(eta)+" s)\r",
+                  eta = ts2time(int(((time()-stime)/done)*(100-done)))
+                print "["+str(progind)+"] Getting "+str(caseatt)+" : "+str(csize/1024)+" kB ("+str(int(done))+"% ETA:"+str(eta)+")        \r",
               if not data:
                 break
               save.write(data)
             save.close()
-            print "[+] Download of "+str(caseatt)+" size: "+str(csize/1024)+" kB done in "+str(int(time()-stime))+" seconds"
+            print "[+] Download of "+str(caseatt)+" size: "+str(csize/1024)+" kB done in "+str(ts2time(int(time()-stime),1))
           except IOError as errstr:
             os.unlink(casedir+caseatt)
             print "[!] error while downloading file: "+str(caseatt)+" ERROR:"+str(errstr)

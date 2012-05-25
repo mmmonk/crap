@@ -7,7 +7,7 @@ from sgmllib import SGMLParser
 import sys
 import os
 import re
-from time import sleep
+from time import sleep,time
 from ftplib import FTP,error_perm
 
 ### TODO:
@@ -15,7 +15,7 @@ from ftplib import FTP,error_perm
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
 # - and in general try to verify all the data from the server 
 
-version = "20120523a"
+version = "20120525"
 
 def usage():
   '''
@@ -98,7 +98,12 @@ def ftpcallback(data):
   fcount+=len(data)
   ftpfile.write(data)
   ftpprogind = progressindicator(ftpprogind)
-  print "["+str(ftpprogind)+"] Getting "+str(ftpatt)+" "+str(fcount/1024)+" kB ("+str(int((float(fcount)/fsize)*100))+"%)\r",
+  done = int((float(fcount)/fsize)*100)
+  if done == 0:
+    eta = "?"
+  else:
+    eta = int(((time()-ftpstime)/done)*(100-done))
+  print "["+str(ftpprogind)+"] Getting "+str(ftpatt)+" "+str(fcount/1024)+" kB ("+str(done)+"% : ETA "+str(eta)+" s) \r",
 
 
 def ftpcheck(caseid,casedir,ftp):
@@ -156,20 +161,21 @@ def ftpcheck(caseid,casedir,ftp):
     if exists == 0:
       print "[+] Downloading "+str(ftpatt)+"\r",
       try:
-        global ftpfile, fcount, fsize, ftpprogind 
+        global ftpfile, fcount, fsize, ftpprogind, ftpstime 
         ftpfile = open(casedir+os.sep+ftpatt,"wb")
         fcount = 0
         ftp.sendcmd("TYPE i")
         fsize = ftp.size(str(filename))
         ftpprogind = "|"
+        ftpstime = time()
         ftp.retrbinary("RETR "+str(filename),ftpcallback,blocksize=32768)
         ftpfile.close() 
       except:
-        os.unlink(casedir+ftpatt)
+        os.unlink(casedir+os.sep+ftpatt)
         print "[!] error while downloading file: "+str(ftpatt)
         continue
 
-      print "[+] Download of "+str(ftpatt)+" size: "+str(fcount/1024)+" kB done"
+      print "[+] Download of "+str(ftpatt)+" size: "+str(fcount/1024)+" kB done in "+str(int(time()-ftpstime))+" seconds"
     else:
       print "[+] File already exists: "+str(ftpatt)
 
@@ -584,6 +590,7 @@ if __name__ == '__main__':
           try:
             save = open(casedir+os.sep+caseatt,"w")
             progind = "|"
+            stime = time()
             while 1:
               data = att.read(32768)
               csize = csize + len(data)
@@ -591,12 +598,17 @@ if __name__ == '__main__':
               if attsize == "?":
                 print "["+str(progind)+"] Getting "+str(caseatt)+" : "+str(csize/1024)+" kB\r",
               else:
-                print "["+str(progind)+"] Getting "+str(caseatt)+" : "+str(csize/1024)+" kB ("+str(int((float(csize)/(attsize*1000))*100))+"%)\r",
+                done = int((float(csize)/(attsize*1000))*100)
+                if done == 0:
+                  eta = "?"
+                else:
+                  eta = int(((time()-stime)/done)*(100-done))
+                print "["+str(progind)+"] Getting "+str(caseatt)+" : "+str(csize/1024)+" kB ("+str(done)+"% : ETA "+str(eta)+" s)\r",
               if not data:
                 break
               save.write(data)
             save.close()
-            print "[+] Download of "+str(caseatt)+" size: "+str(csize/1024)+" kB done"
+            print "[+] Download of "+str(caseatt)+" size: "+str(csize/1024)+" kB done in "+str(int(time()-stime))+" seconds"
           except IOError as errstr:
             os.unlink(casedir+caseatt)
             print "[!] error while downloading file: "+str(caseatt)+" ERROR:"+str(errstr)

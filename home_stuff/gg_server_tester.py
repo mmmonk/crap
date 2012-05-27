@@ -12,18 +12,21 @@ except:
   pass
 
 timem = 1000000
-goodenough = 30000 # delay of ans in us
+goodenough = 60000 # delay of ans including reading 2 first bytes in us
 servers = [] 
 
 socket.setdefaulttimeout(2)
 
 def testserver(srv,timem):
-  ctime = timem 
   s = socket.socket()
   try:
     stime = time.time()
     s.connect((server,8074))
-    etime = time.time()
+    data = s.recv(2)
+    if str(data).encode('hex') == "0100":
+      etime = time.time()
+    else:
+      etime = stime + timem*10
     s.close()
     return int((etime-stime)*timem)
   except socket.error:

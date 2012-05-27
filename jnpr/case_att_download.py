@@ -1,4 +1,4 @@
-#!/usr/bin/python -u
+#!/usr/bin/env python
 
 from cookielib import CookieJar
 from urllib import urlencode,unquote,quote
@@ -16,6 +16,16 @@ from ftplib import FTP,error_perm
 # - and in general try to verify all the data from the server 
 
 version = "20120525"
+
+# class for unbuffering stdout
+class Unbuffered:
+  def __init__(self, stream):
+    self.stream = stream
+  def write(self, data):
+    self.stream.write(data)
+    self.stream.flush()
+  def __getattr__(self, attr):
+    return getattr(self.stream, attr)
 
 def usage():
   '''
@@ -318,6 +328,8 @@ class CaseAttachForm(SGMLParser):
 
 if __name__ == '__main__':
 
+  sys.stdout = Unbuffered(sys.stdout)
+
   if os.name == "posix":
     conffile = str(os.environ['HOME'])+os.sep+'.cm.conf'
   urlcm = "https://tools.online.juniper.net/cm/"
@@ -378,35 +390,35 @@ if __name__ == '__main__':
         elif arg == "-e":
           i += 1
           if i >= imax:
-            usage()
+            sys.exit(1) 
           opt_excl = sys.argv[i]
         elif arg == "-h":
-          usage()
+          sys.exit(1)
         elif arg == "-d":
           i += 1
           if i >= imax:
-            usage()
+            sys.exit(1)
           opt_dir = sys.argv[i]
         elif arg == "-u":
           i += 1
           if i >= imax:
-            usage()
+            sys.exit(1) 
           opt_user = sys.argv[i]
         elif arg == "-n":
           i += 1
           if i >= imax:
-            usage()
+            sys.exit(1) 
           opt_news = int(sys.argv[i])
         elif arg == "-p":
           i += 1
           if i >= imax:
-            usage()
+            sys.exit(1) 
           opt_pass = sys.argv[i]
         else:
           if re.match("^\d{4}-\d{4}-\d{4}$",arg):
             caseid = arg
           else:
-            usage()
+            sys.exit(1) 
         i += 1
     except:
       usage()

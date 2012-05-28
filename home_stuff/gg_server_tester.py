@@ -3,6 +3,7 @@
 import socket
 import time
 import sys
+import random
 
 count = 5
 try:
@@ -10,24 +11,54 @@ try:
 except:
   pass
 
-servers = dict() 
+timem = 1000000
+goodenough = 60000 # delay of ans including reading 2 first bytes in us
+servers = [] 
 
 socket.setdefaulttimeout(2)
 
-for o4 in xrange(2,100):
-  servers["91.214.237."+str(o4)] = 10000000
-
-for server in servers:
+def testserver(srv,timem):
   s = socket.socket()
   try:
     stime = time.time()
     s.connect((server,8074))
-    etime = time.time()
+    data = s.recv(2)
+    if str(data).encode('hex') == "0100":
+      etime = time.time()
+    else:
+      etime = stime + timem*10
     s.close()
-    servers[server]=int((etime-stime)*1000000)
+    return int((etime-stime)*timem)
   except socket.error:
-    pass
+    return timem*10
 
-a = sorted(servers.items(),key=lambda x: x[1])
-for i in xrange(0,count):
-  print str(a[i][0]).ljust(14)+" time: "+str(a[i][1])+" us"
+if __name__ == '__main__':
+
+  # generate all the IPs
+  for o4 in xrange(2,100):
+    servers.append("91.214.237."+str(o4))
+
+  # test servers
+  while len(servers) > 0:
+
+    # pick a random server
+    server = random.choice(servers)
+    servers.remove(server)
+
+    times = ""
+    ok = 1
+
+    # test it if it is ok 3 times
+    for i in xrange(0,3):
+      delay = testserver(server,timem)
+      if delay > goodenough:
+        ok = 0
+        break
+      else:
+        times += str(delay)+"us "
+
+    if ok == 1:
+      print str(server)+" "+str(times)
+      break
+    else:
+      continue

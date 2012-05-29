@@ -85,13 +85,13 @@ expect timeout {
 } "assword:" {
   send -s "$pass\r"
   exp_continue
-} -re ".*(%|>) " {
+} -re ".*(%|>|#) " {
   send -s "\r"
 }
 
 set send_slow {5 .01}
 
-expect -re ".*(%|> )" {
+expect -re ".*(%|>|#) " {
   log_file "$logdir/$host-$filetime.log"
   send_log "\n---------- log start at $stime ----------\n"
 

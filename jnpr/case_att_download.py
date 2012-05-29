@@ -15,7 +15,7 @@ from ftplib import FTP,error_perm
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
 # - and in general try to verify all the data from the server 
 
-version = "20120525"
+version = "20120530"
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -131,8 +131,7 @@ def ftpcallback(data):
     eta = ts2time(int(((time()-ftpstime)/done)*(100-done)))
   print "["+str(ftpprogind)+"] Getting "+str(ftpatt)+" "+str(fcount/1024)+" kB ("+str(int(done))+"% ETA:"+str(eta)+")        \r",
 
-
-def ftpcheck(caseid,casedir,ftp):
+def ftpcheck(filelist,caseid,casedir,ftp):
   '''
   this checks for files inside the specific folder
   of the ftp server, it also makes sure not to overwrite files
@@ -185,25 +184,35 @@ def ftpcheck(caseid,casedir,ftp):
         pass
 
     if exists == 0:
-      print "[+] Downloading "+str(ftpatt)+"\r",
+      notdir = 1
       try:
-        global ftpfile, fcount, fsize, ftpprogind, ftpstime 
-        ftpfile = open(casedir+os.sep+ftpatt,"wb")
-        fcount = 0
-        ftp.sendcmd("TYPE i")
-        fsize = ftp.size(str(filename))
-        ftpprogind = "|"
-        ftpstime = time()
-        ftp.retrbinary("RETR "+str(filename),ftpcallback,blocksize=32768)
-        ftpfile.close() 
-      except:
-        os.unlink(casedir+os.sep+ftpatt)
-        print "[!] error while downloading file: "+str(ftpatt)
-        continue
+        ftp.cwd(filename)
+        ftpcheck(filelist,caseid,casedir+os.sep+filename,ftp)
+        ftp.cwd("..")
+        notdir = 0
+      except error_perm:
+        pass
 
-      print "[+] Download of "+str(ftpatt)+" size: "+str(fcount/1024)+" kB done in "+str(ts2time(int(time()-ftpstime),1))
-    else:
-      print "[+] File already exists: "+str(ftpatt)
+      if notdir == 1:
+        print "[+] Downloading "+str(ftpatt)+"\r",
+        try:
+          global ftpfile, fcount, fsize, ftpprogind, ftpstime 
+          ftpfile = open(casedir+os.sep+ftpatt,"wb")
+          fcount = 0
+          ftp.sendcmd("TYPE i")
+          fsize = ftp.size(str(filename))
+          ftpprogind = "|"
+          ftpstime = time()
+          ftp.retrbinary("RETR "+str(filename),ftpcallback,blocksize=32768)
+          ftpfile.close() 
+        except:
+          os.unlink(casedir+os.sep+ftpatt)
+          print "[!] error while downloading file: "+str(ftpatt)
+          continue
+
+        print "[+] Download of "+str(ftpatt)+" size: "+str(fcount/1024)+" kB done in "+str(ts2time(int(time()-ftpstime),1))
+      else:
+        print "[+] File already exists: "+str(ftpatt)
 
 class LoginForm(SGMLParser):
   '''
@@ -655,14 +664,14 @@ if __name__ == '__main__':
 
       try:
         ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
-        ftpcheck(caseid,casedir,ftp)
+        ftpcheck(filelist,caseid,casedir,ftp)
       except error_perm:
         pass
 
       ### checking sftp folder
       try:
         ftp.cwd("/volume/sftp/pub/incoming/"+caseid)
-        ftpcheck(caseid,casedir,ftp)
+        ftpcheck(filelist,caseid,casedir,ftp)
       except error_perm:
         pass
 

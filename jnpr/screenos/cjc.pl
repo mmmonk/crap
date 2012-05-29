@@ -11,8 +11,10 @@ use warnings;
 use integer;
 
 while(<>){
-	s/(\x08|\x0d)//g;
 	s/--- more ---              //;
-	print;
+  s/---\(more\)---\x0d\s+\x0d//;
+  s/---\(more \d+%\)---\x0d\s+\x0d//;
+  s/(\x08|\x0d)//g;
+  print;
 }
 

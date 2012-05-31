@@ -17,12 +17,35 @@ s_val = 0
 etime = ""
 e_val = 0
 vals  = []
+day = ""
+cday = ""
+
+try:
+  fd = open("memory_report_main.dat","ab")
+except:
+  print "problem with writting to the file memory_report_main.dat"
+  sys.exit(1)
 
 try:
   for line in data.readlines():
     dat = line.strip().split(',')
     ts = dat[0]
     val = int(dat[2])
+    
+    day = dat[0].split(" ")[0]
+    
+    if day != cday:
+      if cday != "":
+        avrg = 0
+        for val in vals:
+          avrg += val
+        avrg /= len(vals)
+
+        fd.write(str(filename.replace(".csv",""))+","+str(cday)+","+str(min_v)+","+str(max_v)+","+str(avrg)+"\n") 
+        max_v = 0
+        min_v = 100
+        vals  = []
+      cday = day
 
     if stime == "":
       stime = ts
@@ -41,14 +64,5 @@ except:
   print "ERROR: probably corrupted file, please check that there are no additional commas"
   sys.exit(1)
 
-avrg = 0
-for val in vals:
-  avrg += val
-avrg /= len(vals)
-
-print "Device name "+str(filename.replace(".csv",""))+"\
- polled from date "+str(stime)+" to "+str(etime)+"\
- had a memory increase of "+str(e_val-s_val)+"%\
- with a minimum of "+str(min_v)+"%, max of "+str(max_v)+"%\
- and average of "+(str(avrg))+"%"
+fd.close()
  

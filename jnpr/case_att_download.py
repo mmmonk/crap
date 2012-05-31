@@ -15,7 +15,7 @@ from ftplib import FTP,error_perm
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
 # - and in general try to verify all the data from the server 
 
-version = "20120530"
+version = "20120531"
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -433,8 +433,9 @@ if __name__ == '__main__':
       usage()
 
     if caseid == "":
-      if re.match("^\d{4}-\d{4}-\d{4}$",os.path.basename(os.getcwd())):
-        caseid = os.path.basename(os.getcwd())
+      m = re.match("^\d{4}-\d{4}-\d{4}",os.path.basename(os.getcwd()))
+      if m != None:
+        caseid = m.group(0) 
         opt_dir = ""
         opt_ucwd = 1
 

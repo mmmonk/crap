@@ -45,6 +45,7 @@ Options:\n\
 -l            just list case attachments without downloading,\n\
 -o            force overwrite of the files,\n\
 -p pass       password used for the CM,\n\
+-s            show case status, customer information and exit, don't download anything,\n\
 -t            this will download attachments to a folder \"temp\"\n\
               in the destination folder (for cases that you just want to look at),\n\
 -u user       user name used for the CM,\n\
@@ -358,6 +359,7 @@ if __name__ == '__main__':
   opt_pass = ""
   opt_ucwd = 0
   opt_news = 0
+  opt_stat = 0
 
   try:
     LoadConf(conffile)
@@ -391,6 +393,8 @@ if __name__ == '__main__':
           opt_list = 1
         elif arg == "-o":
           opt_over = 1
+        elif arg == "-s":
+          opt_stat = 1
         elif arg == "-i":
           i += 1
           if i >= imax:
@@ -501,6 +505,16 @@ if __name__ == '__main__':
 
     sleep(0.25)
 
+    # this is for printing the detail status of the case
+    if opt_stat == 1:
+      text = dat.read().replace("\n","").replace("\r","")
+      text = re.sub("\s+"," ",text)
+      cd = re.findall("<b>((?:\w|\s)+?):&nbsp;&nbsp;<\/b>(.+?)<",text,re.I+re.S)
+      for desc,value in cd:
+        if not "Current Status" in desc:
+          print "["+str(caseid)+"] "+str(desc)+": "+str(value).replace("&nbsp;","").strip()
+      sys.exit(0)
+
     print "[+] "+str(caseid)+": searching for files\r",
     try:
       fparser = CaseAttachForm()
@@ -527,7 +541,7 @@ if __name__ == '__main__':
 
     casedir = os.path.normpath(casedir)
     if opt_list == 0:
-      print "[+] "+str(caseid)+": will download to "+str(casedir)
+      print "[+] "+str(caseid)+": will download to "+str(casedir)+"         "
 
     maxcmatt = len(attach)
     print "[+] "+str(caseid)+": found total of "+str(maxcmatt)+" attachment(s)"

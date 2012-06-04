@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# Author: Marek Lukaszuk
+
 from cookielib import CookieJar
 from urllib import urlencode,unquote,quote
 import urllib2 
@@ -15,7 +17,7 @@ from ftplib import FTP,error_perm
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
 # - and in general try to verify all the data from the server 
 
-version = "20120531"
+version = "20120603"
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -507,9 +509,8 @@ if __name__ == '__main__':
 
     # this is for printing the detail status of the case
     if opt_stat == 1:
-      text = dat.read().replace("\n","").replace("\r","")
-      text = re.sub("\s+"," ",text)
-      cd = re.findall("<b>((?:\w|\s)+?):&nbsp;&nbsp;<\/b>(.+?)<",text,re.I+re.S)
+      text = re.sub("\s+"," ",dat.read().replace("\n","").replace("\r",""))
+      cd = re.findall("<b>((?:\w|\s)+?):&nbsp;&nbsp;<\/b>(.+?)<",text,re.I)
       for desc,value in cd:
         if not "Current Status" in desc:
           print "["+str(caseid)+"] "+str(desc)+": "+str(value).replace("&nbsp;","").strip()

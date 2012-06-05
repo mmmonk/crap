@@ -1,0 +1,13 @@
+<SearchPlugin xmlns="http://www.mozilla.org/2006/browser/search/">
+<ShortName>StartPage</ShortName>
+<Description>StartPage</Description>
+<InputEncoding>UTF-8</InputEncoding>
+<Image width="16" height="16">data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAAXNSR0IArs4c6QAAAihQTFRFtw8PsRkfshofsxoftBsfrCQuoio9oys9pCw+pSw+pi0+pi4+py4+pDtNpzxNjkZskEhskUhsmE1soVNtkFd8mV18jmKMm2B9gWiboWN9k2aMg3erP4f1P4n1P4n2QYn1Qon2iHyrQYv2UYjnmnqbQov2Q4v1Q4v2RIv1RIv2RYv2RI32SI72VIznRJD2RpD2R5D3SpD3R5H2SZH2SZH3SpH2SpH3TpH2S5L3TJT3ioq7WpToX5ToUJf3T5j2Upj3T5n3UJn2VZ33WZz3Vp33hJTKY5zoWZ73WZ74Wp74aJzoYJ/3YZ/3W6H3XKH4b53omJa7X6H3a5/obqHpYKT4YqT4X6b4gZ/aYKb4Zaj3Zqn4baf4Zqn5Zar4dajpZ6v5aav4a6v4a6z4ba74ba75e6zpbK/4ba/5b6/4b6/5cK/4c6/4eK75crD5cbL5d7H5dbP4frH5ebP5dbX5e7T5fbT5dbf5d7f4d7f5fLf5erj5gbf5e7n5fLn5f7n5f7n6frv5iLj6gLv6iLr6g735kLvpkLvqhb35hb36hb75hb76hb/6iMH6h8L5h8L6k8D6i8T5i8T6mcD6msD6jcb6m8L6i8f5i8f6jcf5jcf6kMf6kcf6ncT7kcn6kcn7lMn6lMn7lcn6lMr6lcv6lcz7mc76pcv7rdD7sdH7s9P8uNX8xd38zOD9y+L92un92+n93uv93uz95vD+6PL+8/j+9Pn+9fn/////uyUVkAAAAQxJREFUGBkFwTtLw0AAB/D/PXIkNEjF4gss6FAKVtTBguLk4Obk1MEv4OYn6egu7hXp4OgoqN0UN2vBB9UKJk0u98idvx+5UBSOglB4ICg5T6zQIIL6yX27pgnlRRHAEcXOh/Zq6Yxrtq+kNSY315VqkQw2Kds11jj32Jcne8svmanzXKIM/F1KVVKrvw4TmqaZiePD2PXzXMNa1irDo8bqaPY9eXobVw4Ea8qOSIdpMxopubATWi474ubjuImNyUOhaBayelvU2lHpBNXj6c+8o+YZVZZ2B8iDhvDecN373uqRxe3ilomVuWlE1gGcrkF2fxkBwPgfAcrs8/LLg8MhIC0NEAoP4jg8Zv4BVC19VCv6RL0AAAAASUVORK5CYII=</Image>
+<Url type="text/html" method="POST" template="https://startpage.com/do/search">
+  <Param name="cat" value="web"/>
+  <Param name="query" value="{searchTerms}"/>
+  <Param name="prf" value="89096fb1e24b385b52fc4f18b4260bd6"/>
+</Url>
+<SearchForm>https://startpage.com/do/search?prf=89096fb1e24b385b52fc4f18b4260bd6</SearchForm>
+<!-- <SearchForm>https://startpage.com/do/search?prf=d24bbec17cffdf6bf79a6109496eefaa</SearchForm> -->
+</SearchPlugin>

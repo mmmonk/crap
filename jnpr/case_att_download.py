@@ -17,7 +17,7 @@ from ftplib import FTP,error_perm
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
 # - and in general try to verify all the data from the server 
 
-version = "20120603"
+version = "20120611"
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -47,6 +47,7 @@ Options:\n\
 -l            just list case attachments without downloading,\n\
 -o            force overwrite of the files,\n\
 -p pass       password used for the CM,\n\
+-fp pass      password used for ftp (if not set this will be the same as -p),\n\
 -s            show case status, customer information and exit, don't download anything,\n\
 -t            this will download attachments to a folder \"temp\"\n\
               in the destination folder (for cases that you just want to look at),\n\
@@ -359,6 +360,7 @@ if __name__ == '__main__':
   opt_over = 0
   opt_user = ""
   opt_pass = ""
+  opt_fpass = ""
   opt_ucwd = 0
   opt_news = 0
   opt_stat = 0
@@ -429,6 +431,11 @@ if __name__ == '__main__':
           if i >= imax:
             sys.exit(1) 
           opt_pass = sys.argv[i]
+        elif arg == "-fp":
+          i += 1
+          if i >= imax:
+            sys.exit(1) 
+          opt_fpass = sys.argv[i]
         else:
           if re.match("^\d{4}-\d{4}-\d{4}$",arg):
             caseid = arg
@@ -449,6 +456,9 @@ if __name__ == '__main__':
     if caseid == "" or opt_user == "" or opt_pass == "":
       print "[!] error: either case id or user name or password was not defined"
       usage()
+
+    if opt_fpass == "":
+      opt_fpass = opt_pass
 
     cj = CookieJar()
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
@@ -673,7 +683,7 @@ if __name__ == '__main__':
       print "[+] Checking ftp server "+str(ftpserver)
       try:
         ftp = FTP(ftpserver)
-        ftp.login(opt_user,opt_pass)
+        ftp.login(opt_user,opt_fpass)
       except:
         print "[!] error while connecting to the ftp server"
         sys.exit(1)

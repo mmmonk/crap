@@ -17,7 +17,7 @@ from ftplib import FTP,error_perm
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
 # - and in general try to verify all the data from the server 
 
-version = "20120611"
+version = "20120613"
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -40,6 +40,7 @@ Version: "+str(version)+"\n\n\
 Options:\n\
 -d directory  directory where to download attachments,\n\
               inside that directory a directory with the case number will be created,\n\
+-nd           don't create the case directory just dump eveything into root of the specified directory,\n\
 -i regexp     (include) download or list only attachments which filenames match regexp,\n\
 -e regexp     (exclude) skip attachments which filenames match regexp,\n\
 -h            this help,\n\
@@ -356,7 +357,8 @@ if __name__ == '__main__':
   opt_excl = ""
   opt_list = 0
   opt_temp = 0
-  opt_dir = os.curdir 
+  opt_dir = os.curdir
+  opt_nmkd = 0
   opt_over = 0
   opt_user = ""
   opt_pass = ""
@@ -399,6 +401,8 @@ if __name__ == '__main__':
           opt_over = 1
         elif arg == "-s":
           opt_stat = 1
+        elif arg == "-nd":
+          opt_nmkd = 1
         elif arg == "-i":
           i += 1
           if i >= imax:
@@ -549,6 +553,9 @@ if __name__ == '__main__':
 
     if opt_ucwd == 1:
       casedir = os.curdir+os.sep 
+
+    if opt_nmkd == 1:
+      casedir = str(opt_dir)+os.sep
 
     casedir = os.path.normpath(casedir)
     if opt_list == 0:

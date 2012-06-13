@@ -14,8 +14,7 @@ sock = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
 sock.bind( (UDP_IP,UDP_PORT) )
 sock.setblocking(0)
 
-serv = socket.socket( socket.AF_INET, socket.SOCK_STREAM ) 
-serv.connect( (UDP_IP,22) )
+caddr = ("",0)
 
 while True:
   try:
@@ -23,14 +22,24 @@ while True:
   except socket.error:
     pass
   else:
+    if not addr == caddr: 
+      try:
+        serv.shutdown(socket.SHUT_RDWR)
+      except NameError:
+        pass
+      serv = socket.socket( socket.AF_INET, socket.SOCK_STREAM ) 
+      serv.connect( (UDP_IP,22) )
+
+    caddr = addr
+
     toread,[],[] = select([serv],[],[],1)
     [],towrite,[] = select([],[serv],[],1)
     if serv in towrite:
-      serv.write(data)
-    elif serv in toread:
-      servdata = serv.read(maxlen)
+      serv.send(data)
+    if serv in toread:
+      servdata = serv.recv(maxlen)
       if len(servdata) == 0:
-        serv.shutdown()
+        serv.shutdown(socket.SHUT_RDWR)
         sys.exit()
       else:
         sock.sendto(servdata,addr)

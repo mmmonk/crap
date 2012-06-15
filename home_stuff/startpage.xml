@@ -6,8 +6,8 @@
 <Url type="text/html" method="POST" template="https://startpage.com/do/search">
   <Param name="cat" value="web"/>
   <Param name="query" value="{searchTerms}"/>
-  <Param name="prf" value="89096fb1e24b385b52fc4f18b4260bd6"/>
+  <Param name="prf" value="aeee127da1e39a52d79f2349eb7c4e5c"/>
 </Url>
-<SearchForm>https://startpage.com/do/search?prf=89096fb1e24b385b52fc4f18b4260bd6</SearchForm>
+<SearchForm>https://startpage.com/do/search?prf=aeee127da1e39a52d79f2349eb7c4e5c</SearchForm>
 <!-- <SearchForm>https://startpage.com/do/search?prf=d24bbec17cffdf6bf79a6109496eefaa</SearchForm> -->
 </SearchPlugin>

@@ -9,14 +9,15 @@ import time
 import struct
 
 def dtime(lt,dt):
-  ct = time.time()
-  if ct-lt > dt:
+  if time.time()-lt > dt:
     return True
-  else:
-    return False
+  return False
 
-def header(seq,ack):
+def encode_head(seq,ack):
   return struct.pack("BB",seq,ack)
+
+def decode_head(dat):
+  return struct.unpack("BB",dat)
 
 def incseq(seq):
   seq += 1
@@ -24,18 +25,26 @@ def incseq(seq):
     return 0
   return seq
 
+def calcrtt(snt):
+  rtt = round(time.time() - snt,3)
+  if rtt < 0.1:
+    return 0.1
+  if rtt > 1:
+    return 1
+  return rtt
+
 def debug(msg):
   sys.stderr.write(msg+"\n")
 
 IP="127.0.0.1"
 PORT=5005
 
-maxlen = 1024 # <<- FIXME why this is 2 higher then on the server????
-seq = 0
-ack = 0
-rtt = 1
-snt = 1
-notyet = 0
+maxlen = 1022 # data size + 2 bytes for header
+seq = 0 # our sequence number
+ack = 0 # seq number of the peer
+rtt = 0.1 # round trip time of the pkt
+snt = 1 # last time a pkt was send
+notyet = 1 # we didn't yet received an ack from peer 
 
 dstaddr = (IP,PORT)
 sock = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
@@ -43,28 +52,26 @@ sock.setblocking(0)
 
 fcntl(0, F_SETFL, O_NONBLOCK)
 
-sock.sendto(header(seq,ack),dstaddr)
-
-lt = time.time()
+sock.sendto(encode_head(seq,ack),dstaddr)
+snt = time.time() 
 
 while True:
   toread,towrite,[] = select([0],[1],[],10)
 
   if 1 in towrite:
     try:
-      data, addr = sock.recvfrom (maxlen)
+      data, addr = sock.recvfrom (maxlen+2) # +2 because of the header
     except socket.error:
-      select([],[],[],0.2)
-      pass
+      select([],[],[],rtt)
     else:
       if addr == dstaddr:
-        head = struct.unpack("BB",data[:2])
+        head = decode_head(data[:2])
         if seq == head[1]:
           if len(data[2:]) > 0:
             sys.stdout.write(data[2:])
           ack = head[0]
           seq = incseq(seq)
-          #rtt = time.time() - snt
+          rtt = calcrtt(snt)
           notyet = 0
         else:
           sys.stderr.write("[!] wrong seq\n")
@@ -77,12 +84,12 @@ while True:
       sys.exit()
     
     else:
-      sock.sendto(header(seq,ack)+si,dstaddr)
+      sock.sendto(encode_head(seq,ack)+si,dstaddr)
       notyet = 1
-      lt = time.time()
-      snt = lt
+      snt = time.time()
 
-  if dtime(lt,0.1) and notyet == 0:
-    sock.sendto(header(seq,ack),dstaddr)
+  if dtime(snt,rtt) and notyet == 0:
+    sock.sendto(encode_head(seq,ack),dstaddr)
     notyet = 1
     snt = time.time()
+

@@ -6,8 +6,11 @@ from select import select
 import sys
 import struct
 
-def header(seq,ack):
+def encode_head(seq,ack):
   return struct.pack("BB",seq,ack)
+
+def decode_head(dat):
+  return struct.unpack("BB",dat)
 
 def incseq(seq):
   seq += 1
@@ -15,62 +18,74 @@ def incseq(seq):
     return 0
   return seq
 
+def calcrtt(snt):
+  rtt = round(time.time() - snt,3)
+  if rtt < 0.1:
+    return 0.1
+  if rtt > 1:
+    return 1 
+  return rtt
+
 def debug(msg):
   sys.stderr.write(msg+"\n")
 
-maxlen = 1022
 
 IP="127.0.0.1"
 PORT=5005
+
+maxlen = 1022 # data size + 2 bytes for header
+seq = 0 # our sequence number
+ack = 0 # seq number of the peer
+rtt = 0.1 # round trip time of the pkt
+snt = time.time() # last time a pkt was send
 
 sock = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
 sock.bind((IP,PORT))
 sock.setblocking(0)
 
-seq = 0
-ack = 0
-rtt = 1
-snt = 1
-
 caddr = ("",0)
 
 while True:
   try:
-    data, addr = sock.recvfrom( maxlen )
+    data, addr = sock.recvfrom(maxlen+2) # +2 because of the header
   except socket.error:
-    select([],[],[],0.1)
-    pass
+    select([],[],[],rtt)
   else:
-    if not addr == caddr: 
+    if not addr == caddr:
       try:
         serv.shutdown(socket.SHUT_RDWR)
       except NameError:
         pass
-      serv = socket.socket( socket.AF_INET, socket.SOCK_STREAM ) 
+      
+      serv = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
+      rtt = 0.1
+      snt = time.time() - rtt
       serv.connect( (IP,22) )
-      head = struct.unpack("BB",data[:2])
+      caddr = addr
+      head = decode_head(data[:2])
       seq = head[1]
 
-    caddr = addr
-    head = struct.unpack("BB",data[:2])
-
+    head = decode_head(data[:2]) 
     if seq == head[1]:
       ack = head[0]
       seq = incseq(seq) 
-      send = 0
+      rtt = calcrtt(snt)
       toread,towrite,[] = select([serv],[serv],[],10)
       if serv in towrite and len(data[2:])>0:
         serv.send(data[2:])
+      
       if serv in toread:
         servdata = serv.recv(maxlen)
         if len(servdata) == 0:
           serv.shutdown(socket.SHUT_RDWR)
           sys.exit()
         else:
-          sock.sendto(header(seq,ack)+servdata,addr)
+          sock.sendto(encode_head(seq,ack)+servdata,addr)
+          snt = time.time()
           send = 1
+      else:
+        sock.sendto(encode_head(seq,ack),addr)
+        snt = time.time()
 
-      if send == 0:
-        sock.sendto(header(seq,ack),addr)
     else:
       sys.stderr.write("[!] wrong seq\n")

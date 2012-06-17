@@ -53,7 +53,8 @@ srvdata = ""
 while True:
   try:
     data, addr = sock.recvfrom(maxlen+2) # +2 because of the header
-  except socket.error:
+#  except socket.error :
+  except :
     select([],[],[],rtt)
     if notyet > 0 and not caddr == ("",0) :
       notyet += 1

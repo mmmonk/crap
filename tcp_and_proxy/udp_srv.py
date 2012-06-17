@@ -73,9 +73,10 @@ while True:
     if not addr == caddr:
       try:
         serv.shutdown(socket.SHUT_RDWR)
-      except NameError,socket.error:
+      except NameError:
         pass
-      
+      except socket.error:
+        pass
       serv = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
       rtt = 0.1
       snt = time.time() - rtt

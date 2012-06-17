@@ -74,7 +74,7 @@ while True:
       if notyet == maxmiss:
         sock.sendto(encode_head(seq,ack)+xored(clidata),dstaddr)
         snt = time.time()
-      if notyet > maxmiss:
+      if notyet > maxmiss*2:
         sys.stderr.write("[!] packet lost, exiting\n")
         sys.exit(1)
     else:

@@ -61,7 +61,7 @@ while True:
       sys.stderr.write("[!] packet lost, resending\n")
       sock.sendto(encode_head(seq,ack)+xored(srvdata),caddr)
       snt = time.time()
-    if notyet > maxmiss:
+    if notyet > maxmiss*2:
       sys.stderr.write("[!] packet lost, reseting\n")
       caddr = ("",0)
       notyet = 0

@@ -32,7 +32,6 @@ def debug(msg):
 def xored(msg):
   return "".join([ chr(ord(c)^170) for c in msg ])
 
-IP="127.0.0.1"
 PORT=5005
 
 maxlen = 1022 # data size + 2 bytes for header
@@ -44,7 +43,7 @@ notyet = 0 # we didn't yet received an ack from peer
 maxmiss = 4 
 
 sock = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
-sock.bind((IP,PORT))
+sock.bind(("0.0.0.0",PORT))
 sock.setblocking(0)
 
 caddr = ("",0)
@@ -79,7 +78,7 @@ while True:
       serv = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
       rtt = 0.1
       snt = time.time() - rtt
-      serv.connect( (IP,22) )
+      serv.connect( ("127.0.0.1",22) )
       caddr = addr
       head = decode_head(data[:2])
       seq = head[1]

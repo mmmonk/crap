@@ -39,8 +39,8 @@ def xored(msg):
 def debug(msg):
   sys.stderr.write(msg+"\n")
 
-IP="127.0.0.1"
-PORT=5005
+IP = sys.argv[1]
+PORT = 5005
 
 maxlen = 1022 # data size + 2 bytes for header
 seq = 0 # our sequence number

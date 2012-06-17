@@ -40,7 +40,7 @@ ack = 0 # seq number of the peer
 rtt = 0.1 # round trip time of the pkt
 snt = time.time() # last time a pkt was send
 notyet = 0 # we didn't yet received an ack from peer
-maxmiss = 4 
+maxmiss = 4 # how many rtts we can wait till resending pkt 
 
 sock = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
 sock.bind(("0.0.0.0",PORT))
@@ -58,6 +58,7 @@ while True:
     if notyet > 0 and not caddr == ("",0) :
       notyet += 1
     if notyet == maxmiss:
+      sys.stderr.write("[!] packet lost, resending\n")
       sock.sendto(encode_head(seq,ack)+xored(srvdata),caddr)
       snt = time.time()
     if notyet > maxmiss:

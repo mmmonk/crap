@@ -48,7 +48,7 @@ ack = 0 # seq number of the peer
 rtt = 0.1 # round trip time of the pkt
 snt = 1 # last time a pkt was send
 notyet = 1 # we didn't yet received an ack from peer 
-maxmiss = 4 
+maxmiss = 4 # how many rtts we can wait till resending pkt 
 
 dstaddr = (IP,PORT)
 sock = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )

@@ -33,6 +33,9 @@ def calcrtt(snt):
     return 1
   return rtt
 
+def xored(msg):
+  return "".join([ chr(ord(c)^170) for c in msg ])
+
 def debug(msg):
   sys.stderr.write(msg+"\n")
 
@@ -45,6 +48,7 @@ ack = 0 # seq number of the peer
 rtt = 0.1 # round trip time of the pkt
 snt = 1 # last time a pkt was send
 notyet = 1 # we didn't yet received an ack from peer 
+maxmiss = 4 
 
 dstaddr = (IP,PORT)
 sock = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
@@ -55,6 +59,8 @@ fcntl(0, F_SETFL, O_NONBLOCK)
 sock.sendto(encode_head(seq,ack),dstaddr)
 snt = time.time() 
 
+clidata = ""
+
 while True:
   toread,towrite,[] = select([0],[1],[],10)
 
@@ -63,12 +69,20 @@ while True:
       data, addr = sock.recvfrom (maxlen+2) # +2 because of the header
     except socket.error:
       select([],[],[],rtt)
+      if notyet > 0:
+        notyet += 1
+      if notyet == maxmiss:
+        sock.sendto(encode_head(seq,ack)+xored(clidata),dstaddr)
+        snt = time.time()
+      if notyet > maxmiss:
+        sys.stderr.write("[!] packet lost, exiting\n")
+        sys.exit(1)
     else:
       if addr == dstaddr:
         head = decode_head(data[:2])
         if seq == head[1]:
           if len(data[2:]) > 0:
-            sys.stdout.write(data[2:])
+            sys.stdout.write(xored(data[2:]))
           ack = head[0]
           seq = incseq(seq)
           rtt = calcrtt(snt)
@@ -79,12 +93,12 @@ while True:
         sys.stderr.write("[!] wrong source address: "+str(addr)+"\n")
 
   if 0 in toread and notyet == 0:
-    si = sys.stdin.read(maxlen)
-    if len(si) == 0:
+    clidata = sys.stdin.read(maxlen)
+    if len(clidata) == 0:
       sys.exit()
     
     else:
-      sock.sendto(encode_head(seq,ack)+si,dstaddr)
+      sock.sendto(encode_head(seq,ack)+xored(clidata),dstaddr)
       notyet = 1
       snt = time.time()
 

@@ -1,15 +1,10 @@
 #!/usr/bin/python
 
 import socket
-import time
-import sys
-import random
-
-count = 5
-try:
-  count = int(sys.argv[1])
-except:
-  pass
+from time import time
+from sys import exit
+from random import choice as rndchoice
+from os import getenv
 
 timem = 1000000
 goodenough = 60000 # delay of ans including reading 2 first bytes in us
@@ -20,11 +15,11 @@ socket.setdefaulttimeout(2)
 def testserver(srv,timem):
   s = socket.socket()
   try:
-    stime = time.time()
+    stime = time()
     s.connect((server,8074))
     data = s.recv(2)
     if str(data).encode('hex') == "0100":
-      etime = time.time()
+      etime = time()
     else:
       etime = stime + timem*10
     s.close()
@@ -42,7 +37,7 @@ if __name__ == '__main__':
   while len(servers) > 0:
 
     # pick a random server
-    server = random.choice(servers)
+    server = rndchoice(servers)
     servers.remove(server)
 
     times = ""
@@ -58,7 +53,14 @@ if __name__ == '__main__':
         times += str(delay)+"us "
 
     if ok == 1:
-      print str(server)+" "+str(times)
+      try:
+        open(str(getenv('HOME'))+"/.gg/cmd","w").write("\
+            /set server "+str(server)+"\n\
+            /wr\n\
+            /reconnect\n\
+            /echo \""+str(server)+" "+str(times)+"\n")
+      except:
+        exit(1)
       break
     else:
       continue

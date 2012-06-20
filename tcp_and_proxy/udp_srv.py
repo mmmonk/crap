@@ -16,12 +16,8 @@ rtt = 0.1 # round trip time of the pkt
 snt = time.time() # last time a pkt was send
 notyet = 0 # we didn't yet received an ack from peer
 maxmiss = 4 # how many rtts we can wait till resending pkt 
-maxif = 10 # max pkts in flight
-cif = 0 # current number of pkts in flight
-lseq = 0 # oldest seq number
+paddlen = 256
 headsize = 4
-
-buff = {} 
 
 def encode_head(seq,ack,size):
   return struct.pack("BBH",seq,ack,size+headsize)

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import socket
-from time import time
+from time import time,sleep
 from sys import exit
 from random import choice as rndchoice
 from os import getenv
@@ -28,6 +28,8 @@ def testserver(srv,timem):
     return timem*10
 
 if __name__ == '__main__':
+
+  sleep(3)
 
   # generate all the IPs
   for o4 in xrange(2,100):
@@ -58,7 +60,8 @@ if __name__ == '__main__':
             /set server "+str(server)+"\n\
             /wr\n\
             /reconnect\n\
-            /echo \""+str(server)+" "+str(times)+"\n")
+            /echo server:"+str(server)+" times:"+str(times)+"\n\
+            /beep\n")
       except:
         exit(1)
       break

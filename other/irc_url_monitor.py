@@ -37,12 +37,12 @@ if __name__ == '__main__':
     if len(newlinks) > 0:
     
       msg = "From: irssi@monkey.geeks.pl\nTo: m.lukaszuk@gmail.com\nSubject: irssi links from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localtime()))+"\n\n" 
-      for link,channel in sorted(newlinks.items(), key=lambda x: x[0].replace("//www.","",1).split(":")[1]):
+      for link,channel in sorted(newlinks.items(), key=lambda x: x[0].replace("//www.","//",1).split(":")[1]):
         msg += link+" "+channel+"\n"
-      
+
       smtpObj = smtplib.SMTP("127.0.0.1")
       smtpObj.sendmail('m.lukaszuk@gmail.com','m.lukaszuk@gmail.com',msg)
-      
+
       fd = open(urlhistory,'w')
       i = 0 
       for link,ts in sorted(seenurls.items(), key=lambda x: x[1], reverse=True):

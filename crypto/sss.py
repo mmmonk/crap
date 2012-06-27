@@ -104,8 +104,9 @@ if __name__ == "__main__":
     xv.append(a) # this is our secret, value a*x^0
     
     # randomly generate all other constansts for polynomial
+    # the range for the other contstant is (-2*a,2*a) 
     for i in xrange(opt_req-1):
-      xv.append(random.randint(-1*a,a))
+      xv.append(random.randint(0-(2*a),(2*a)))
 
     # randomly pick unique x to calculate f(x)
     # we can't pick 0 here, because this is our secret

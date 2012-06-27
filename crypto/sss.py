@@ -39,8 +39,6 @@ def usage():
 
 if __name__ == "__main__":
 
-  txt = sys.argv[1]+" "
-
   i = 1
   maxargv = len(sys.argv)
   
@@ -64,7 +62,7 @@ if __name__ == "__main__":
         i += 1
         if i >= maxargv:
           sys.exit(1)
-        opt_enc = sys.argv[i]
+        opt_enc = sys.argv[i]+" "
       elif arg == "-d":
         opt_dec = 1
       elif arg == "-f":
@@ -92,17 +90,18 @@ if __name__ == "__main__":
   if not opt_enc == "":
 
     xv = []
-    xv.append(int(opt_enc.encode('hex'),16))
+    a = int(opt_enc.encode('hex'),16)
+    xv.append(a)
     
     for i in xrange(opt_req-1):
-      xv.append(random.randint(-10000000000000,10000000000000))
+      xv.append(random.randint(-1*a,a))
 
     for x in xrange(1,opt_all+1):
       y = xv[0]
       for i in xrange(1,len(xv)):
         y += xv[i]*(x**i)
 
-      line = str(x)+":"+str(y)
+      line = str(x)+":"+b32encode(str(y))
       if not opt_fd == "":
         try:
           open(opt_fd,"w").write(line+"\n")
@@ -119,7 +118,7 @@ if __name__ == "__main__":
       print "file "+str(opt_fd)+" could not be read !"
       usage()
       sys.exit(1)
-    points = [ (int(x),int(y)) for x,y in lines]
+    points = [ (int(x),int(b32decode(y))) for x,y in lines]
 
     out = hex(int(result(points))).replace("0x","").replace("L","")
     print out.decode('hex')

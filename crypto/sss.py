@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import sys
-import operator
 import random
 from decimal import *
 from base64 import *
@@ -9,13 +8,15 @@ from base64 import *
 # if you have problems with the decryption, increase this value 
 getcontext().prec = 1000 
 
-# https://en.wikipedia.org/wiki/Lagrange_polynomial
-# this is a special case in which the Lagrange L(x) 
-# function is actually L(0), ie:
-# given polynomial a+bx+bx^2=y we "hide" the secret as
-# value "a", so knowing enough points what we do is basically f(0) 
 
 def Lagrange_polynomial(points):
+  ''' 
+  https://en.wikipedia.org/wiki/Lagrange_polynomial
+  this is a special case in which the Lagrange L(x) 
+  function is actually L(0), ie:
+  given polynomial a+bx+bx^2=y we "hide" the secret as
+  value "a", so knowing enough points what we do is basically f(0) 
+  '''
   total = Decimal(0)
   k = len(points)
   for i in xrange(k):
@@ -102,11 +103,12 @@ if __name__ == "__main__":
     a = int(opt_enc.encode('hex'),16)
     xv.append(a) # this is our secret, value a*x^0
     
-    # randomly generating all other 
+    # randomly generate all other constansts for polynomial
     for i in xrange(opt_req-1):
       xv.append(random.randint(-1*a,a))
 
-    # randomly pick x to calculate f(x)
+    # randomly pick unique x to calculate f(x)
+    # we can't pick 0 here, because this is our secret
     xseen = {}
     for i in xrange(1,opt_all+1):
       while 1:
@@ -124,13 +126,13 @@ if __name__ == "__main__":
 
       # text output, convert y to base32 
       line = str(x)+":"+b32encode(str(y))
-      if not opt_fd == "":
+      if not opt_fd == "": # output to file
         try:
           open(opt_fd,"w").write(line+"\n")
         except IOError:
           print "problem with writing to file: "+str(opt_fd)
           sys.exit(1)
-      else:
+      else: # output to stdout
         print line
      
   elif opt_dec == 1 and not opt_fd == "": # decoding part

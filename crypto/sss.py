@@ -6,13 +6,14 @@ import random
 from decimal import *
 from base64 import *
 
+# if you have problems with the decryption, increase this value 
 getcontext().prec = 1000 
 
 # https://en.wikipedia.org/wiki/Lagrange_polynomial
 # this is a special case in which the Lagrange L(x) 
 # function is actually L(0)
 
-def result(points):
+def Lagrange_polynomial(points):
   total = Decimal(0)
   k = len(points)
   for i in xrange(k):
@@ -96,10 +97,19 @@ if __name__ == "__main__":
     for i in xrange(opt_req-1):
       xv.append(random.randint(-1*a,a))
 
-    for x in xrange(1,opt_all+1):
+    xseen = {}
+    for i in xrange(1,opt_all+1):
+      while 1:
+        try:
+          x = random.randint(1,1000000000000)
+          if xseen[x] == 0:
+            pass
+        except KeyError:
+          break
+      
       y = xv[0]
-      for i in xrange(1,len(xv)):
-        y += xv[i]*(x**i)
+      for j in xrange(1,len(xv)):
+        y += xv[j]*(x**j)
 
       line = str(x)+":"+b32encode(str(y))
       if not opt_fd == "":
@@ -118,9 +128,10 @@ if __name__ == "__main__":
       print "file "+str(opt_fd)+" could not be read !"
       usage()
       sys.exit(1)
+    
     points = [ (int(x),int(b32decode(y))) for x,y in lines]
 
-    out = hex(int(result(points))).replace("0x","").replace("L","")
+    out = hex(int(Lagrange_polynomial(points))).replace("0x","").replace("L","")
     print out.decode('hex')
 
   else:

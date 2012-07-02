@@ -10,25 +10,26 @@ getcontext().prec = 1000
 
 
 def Lagrange_polynomial(points):
-  ''' 
-  https://en.wikipedia.org/wiki/Lagrange_polynomial
-  this is a special case in which the Lagrange L(x) 
-  function is actually L(0), ie:
-  given polynomial a+bx+bx^2=y we "hide" the secret as
-  value "a", so knowing enough points what we do is basically f(0) 
   '''
-  total = Decimal(0)
-  k = len(points)
-  for i in xrange(k):
+  input: array of tuples (x,y)
+  We calculate here the constant that is present in the polynomial
+  at the x^0. This constant is our secret. We use this: 
+  https://en.wikipedia.org/wiki/Lagrange_polynomial
+  but in our case function is actually L(0)
+  '''
+  a = Decimal(0)
+  k = len(points) # how many points we actually have
+  for i in xrange(k): # this is for the y values
     l = Decimal(1) 
-    for j in xrange(k):
-      if j != i:
+    for j in xrange(k): # those are the x values
+      if j != i: # l = (x0 - xj) / (xi - xj) 
         l *= (Decimal(0) - Decimal(points[j][0]))/(Decimal(points[i][0]) - Decimal(points[j][0]))
-   
+  
+    # multiply the previous l by yi
     l *= Decimal(points[i][1]) 
-    total += l
+    a += l
 
-  return total
+  return a 
 
 def usage():
   print sys.argv[0]+" <options> \n\n\
@@ -129,7 +130,7 @@ if __name__ == "__main__":
       line = str(x)+":"+b32encode(str(y))
       if not opt_fd == "": # output to file
         try:
-          open(opt_fd,"w").write(line+"\n")
+          open(opt_fd,"a").write(line+"\n")
         except IOError:
           print "problem with writing to file: "+str(opt_fd)
           sys.exit(1)

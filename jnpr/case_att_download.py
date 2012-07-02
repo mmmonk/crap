@@ -393,49 +393,49 @@ if __name__ == '__main__':
         if i >= imax:
           break
         arg = sys.argv[i]
-        if arg == "-t":
+        if arg == "-t": # temporary folder usage
           opt_temp = 1
-        elif arg == "-l":
+        elif arg == "-l": # just list the attachments
           opt_list = 1
-        elif arg == "-o":
+        elif arg == "-o": # overwrite the files
           opt_over = 1
-        elif arg == "-s":
+        elif arg == "-s": # print the case data
           opt_stat = 1
-        elif arg == "-nd":
+        elif arg == "-nd": # don't create the case dir
           opt_nmkd = 1
-        elif arg == "-i":
+        elif arg == "-i": # include only files matching regex
           i += 1
           if i >= imax:
             usage()
           opt_incl = sys.argv[i]
-        elif arg == "-e":
+        elif arg == "-e": # exclude only files matching regex
           i += 1
           if i >= imax:
             sys.exit(1) 
           opt_excl = sys.argv[i]
-        elif arg == "-h":
+        elif arg == "-h": # print usage/help
           sys.exit(1)
-        elif arg == "-d":
+        elif arg == "-d": # write files to this directory
           i += 1
           if i >= imax:
             sys.exit(1)
           opt_dir = sys.argv[i]
-        elif arg == "-u":
+        elif arg == "-u": # username for the case system
           i += 1
           if i >= imax:
             sys.exit(1) 
           opt_user = sys.argv[i]
-        elif arg == "-n":
+        elif arg == "-n": # download only n latest attachemnts
           i += 1
           if i >= imax:
             sys.exit(1) 
           opt_news = int(sys.argv[i])
-        elif arg == "-p":
+        elif arg == "-p": # password for the case system
           i += 1
           if i >= imax:
             sys.exit(1) 
           opt_pass = sys.argv[i]
-        elif arg == "-fp":
+        elif arg == "-fp": # ftp password
           i += 1
           if i >= imax:
             sys.exit(1) 
@@ -608,27 +608,30 @@ if __name__ == '__main__':
           if re.search(opt_excl,filename.group(1)):
             continue
 
-        # download N newest attachements
+        # download N newest attachments
         if opt_news > 0:
           if curcmatt <= maxcmatt - opt_news:
             curcmatt += 1
             continue
 
+        # lets make sure that we have the destination directory
         if not os.path.exists(casedir):
           os.makedirs(casedir)
 
+        # and that the names don't repeat
         caseatt = str(filename.group(1))
         try:
           filelist[caseatt] += 1
         except KeyError:
           filelist[caseatt] = 0
 
+        # if the name repeats modify the name
         if filelist[caseatt] > 0:
           name = re.search("^(.+)(\.\S{1,4})$",caseatt)
-          if name:
+          if name: # if we have extension, then add a number before ext
             temp = name.group(1)+"_"+str(filelist[caseatt])+name.group(2)
             caseatt = temp
-          else:
+          else: # if we don't see any extension then add the number at the end
             temp = caseatt + "_"+str(filelist[caseatt])
             caseatt = temp
 
@@ -688,6 +691,7 @@ if __name__ == '__main__':
     ### FTP SERVER
     if opt_news == 0:
       print "[+] Checking ftp server "+str(ftpserver)
+      # trying to login to the ftp server
       try:
         ftp = FTP(ftpserver)
         ftp.login(opt_user,opt_fpass)
@@ -695,13 +699,14 @@ if __name__ == '__main__':
         print "[!] error while connecting to the ftp server"
         sys.exit(1)
 
+      ### checking ftp upload directory
       try:
         ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
         ftpcheck(filelist,caseid,casedir,ftp)
       except error_perm:
         pass
 
-      ### checking sftp folder
+      ### checking sftp upload directory
       try:
         ftp.cwd("/volume/sftp/pub/incoming/"+caseid)
         ftpcheck(filelist,caseid,casedir,ftp)

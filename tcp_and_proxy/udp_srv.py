@@ -50,6 +50,11 @@ def checkformoredata(sock):
     return 1
   return 0
 
+def dtime(lt,dt):
+  if time.time()-lt > dt:
+    return True
+  return False
+
 def sending(pad,sock,dstaddr,seq,ack,data,paddlen,moredata=0):
   size = len(data)
   if size < paddlen:
@@ -77,9 +82,7 @@ while True:
     data, addr = sock.recvfrom(maxlen+headsize)
   except socket.error :
     # there was nothing to read from the socket
-    # lets wait, is this the best place TODO ??
-    select([],[],[],rtt)
-    if notyet > 0 and not caddr == ("",0):
+    if dtime(snt,rtt) and notyet > 0 and not caddr == ("",0):
       # we didn't yet got any response
       notyet += 1
     if notyet == maxmiss:
@@ -152,3 +155,5 @@ while True:
 
     else:
       sys.stderr.write("[!] wrong seq\n")
+
+  select([],[],[],0.1)

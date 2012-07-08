@@ -19,8 +19,8 @@ rtt = 0.1 # round trip time of the pkt
 snt = 1 # last time a pkt was send
 notyet = 1 # we didn't yet received an ack from peer 
 maxmiss = 4 # how many rtts we can wait till resending pkt 
-paddlen = 251
-headsize = 5 
+paddlen = 251 # 256 - header size 
+headsize = 5 # header size
 
 buff = {} 
 
@@ -91,9 +91,7 @@ while True:
       data, addr = sock.recvfrom (maxlen+headsize)
     except socket.error:
       # there was nothing to read from the socket
-      # lets wait, is this the best place TODO ??
-      select([],[],[],rtt)
-      if notyet > 0:
+      if dtime(snt,rtt) and notyet > 0:
         # we didn't yet got any response
         notyet += 1
       if notyet == maxmiss:
@@ -142,3 +140,4 @@ while True:
     getmore = 0 # lets reset this
     notyet = 1 # we need to wait
 
+  select([],[],[],0.1)

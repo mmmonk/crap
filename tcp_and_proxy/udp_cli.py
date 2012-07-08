@@ -91,12 +91,13 @@ while True:
       data, addr = sock.recvfrom (maxlen+headsize)
     except socket.error:
       # there was nothing to read from the socket
-      if dtime(snt,rtt) and notyet > 0:
+      if notyet > 0 and dtime(snt,rtt):
         # we didn't yet got any response
         notyet += 1
       if notyet == maxmiss:
         # our packet was probably lost, resend
         snt = sending(padding,sock,dstaddr,seq,ack,clidata,paddlen)
+        notyet += 1
       if notyet > maxmiss*3:
         # we give up
         sys.stderr.write("[!] packet lost, exiting\n")
@@ -133,6 +134,7 @@ while True:
       snt = sending(padding,sock,dstaddr,seq,ack,clidata,paddlen)
       notyet = 1 # we need to wait
 
+  
   # send a packet either to get more data or 
   # to check if the server has anything to send
   if (getmore == 1 or dtime(snt,rtt)) and notyet == 0:
@@ -140,4 +142,5 @@ while True:
     getmore = 0 # lets reset this
     notyet = 1 # we need to wait
 
-  select([],[],[],0.1)
+  if getmore == 0 and notyet == 1:
+    select([],[],[],rtt)

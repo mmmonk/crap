@@ -62,10 +62,10 @@ def sending(pad,sock,dstaddr,seq,ack,data,paddlen,moredata=0):
   sock.sendto(xored(ack,encode_head(seq,ack,size,moredata)+data),dstaddr)
   return time.time()
 
-# our listening socket - non blocking
+# our listening socket - blocking
 sock = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
 sock.bind((IP,PORT))
-sock.setblocking(0)
+sock.setblocking(1)
 
 # this is the start value for to which we will compare 
 # connecting hosts to know if there is a new connection or not
@@ -78,17 +78,18 @@ padding = open("/dev/urandom").read(paddlen)
 
 while True:
   try:
-    # this is done on a non-blocking socket
+    # this is a blocking socket
     data, addr = sock.recvfrom(maxlen+headsize)
   except socket.error :
     # there was nothing to read from the socket
-    if dtime(snt,rtt) and notyet > 0 and not caddr == ("",0):
+    if notyet > 0 and not caddr == ("",0):
       # we didn't yet got any response
       notyet += 1
     if notyet == maxmiss:
       # our packet was probably lost, resend
       sys.stderr.write("[!] packet lost, resending\n")
       snt = sending(padding,sock,caddr,seq,ack,srvdata,paddlen,checkformoredata(serv))
+      notyet += 1
     if notyet > maxmiss*3:
       # we give up
       sys.stderr.write("[!] packet lost, reseting\n")
@@ -122,6 +123,7 @@ while True:
       # new padding
       padding = open("/dev/urandom").read(paddlen)
       caddr = addr
+      seq = 1 # resetting seq number 
       head = decode_head(xored(seq,data[:headsize]))
       seq = head[1]
 
@@ -156,4 +158,3 @@ while True:
     else:
       sys.stderr.write("[!] wrong seq\n")
 
-  select([],[],[],0.1)

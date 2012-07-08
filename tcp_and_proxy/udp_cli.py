@@ -19,10 +19,8 @@ rtt = 0.1 # round trip time of the pkt
 snt = 1 # last time a pkt was send
 notyet = 1 # we didn't yet received an ack from peer 
 maxmiss = 4 # how many rtts we can wait till resending pkt 
-maxif = 10 # max pkts in flight
-cif = 0 # current number of pkts in flight
-lseq = 0 # oldest seq number
-headsize = 4
+paddlen = 251
+headsize = 5 
 
 buff = {} 
 
@@ -31,11 +29,11 @@ def dtime(lt,dt):
     return True
   return False
 
-def encode_head(seq,ack,size):
-  return struct.pack("BBH",seq,ack,size+headsize)
+def encode_head(seq,ack,size,moredata=0):
+  return struct.pack("BBHB",seq,ack,size+headsize,moredata)
 
 def decode_head(dat):
-  return struct.unpack("BBH",dat)
+  return struct.unpack("BBHB",dat)
 
 def incseq(seq):
   seq += 1
@@ -57,68 +55,90 @@ def xored(x,msg):
 def debug(msg):
   sys.stderr.write(msg+"\n")
 
-
-def sending(pad,sock,dstaddr,seq,ack,data):
+def sending(pad,sock,dstaddr,seq,ack,data,paddlen):
   size = len(data)
-  if size < 252:
-    data += pad[:252-size]
-  sock.sendto(xored(ack,encode_head(seq,ack,size)+data),dstaddr)
+  if size < paddlen:
+    data += pad[:paddlen-size]
+  sock.sendto(xored(ack,encode_head(seq,ack,size,0)+data),dstaddr)
   return time.time()
 
-
+# this is socket to our server
 sock = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
-sock.setblocking(0)
-fcntl(0, F_SETFL, O_NONBLOCK)
+sock.setblocking(0) # yep this one is non blocking
+fcntl(0, F_SETFL, O_NONBLOCK) # our stdout is also non blocking
 
+# this is our server address and port
 dstaddr = (IP,PORT)
 
-padding = open("/dev/urandom").read(256)
+# getting some random padding that we will use
+padding = open("/dev/urandom").read(paddlen)
 
-snt = sending(padding,sock,dstaddr,seq,ack,"")
+# lets send the first empty packet
+# ssh starts with a banner from the server
+# and we send this packet to get that banner
+snt = sending(padding,sock,dstaddr,seq,ack,"",paddlen)
 
+getmore = 0
 clidata = ""
 
 while True:
   toread,towrite,[] = select([0],[1],[],10)
 
+  # test to see if there is anything from the server
   if 1 in towrite:
     try:
+      # this is done on a non-blocking socket
       data, addr = sock.recvfrom (maxlen+headsize)
     except socket.error:
+      # there was nothing to read from the socket
+      # lets wait, is this the best place TODO ??
       select([],[],[],rtt)
       if notyet > 0:
+        # we didn't yet got any response
         notyet += 1
       if notyet == maxmiss:
-        snt = sending(padding,sock,dstaddr,seq,ack,clidata)
+        # our packet was probably lost, resend
+        snt = sending(padding,sock,dstaddr,seq,ack,clidata,paddlen)
       if notyet > maxmiss*3:
+        # we give up
         sys.stderr.write("[!] packet lost, exiting\n")
         sys.exit(1)
     else:
+      # server sent something
+      # is this the same server we supposed to talk to
       if addr == dstaddr:
+        # lets see the header (after xoring the data)
         head = decode_head(xored(seq,data[:headsize]))
         if seq == head[1]:
-          ack = head[0]
-          rtt = calcrtt(snt)
-          notyet = 0
+          ack = head[0] # set our ack
+          rtt = calcrtt(snt) # modify the rtt
+          notyet = 0 # we got our packet
           if head[2] > 0 \
-              and len(data[headsize:head[2]]) == head[2] - headsize: 
+              and len(data[headsize:head[2]]) == head[2] - headsize:
+            # this packet seems to have a valid data, let see what it is
             sys.stdout.write(xored(seq,data[headsize:head[2]]))
-          seq = incseq(seq)
+          seq = incseq(seq) # increase our seq num
+          getmore = head[3] # is there more data ?
         else:
           sys.stderr.write("[!] wrong seq\n")
       else:
         sys.stderr.write("[!] wrong source address: "+str(addr)+"\n")
 
+  # client has something to send
   if 0 in toread and notyet == 0:
     clidata = sys.stdin.read(maxlen)
     if len(clidata) == 0:
       sys.exit()
     
     else:
-      snt = sending(padding,sock,dstaddr,seq,ack,clidata)
-      notyet = 1
+      # client sends data here
+      snt = sending(padding,sock,dstaddr,seq,ack,clidata,paddlen)
+      notyet = 1 # we need to wait
 
-  if dtime(snt,rtt) and notyet == 0:
-    snt = sending(padding,sock,dstaddr,seq,ack,"")
-    notyet = 1
+  # send a packet either to get more data or 
+  # to check if the server has anything to send
+  if (getmore == 1 or dtime(snt,rtt)) and notyet == 0:
+    snt = sending(padding,sock,dstaddr,seq,ack,"",paddlen)
+    getmore = 0 # lets reset this
+    notyet = 1 # we need to wait
 

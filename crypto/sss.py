@@ -127,7 +127,7 @@ if __name__ == "__main__":
         y += xv[j]*(x**j)
 
       # text output, convert y to base32 
-      line = str(x)+":"+b32encode(str(y))
+      line = b32encode(str(x)+":"+str(y))
       if not opt_fd == "": # output to file
         try:
           open(opt_fd,"a").write(line+"\n")
@@ -142,14 +142,14 @@ if __name__ == "__main__":
       # reading from a file
       # format:
       # x:base32(y)
-      lines = [ line.strip().split(":") for line in open(opt_fd).readlines()]
+      lines = [ b32decode(line.strip()).split(":") for line in open(opt_fd).readlines()]
     except IOError:
       print "file "+str(opt_fd)+" could not be read !"
       usage()
       sys.exit(1)
    
     # converting text to tuples (x,y) 
-    points = [ (int(x),int(b32decode(y))) for x,y in lines]
+    points = [ (int(x),int(y)) for x,y in lines]
     
     # coming up with the secret value
     out = hex(int(Lagrange_polynomial(points))).replace("0x","").replace("L","")

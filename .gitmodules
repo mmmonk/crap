@@ -1,0 +1,3 @@
+[submodule "fortunes"]
+	path = fortunes
+	url = git@github.com:mmmonk/fortunes.git

@@ -2,4 +2,16 @@ Ether(src=RandMAC())/IP(src=RandIP(),dst="192.168.1.1")/UDP(sport=35)
 
 IP(dst="172.26.125.105")/UDP(sport=RandShort(),dport=53)/DNS(rd=1,id=RandShort(),qd=DNSQR(qname="monkey.geeks.pl", qtype="AAAA"))
 
+### testing SNMP community strings
+snmpcomm=[comm.strip() for comm in  open("wordlist-common-snmp-community-strings.txt").readlines()]
+sendp(Ether()/IP(dst="172.30.72.0/23")/UDP(sport=RandShort(),dport=161)/SNMP(community=snmpcomm,version=["v2c","v1","v2"],PDU=SNMPget(varbindlist=SNMPvarbind(oid="1.3.6.1.2.1.1.1.0"))))
+
+### reading SNMP answers from a pcap file snmp.pcap
+snmp_ans = [p if p.haslayer(SNMPresponse) and p.getlayer(SNMPresponse).error==ASN1_INTEGER(0) else None for p in rdpcap("snmp.pcap")]
+while 1:
+ try:
+  snmp_ans.remove(None)
+ except:
+  break
+
 

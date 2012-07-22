@@ -1,5 +1,7 @@
+" ~/.vimrc file
 " $Id: 20120722$
-" $Date: 2012-07-22 10:10:04$
+" $Date: 2012-07-22 17:02:48$
+" $Author: Marek Lukaszuk$
 "
 " ideas http://amix.dk/vim/vimrc.html
 " vim --servername GVIM --remote-tab-silent
@@ -190,22 +192,47 @@ if has('autocmd')
     endif
   endfunction
 
+  " clean up the \r at the end of lines
+  function! StripTrailingCarriageReturn()
+    exec "normal ma" | " this saves the current position in the file
+    %s/\r//e
+    exec "normal `a" | " this restores the current position in the file
+  endfunction
+
   " this function as the name suggests strips the trailing
   " white characters from the end of the lines
   function! StripTrailingWhitespace()
+    exec "normal ma" | " this saves the current position in the file
     %s/\s\+$//e
+    exec "normal `a" | " this restores the current position in the file
   endfunction
 
   " this function modifies automatically the version number
   " and the last modified timestamp
   function! VersionUpdate()
-    if &modified == 1
+    if &modified
+      let endl = min ([20,line("$")]) " we will search max 20 first lines 
+      exec "normal ma" | " this saves the current position in the file
       try
-        exe ":1,20 s/\$Id.*\$/$Id: ".strftime("%Y%m%d")."$/e"
-        exe ":1,20 s/\$Date.*\$/$Date: ".strftime("%F %T")."$/e"
+        exe ":1,".endl." s/\$Id.*\$/$Id: ".strftime("%Y%m%d")."$/e"
+        exe ":1,".endl." s/\$Date.*\$/$Date: ".strftime("%F %T")."$/e"
       catch
       endtry
+      exec "normal `a" | " this restores the current position in the file
     endif
+  endfunction
+
+  function! FileCleanUp()
+    call StripTrailingCarriageReturn()
+    call StripTrailingWhitespace()
+  endfunction
+
+  function! FileCleanUpCases()
+    exec "normal ma" | " this saves the current position in the file
+    exec ":%! cjc.pl"
+    call StripTrailingCarriageReturn()
+    call StripTrailingWhitespace()
+    exec "normal `a" | " this restores the current position in the file
   endfunction
 
   augroup ResCur
@@ -214,7 +241,10 @@ if has('autocmd')
   augroup END
 
   au BufWrite * call VersionUpdate()
-  au BufWrite * call StripTrailingWhitespace()
+  " clean up trailing white spaces in my scripts
+  au BufWrite $HOME/store/tools/* call StripTrailingWhitespace()
+  " clean up files after reading in the cases subdirectory
+  au BufRead $HOME/store/juniper/* call FileCleanUpCases()
 
   augroup Openssl-enc
     au!
@@ -238,7 +268,7 @@ if has('autocmd')
   augroup VimConfig
     au!
     au BufWritePost ~/.vimrc so ~/.vimrc
-    au BufWritePost .vimrc   so ~/.vimrc
+    "au BufWritePost .vimrc   so ~/.vimrc
   augroup END
 endif
 
@@ -249,6 +279,20 @@ endif
 
 set secure
 
+" #################################
+" # adding custome header variables
+" #################################
+function! AddStdHeader()
+  let s:line=line(".")
+  call append(s:line," $Id$")
+  call append(s:line+1," $Date$")
+  call append(s:line+2," $Author: Marek Lukaszuk$")
+  unlet s:line
+endfunction
+
+abbre fc call FileCleanUpCases()
+abbre ah call AddStdHeader()
 abbre sws call StripTrailingWhitespace()
 abbre wu call VersionUpdate()
 abbre te tabedit
+

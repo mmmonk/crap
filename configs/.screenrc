@@ -1,3 +1,7 @@
+# $Id: 20120722$
+# $Date: 2012-07-22 16:24:56$
+# $Author: Marek Lukaszuk$
+
 startup_message off
 #defflow on # will force screen to process ^S/^Q
 altscreen on

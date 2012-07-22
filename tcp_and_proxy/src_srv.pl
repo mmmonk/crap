@@ -1,7 +1,8 @@
 #!/usr/bin/perl
 
-# $Id$
-
+# $Id: 20120722$
+# $Date: 2012-07-22 14:15:29$
+# $Author: Marek Lukaszuk$
 
 
 
@@ -59,7 +60,7 @@ while (1) {
 
 		if ($socks_conn eq 255){
 			warn ct,"socks server says wrong authentication type\n";
-			next;	
+			next;
 		}
 
 		if ($host=~/^\d+\.\d+\.\d+\.\d+$/){
@@ -117,7 +118,7 @@ while (1) {
 	my $ssh;
   socket($ssh,PF_INET,SOCK_STREAM,6);
   if (! connect($ssh,sockaddr_in($ssh_srv_prt,inet_aton($ssh_server)))){
-          warn ct,"ssh server at ".$ssh_server.":".$ssh_srv_prt." is not responding\n"; 
+          warn ct,"ssh server at ".$ssh_server.":".$ssh_srv_prt." is not responding\n";
           next;
   }else{
 		warn ct,"connected to SSH server at ".$ssh_server.":".$ssh_srv_prt."\n";
@@ -167,5 +168,5 @@ sub io_thread {
 sub ct {
 	$_ = asctime(localtime(time));
 	chomp;
-	return "$_ - "; 
+	return "$_ - ";
 }

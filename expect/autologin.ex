@@ -1,6 +1,8 @@
 #!/usr/local/bin/expect --
 
-;# $Id$
+# $Id: 20120722$
+# $Date: 2012-07-22 14:42:31$
+# $Author: Marek Lukaszuk$
 
 package require base64
 
@@ -28,7 +30,7 @@ if {[regexp "^ubr7200-" $host ]} {
 
 } elseif { [regexp "-sw0" $host ]} {
 	set pass [::base64::decode $var2]
-	set enab [::base64::decode $ver2] 
+	set enab [::base64::decode $ver2]
 	set user "admin"
 	set cmd "/usr/bin/telnet $host"
 
@@ -49,7 +51,7 @@ if {[regexp "^ubr7200-" $host ]} {
 log_user 0
 
 ;# we are connecting to the remote host, throught another ssh connection
-spawn /usr/bin/ssh -2 -4 -C -c blowfish-cbc -t CERBER_HOST "$cmd" 
+spawn /usr/bin/ssh -2 -4 -C -c blowfish-cbc -t CERBER_HOST "$cmd"
 
 expect timeout {
 	send_user "failed to connect - timeout\n"
@@ -65,24 +67,24 @@ expect timeout {
 } "Enter passphrase for key*" {
 	send_user "Please run ssh-add first\n"
 	exit
-} "sername:*" { 
-	send -s "$user\r" 
-	expect "assword:*" { 
+} "sername:*" {
+	send -s "$user\r"
+	expect "assword:*" {
 		send -s "$pass\n"
-	} 
-} "assword:*" { 
-	send -s "$pass\r" 
+	}
+} "assword:*" {
+	send -s "$pass\r"
 }
 
-expect "*>*" { 
-	send -s "en\r" 
-	expect "Password:*" { 
+expect "*>*" {
+	send -s "en\r"
+	expect "Password:*" {
 		send -s "$enab\r"
 	}
 	expect "*#*" {
 		send -s "term mon\r"
 	}
-} "*#*" { 
+} "*#*" {
 	send -s "term mon\r"
 }
 
@@ -99,22 +101,22 @@ log_file "/usr/home/case/store/work/_archives_worklogs/$host-$filetime.log"
 send_log "\n---------- log start at $time ----------\n"
 
 ;# we will use the CTRL-A key sequence to send commands to expect
-;# set KEY \001 
+;# set KEY \001
 
 interact {
 	;# so that we don't get logout when idle
 	timeout 180 { send " \b"}
 
 	;# aliases
-	-echo \001sr\r 	{ 
+	-echo \001sr\r 	{
 		send "\nsh run\r"
-	}	
-	-echo \001ud\r 	{ 
+	}
+	-echo \001ud\r 	{
 		send "\nshow debug\rundebug all\r"
 	}
-	-echo \001sid 	{ 
+	-echo \001sid 	{
 		interact -echo -re "(.*)\r" return
-		send "\nsh interf descr $interact_out(1,string)\r" 
+		send "\nsh interf descr $interact_out(1,string)\r"
 	}
 	-echo \001siib {
 		interact -echo -re "(.*)\r" return
@@ -126,7 +128,7 @@ interact {
 			send "\nsh crypto isakmp sa | i $interact_out(1,string)_.*QM_IDLE.*ACTIVE\r"
 			expect "sh crypto isakmp sa | i $interact_out(1,string)_.*QM_IDLE.*ACTIVE\r"
 			expect -re "(.*)#.*"
-			regsub -all "(\n|\r| )+" $expect_out(buffer) "_" line 
+			regsub -all "(\n|\r| )+" $expect_out(buffer) "_" line
 #			regsub -all " +" $line "_" line
 			if {[regexp ".+_QM_IDLE_(.+)_.+_ACTIVE_.*$" $line "" isakmp_sa]} {
 				send "clear crypto isakmp $isakmp_sa\n"

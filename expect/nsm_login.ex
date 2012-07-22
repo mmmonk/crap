@@ -1,8 +1,11 @@
 #!/usr/bin/expect -f
 
-# ver: 20120403
+# ver: 20120719
 #
 # ChangeLog:
+# 20120719
+# - default user changed to "admin",
+# - added menu to change the default IP address picked by the script,
 # - more aliases,
 # 20120403
 # - added some aliases for often used commands (jtac_),
@@ -83,7 +86,7 @@ My suggestion is to use ~/.ssh/config for any non standard options.
   exit
 } else {
   set host [lindex $argv 0]
-  set user "root"
+  set user "admin"
   set pass "netscreen"
   if { [regexp @ $host] } {
     regexp {(\S+?)@} $host match user
@@ -358,6 +361,7 @@ and remember the jtac_ commands\n"
  5 - print the command needed to export the db to xdif ($filetime),
  6 - print the command needed to import the db from xdif ($filetime),
  7 - disables encryption between devSvr and the devices,
+ 8 - set the IP used by this server, if not autodetected,
 
  input: "
       stty cooked echo
@@ -427,6 +431,16 @@ and remember the jtac_ commands\n"
       } elseif { $action == 7 } {
         send -s "/etc/init.d/devSvr stop; perl -pi\".[backuptimeproc]\" -e 's/(devSvrManager.cryptoKeyLength\\s*) \\d+/\$1 0/' /usr/netscreen/DevSvr/var/devSvr.cfg && /etc/init.d/devSvr start\r"
 
+      } elseif { $action == 8 } {
+        send_user "\nThe IP of this server is: "
+
+        stty cooked echo
+        expect_user -re "(.*)\n"
+        stty raw -echo
+        global ourip
+        set ourip $expect_out(1,string)
+        send "\r"
+      
       # default - unknown choice
       } else {
         send_user "\nUnknown choice\n"

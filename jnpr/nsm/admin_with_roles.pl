@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 
-# $Id$
+# $Id: 20120722$
+# $Date: 2012-07-22 13:41:33$
+# $Author: Marek Lukaszuk$
 
 use strict;
 use warnings;
@@ -17,9 +19,9 @@ while(my $node=readdir(DIR)){
   next unless ($node=~/dbxml/);
   $dbver=$node;
 }
-closedir(DIR); 
+closedir(DIR);
 
-die "Can't find valid dbxml version, exiting\n" unless ($dbver); 
+die "Can't find valid dbxml version, exiting\n" unless ($dbver);
 
 my $dbxmlpath="$guiutils/$dbver/";
 $ENV{LD_LIBRARY_PATH}="$dbxmlpath/lib:";
@@ -82,7 +84,10 @@ foreach my $name (sort keys %admin){
       @res = dbxmlquery("role","__[dbxml:metadata(\"ObjectID\")=$objid and dbxml:metadata(\"HighDbVerID\")=65520]");
       foreach (@res){
         next if (/^Joined/);
-        $tname=$1 if (/^\<__\>\<\!\[CDATA\[(.+?)\]\]\>/);
+        if (/^\<__\>\<\!\[CDATA\[(.+?)\]\]\>/){
+          $tname=$1;
+          last;
+        }
       }
       $rolenames{$roles[$i]}=$tname;
     }
@@ -90,10 +95,13 @@ foreach my $name (sort keys %admin){
       @res = dbxmlquery("domain","__[dbxml:metadata(\"ObjectID\")=".$roles[$i+1]." and dbxml:metadata(\"HighDbVerID\")=65520]");
       foreach (@res){
         next if (/^Joined/);
-        $tname=$1 if (/^\<__\>\<\!\[CDATA\[(.+?)\]\]\>/);
+        if (/^\<__\>\<\!\[CDATA\[(.+?)\]\]\>/){
+          $tname=$1;
+          last;
+        }
       }
       $domains{$roles[$i+1]}=$tname;
-    }  
+    }
     push(@trols,"\"".$rolenames{$roles[$i]}."\"@\"".$domains{$roles[$i+1]}."\"");
   }
   print "$name - ".(join(",",@trols))."\n";

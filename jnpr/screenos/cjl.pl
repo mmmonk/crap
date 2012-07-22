@@ -1,8 +1,9 @@
 #!/usr/bin/perl
 
-# $Id$
+# $Id: 20120722$
+# $Date: 2012-07-22 13:43:44$
+# $Author: Marek Lukaszuk$
 
-# mlukaszuk@juniper.net
 # clearing a bit the output of "get event"
 #
 

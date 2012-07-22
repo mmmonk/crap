@@ -1,5 +1,9 @@
 #!/usr/bin/python -u
 
+# $Id: 20120722$
+# $Date: 2012-07-22 13:40:12$
+# $Author: Marek Lukaszuk$
+
 import urllib2
 from urlparse import urljoin
 import sgmllib
@@ -15,20 +19,20 @@ class MyParser(sgmllib.SGMLParser):
 
   def __init__(self, verbose=0):
     sgmllib.SGMLParser.__init__(self, verbose)
-    self.hyperlinks = {} 
-    self.inside_a = "" 
-    
+    self.hyperlinks = {}
+    self.inside_a = ""
+
   def start_a(self, attributes):
     for name, value in attributes:
       if name == "href":
         if "junos-release-notes" in value:
-          self.inside_a = value 
+          self.inside_a = value
   def handle_data(self, data):
     if not self.inside_a == "":
-      self.hyperlinks[data] = self.inside_a 
+      self.hyperlinks[data] = self.inside_a
 
   def end_a(self):
-    self.inside_a = "" 
+    self.inside_a = ""
 
   def get_hyperlinks(self):
     return self.hyperlinks
@@ -36,7 +40,7 @@ class MyParser(sgmllib.SGMLParser):
 opener = urllib2.build_opener()
 urllib2.install_opener(opener)
 
-releaselinks = {} 
+releaselinks = {}
 
 for rel in jrels:
   myparser = MyParser()
@@ -46,7 +50,7 @@ for rel in jrels:
     text = dat.read()
   except:
     continue
-  
+
   myparser.parse(text)
   links = myparser.get_hyperlinks()
   for link in links:
@@ -63,7 +67,7 @@ for rel in jrels:
       continue
     except:
       pass
-    
+
     download = urllib2.urlopen(fulllink)
     dsize = int(download.info()['Content-Length'])
     try:

@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
-# Author: Marek Lukaszuk
+# $Id: 20120722$
+# $Date: 2012-07-22 13:39:28$
+# $Author: Marek Lukaszuk$
 
 from cookielib import CookieJar
 from urllib import urlencode,unquote,quote
-import urllib2 
-from sgmllib import SGMLParser 
+import urllib2
+from sgmllib import SGMLParser
 import sys
 import os
 import re
@@ -15,7 +17,7 @@ from ftplib import FTP,error_perm
 ### TODO:
 # - add check for unicode,
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
-# - and in general try to verify all the data from the server 
+# - and in general try to verify all the data from the server
 
 version = "20120613"
 
@@ -74,7 +76,7 @@ def LoadConf(filename):
   '''
   global confvar
 
-  confvar = {} 
+  confvar = {}
   try:
     conf = open(filename,'r')
   except:
@@ -84,12 +86,12 @@ def LoadConf(filename):
   line = conf.readline()
 
   while line:
-    try: 
+    try:
       conft = line.replace(os.linesep,'').split("=")
       confvar[conft[0]] = conft[1]
     except:
       pass
-    line = conf.readline() 
+    line = conf.readline()
 
 def progressindicator(sign):
   '''
@@ -100,7 +102,7 @@ def progressindicator(sign):
   elif sign == "/":
     sign = "-"
   elif sign == "-":
-    sign = "\\" 
+    sign = "\\"
   else:
     sign = "|"
   return sign
@@ -142,7 +144,7 @@ def ftpcheck(filelist,caseid,casedir,ftp):
   of the ftp server, it also makes sure not to overwrite files
   '''
   ftplist = ftp.nlst()
-  print "[+] "+str(caseid)+": found "+str(len(ftplist))+" file(s) in "+str(ftp.pwd()) 
+  print "[+] "+str(caseid)+": found "+str(len(ftplist))+" file(s) in "+str(ftp.pwd())
   for filename in ftplist:
     # downloading attachments
     if not opt_incl == "":
@@ -161,7 +163,7 @@ def ftpcheck(filelist,caseid,casedir,ftp):
     if not os.path.exists(casedir):
       os.makedirs(casedir)
 
-    global ftpatt 
+    global ftpatt
     ftpatt = str(filename)
     try:
       filelist[ftpatt] += 1
@@ -201,7 +203,7 @@ def ftpcheck(filelist,caseid,casedir,ftp):
       if notdir == 1:
         print "[+] Downloading "+str(ftpatt)+"\r",
         try:
-          global ftpfile, fcount, fsize, ftpprogind, ftpstime 
+          global ftpfile, fcount, fsize, ftpprogind, ftpstime
           ftpfile = open(casedir+os.sep+ftpatt,"wb")
           fcount = 0
           ftp.sendcmd("TYPE i")
@@ -209,7 +211,7 @@ def ftpcheck(filelist,caseid,casedir,ftp):
           ftpprogind = "|"
           ftpstime = time()
           ftp.retrbinary("RETR "+str(filename),ftpcallback,blocksize=32768)
-          ftpfile.close() 
+          ftpfile.close()
         except:
           os.unlink(casedir+os.sep+ftpatt)
           print "[!] error while downloading file: "+str(ftpatt)
@@ -229,13 +231,13 @@ class LoginForm(SGMLParser):
 
   def __init__(self, verbose = 0):
     SGMLParser.__init__(self, verbose)
-    self.form = {} 
+    self.form = {}
     self.inside_auth_form = 0
 
   def do_input(self, attributes):
     if self.inside_auth_form == 1:
       if 'hidden' in attributes[0]:
-        self.form[attributes[1][1]] = attributes[2][1] 
+        self.form[attributes[1][1]] = attributes[2][1]
 
   def start_form(self, attributes):
     for name, value in attributes:
@@ -244,7 +246,7 @@ class LoginForm(SGMLParser):
         break
 
   def end_form(self):
-    self.inside_auth_form = 0 
+    self.inside_auth_form = 0
 
   def get_form(self):
     return self.form
@@ -260,13 +262,13 @@ class CaseForm(SGMLParser):
 
   def __init__(self, verbose = 0):
     SGMLParser.__init__(self, verbose)
-    self.form = {} 
+    self.form = {}
     self.inside_form = 0
 
   def do_input(self, attributes):
     if self.inside_form == 1:
       if 'hidden' in attributes[0]:
-        self.form[attributes[1][1]] = attributes[2][1] 
+        self.form[attributes[1][1]] = attributes[2][1]
 
   def start_form(self, attributes):
     for name, value in attributes:
@@ -275,7 +277,7 @@ class CaseForm(SGMLParser):
         break
 
   def end_form(self):
-    self.inside_form = 0 
+    self.inside_form = 0
 
   def get_form(self):
     return self.form
@@ -385,7 +387,7 @@ if __name__ == '__main__':
     except KeyError:
       pass
 
-    # options parsing 
+    # options parsing
     i = 1
     imax = len(sys.argv)
     try:
@@ -411,7 +413,7 @@ if __name__ == '__main__':
         elif arg == "-e": # exclude only files matching regex
           i += 1
           if i >= imax:
-            sys.exit(1) 
+            sys.exit(1)
           opt_excl = sys.argv[i]
         elif arg == "-h": # print usage/help
           sys.exit(1)
@@ -423,28 +425,28 @@ if __name__ == '__main__':
         elif arg == "-u": # username for the case system
           i += 1
           if i >= imax:
-            sys.exit(1) 
+            sys.exit(1)
           opt_user = sys.argv[i]
         elif arg == "-n": # download only n latest attachemnts
           i += 1
           if i >= imax:
-            sys.exit(1) 
+            sys.exit(1)
           opt_news = int(sys.argv[i])
         elif arg == "-p": # password for the case system
           i += 1
           if i >= imax:
-            sys.exit(1) 
+            sys.exit(1)
           opt_pass = sys.argv[i]
         elif arg == "-fp": # ftp password
           i += 1
           if i >= imax:
-            sys.exit(1) 
+            sys.exit(1)
           opt_fpass = sys.argv[i]
         else:
           if re.match("^\d{4}-\d{4}-\d{4}$",arg):
             caseid = arg
           else:
-            sys.exit(1) 
+            sys.exit(1)
         i += 1
     except:
       usage()
@@ -452,7 +454,7 @@ if __name__ == '__main__':
     if caseid == "":
       m = re.match("^\d{4}-\d{4}-\d{4}",os.path.basename(os.getcwd()))
       if m != None:
-        caseid = m.group(0) 
+        caseid = m.group(0)
         opt_dir = ""
         opt_ucwd = 1
 
@@ -516,7 +518,7 @@ if __name__ == '__main__':
       print "[!] error while trying to get case "+str(caseid)+" details. >>> Probably your password and/or username are incorrect <<< .\nERROR:"+str(errstr)
       sys.exit(1)
     except urllib2.URLError as errstr:
-      print "[!] error while trying to get case "+str(caseid)+" details,\nERROR:"+str(errstr) 
+      print "[!] error while trying to get case "+str(caseid)+" details,\nERROR:"+str(errstr)
       sys.exit(1)
 
     sleep(0.25)
@@ -552,7 +554,7 @@ if __name__ == '__main__':
       casedir = str(opt_dir)+os.sep+"temp"+os.sep+str(caseid)+os.sep
 
     if opt_ucwd == 1:
-      casedir = os.curdir+os.sep 
+      casedir = os.curdir+os.sep
 
     if opt_nmkd == 1:
       casedir = str(opt_dir)+os.sep

@@ -2,7 +2,8 @@
 -- Trivial Networking Protocol and also TTP dissector for wireshark
 --
 -- $Id: 20120722$
--- $Date: 2012-07-22 09:49:31$
+-- $Date: 2012-07-22 13:48:39$
+-- $Author: Marek Lukaszuk$
 --
 -- usage:
 --    wireshark -X lua_script:ttp_tnp.lua

@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+# $Id: 20120722$
+# $Date: 2012-07-22 13:49:17$
+# $Author: Marek Lukaszuk$
+
 import sys
 
 file = sys.argv[1]

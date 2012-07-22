@@ -1,8 +1,8 @@
 #!/usr/bin/expect --
 
-;# $Id$
-
-;# package require base64
+# $Id: 20120722$
+# $Date: 2012-07-22 13:44:50$
+# $Author: Marek Lukaszuk$
 
 ;# set send_slow  {2  .001}
 set send_slow {10 .01}
@@ -45,14 +45,14 @@ expect timeout {
 } eof {
 	send_user "failed to connect\n"
 	exit
-} "login*" { 
-	send -s "$user\r" 
+} "login*" {
+	send -s "$user\r"
   exp_continue
-} "assword:*" { 
-	send -s "$pass\r" 
+} "assword:*" {
+	send -s "$pass\r"
   exp_continue
-} "*-> " { 
-	send -s "\r" 
+} "*-> " {
+	send -s "\r"
 
 }
 
@@ -89,7 +89,7 @@ interact {
 	}
 
 	\001l {
-		send -s "\r"		
+		send -s "\r"
 		expect  "login*" {
 			send -s "$user\r"
 		  exp_continue
@@ -145,17 +145,17 @@ interact {
 ;#++		send -s "get tech-support\r"
 ;#++		expect "$prompt"
 ;#++		send -s "get event\r"
-;#++		expect "$prompt"		
+;#++		expect "$prompt"
 ;#++		send -s "get log sys\r"
-;#++		expect "$prompt"		
+;#++		expect "$prompt"
 ;#++		send -s "get nsrp\r"
-;#++		expect "$prompt" 
+;#++		expect "$prompt"
 ;#++		send -s "get nsrp monitor\r"
-;#++		expect "$prompt" 
+;#++		expect "$prompt"
 ;#++		send -s "get interface\r"
 ;#++
 ;#++		for { set x 1 } { $x<=4 } { incr x } {
-;#++			
+;#++
 ;#++			expect "$prompt"
 ;#++			send -s "get nsrp\r"
 ;#++			expect "$prompt"
@@ -180,7 +180,7 @@ interact {
 		for { set x 1 } { $x<=130 } { incr x } {
 			send -s "set route 10.0.$x.0/24 interface eth0/0 gateway 172.30.72.1\r"
 			expect "$prompt"
-			sleep 1 
+			sleep 1
 		}
 		send_user "\ndone\n"
 		send -s "\r"

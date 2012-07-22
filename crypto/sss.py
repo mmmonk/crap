@@ -1,35 +1,39 @@
 #!/usr/bin/env python
 
+# $Id: 20120722$
+# $Date: 2012-07-22 13:49:06$
+# $Author: Marek Lukaszuk$
+
 import sys
 import random
 from decimal import *
 from base64 import *
 
-# if you have problems with the decryption, increase this value 
-getcontext().prec = 1000 
+# if you have problems with the decryption, increase this value
+getcontext().prec = 1000
 
 
 def Lagrange_polynomial(points):
   '''
   input: array of tuples (x,y)
   We calculate here the constant that is present in the polynomial
-  at the x^0. This constant is our secret. We use this: 
+  at the x^0. This constant is our secret. We use this:
   https://en.wikipedia.org/wiki/Lagrange_polynomial
   but in our case function is actually L(0)
   '''
   a = Decimal(0)
   k = len(points) # how many points we actually have
   for i in xrange(k): # this is for the y values
-    l = Decimal(1) 
+    l = Decimal(1)
     for j in xrange(k): # those are the x values
-      if j != i: # l = (x0 - xj) / (xi - xj) 
+      if j != i: # l = (x0 - xj) / (xi - xj)
         l *= (Decimal(0) - Decimal(points[j][0]))/(Decimal(points[i][0]) - Decimal(points[j][0]))
-  
+
     # multiply the previous l by yi
-    l *= Decimal(points[i][1]) 
+    l *= Decimal(points[i][1])
     a += l
 
-  return a 
+  return a
 
 def usage():
   print sys.argv[0]+" <options> \n\n\
@@ -48,7 +52,7 @@ if __name__ == "__main__":
 
   i = 1
   maxargv = len(sys.argv)
-  
+
   opt_enc = ""
   opt_dec = 0
   opt_fd = ""
@@ -58,13 +62,13 @@ if __name__ == "__main__":
   # arguments processing
   try:
     while 1:
-      
+
       if i >= maxargv:
         break
 
       arg = sys.argv[i]
 
-      if arg == "-h": # help/usage 
+      if arg == "-h": # help/usage
         usage()
       elif arg == "-e": # encode
         i += 1
@@ -73,12 +77,12 @@ if __name__ == "__main__":
         opt_enc = sys.argv[i]+" "
       elif arg == "-d": # decode
         opt_dec = 1
-      elif arg == "-f": # filename 
+      elif arg == "-f": # filename
         i += 1
         if i >= maxargv:
           sys.exit(1)
         opt_fd = sys.argv[i]
-      elif arg == "-a": # all shares 
+      elif arg == "-a": # all shares
         i += 1
         if i >= maxargv:
           sys.exit(1)
@@ -103,9 +107,9 @@ if __name__ == "__main__":
     xv = []
     a = int(opt_enc.encode('hex'),16)
     xv.append(a) # this is our secret, value a*x^0
-    
+
     # randomly generate all other constansts for polynomial
-    # the range for the other contstant is (-2*a,2*a) 
+    # the range for the other contstant is (-2*a,2*a)
     for i in xrange(opt_req-1):
       xv.append(random.randint(0-(2*a),(2*a)))
 
@@ -120,13 +124,13 @@ if __name__ == "__main__":
             pass
         except KeyError:
           break
-     
+
       # counting f(x)=y
       y = xv[0]
       for j in xrange(1,len(xv)):
         y += xv[j]*(x**j)
 
-      # text output, convert y to base32 
+      # text output, convert y to base32
       line = b32encode(str(x)+":"+str(y))
       if not opt_fd == "": # output to file
         try:
@@ -136,7 +140,7 @@ if __name__ == "__main__":
           sys.exit(1)
       else: # output to stdout
         print line
-     
+
   elif opt_dec == 1 and not opt_fd == "": # decoding part
     try:
       # reading from a file
@@ -147,10 +151,10 @@ if __name__ == "__main__":
       print "file "+str(opt_fd)+" could not be read !"
       usage()
       sys.exit(1)
-   
-    # converting text to tuples (x,y) 
+
+    # converting text to tuples (x,y)
     points = [ (int(x),int(y)) for x,y in lines]
-    
+
     # coming up with the secret value
     out = hex(int(Lagrange_polynomial(points))).replace("0x","").replace("L","")
     print out.decode('hex')

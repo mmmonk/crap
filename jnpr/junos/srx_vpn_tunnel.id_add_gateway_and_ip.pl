@@ -1,5 +1,9 @@
 #!/usr/bin/perl
 
+# $Id: 20120722$
+# $Date: 2012-07-22 13:40:54$
+# $Author: Marek Lukaszuk$
+
 use strict;
 use warnings;
 use integer;

@@ -1,7 +1,8 @@
 #!/usr/bin/expect -f
 
 # $Id: 20120722$
-# $Date: 2012-07-22 08:46:56$
+# $Date: 2012-07-22 13:44:17$
+# $Author: Marek Lukaszuk$
 #
 # ChangeLog:
 # 20120719

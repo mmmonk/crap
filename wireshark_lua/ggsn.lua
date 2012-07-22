@@ -2,7 +2,8 @@
 -- decoding IP inside ggsn packet
 --
 -- $Id: 20120722$
--- $Date: 2012-07-22 09:51:26$
+-- $Date: 2012-07-22 13:48:12$
+-- $Author: Marek Lukaszuk$
 --
 -- usage:
 --    wireshark -X lua_script:ggsn.lua

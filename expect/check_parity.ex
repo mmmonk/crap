@@ -1,6 +1,8 @@
 #!/usr/bin/expect -f
 
-# $Id$
+# $Id: 20120722$
+# $Date: 2012-07-22 13:40:35$
+# $Author: Marek Lukaszuk$
 
 set send_slow {5 .02}
 set timeout 60
@@ -24,7 +26,7 @@ user2@127.0.0.3:pass2
 if the user or pass are not specified the default values are used.
 "
   exit
-} 
+}
 
 set time     [ timestamp -format "%Y/%m/%d %H:%M:%S"]
 set filetime [ timestamp -format "%Y%m%d_%H%M%S"]
@@ -54,7 +56,7 @@ foreach host [split $file_data "\n"] {
   set errorperhost 0
 
   if { $host != "" } {
-    
+
     if { [regexp ":" $host] } {
       regexp {:(\S+)} $host match pass
       regexp {(\S+):} $host match host
@@ -64,7 +66,7 @@ foreach host [split $file_data "\n"] {
       regexp {(\S+?)@} $host match user
       regexp {@(\S+)} $host match host
     }
-    
+
     spawn telnet $host
 
     expect timeout {
@@ -78,7 +80,7 @@ foreach host [split $file_data "\n"] {
       continue
     } "Permission denied, please try again." {
       send_user "\n$host: CONNECTION ERROR - wrong credentials\n"
-      continue 
+      continue
     } "Are you sure you want to continue connecting (yes/no)?" {
       send -s "yes\r"
       exp_continue
@@ -99,7 +101,7 @@ foreach host [split $file_data "\n"] {
 
     expect timeout {
       send_user "\n$host: CONNECTION ERROR - connection timeout\n"
-      break 
+      break
     } eof {
       send_user "\n$host: CONNECTION ERROR - got eof\n"
       break
@@ -128,10 +130,10 @@ foreach host [split $file_data "\n"] {
         } eof {
           send_user "\n$host: CONNECTION ERROR - got eof\n"
           break
-        } "*> " { 
+        } "*> " {
           send -s "request session member $x\r"
         }
-        
+
         expect timeout {
           send_user "\n$host: CONNECTION ERROR - connection timeout\n"
           break

@@ -1,5 +1,8 @@
 #!/bin/tcsh
 
+# $Id: 20120722$
+# $Date: 2012-07-22 08:44:31$
+
 unalias *
 
 where mc > /dev/null    && alias mc "mc -b"
@@ -10,11 +13,11 @@ egrep --color a ~/.aliases >& /dev/null && alias i "egrep -I -i --color=auto"
 alias e       "i -v"
 alias ls      "ls -FA --time-style=long-iso"
 ls-F -l >& /dev/null && alias ls "ls-F -A --time-style=long-iso"
-alias ll      "ls -l" 
+alias ll      "ls -l"
 alias l       "ls -l"
 alias less    "less -sWr"
 alias lstd    "ls -l --time-style=+%D | grep `date +%D`"
-alias lstm    "ls -lt" 
+alias lstm    "ls -lt"
 alias lstc    "ls -ltc"
 alias mv      "mv -i"
 alias ms      "man -k"
@@ -25,7 +28,7 @@ alias realias	"source ~/.aliases"
 alias ressh   "source ~/.ssh_agent"
 alias s       ssh
 alias skm     "ssh -O exit"
-alias sfm     "ssh -O forward" 
+alias sfm     "ssh -O forward"
 alias t       telnet
 alias h       "history 25"
 alias j       "jobs -l"
@@ -38,11 +41,19 @@ alias dec2hex 'echo "obase=16; \!:1" |bc'
 alias hex2bin 'echo "ibase=16;obase=2;" `echo \!:1 |tr "[:lower:]" "[:upper:]"` |bc'
 alias hex2dec 'echo "ibase=16;" `echo \!:1 |tr "[:lower:]" "[:upper:]"` |bc'
 alias findf   "find . -type f -iname"
+alias ..      "cd .."
+
+where gvim > /dev/null
+
+if ( ${status} == 0 ) then
+  alias gvim gvim --servername GVIM --remote-tab-silent
+  alias vim vim --servername GVIM --remote-tab-silent
+endif
 
 where vim > /dev/null && alias vi  vim
 
 ## local aliases specific to this host
 if ( -f ~/.aliases_local) then
   source ~/.aliases_local
-endif 
+endif
 

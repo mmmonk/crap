@@ -1,9 +1,12 @@
 --
 -- Trivial Networking Protocol dissector for wireshark
 --
+-- $Id: 20120722$
+-- $Date: 2012-07-22 09:51:06$
+--
 -- usage:
---    wireshark -X lua_script:tnp.lua 
--- 
+--    wireshark -X lua_script:tnp.lua
+--
 -- any ideas, suggestions for changes, new versions of the protocol
 -- please contact Marek Lukaszuk
 --
@@ -97,7 +100,7 @@ local tnp_proto_rdp_known_ports = {
 local tnp_proto_udp_known_ports = {
   [67] = "bootp",
   [69] = "tftp",
-  [123] = "ntp", 
+  [123] = "ntp",
   [124] = "mcontrol",
   [514] = "syslog",
   [999] = "idpd",
@@ -195,14 +198,14 @@ local tnp_proto_protocols = {
 
 local tnp_proto_fragments = {
   [0] = "none",
-  [127] = "mask", 
+  [127] = "mask",
   [128] = "first/more",
 }
 
 
 local f  = tnp_proto.fields
 f.ver    = ProtoField.uint8("tnp.ver","version",base.HEX,nil,0xF0)
-f.proto  = ProtoField.uint8("tnp.proto","protocol",base.HEX,tnp_proto_protocol_types,0x0F) 
+f.proto  = ProtoField.uint8("tnp.proto","protocol",base.HEX,tnp_proto_protocol_types,0x0F)
 f.frag   = ProtoField.uint8("tnp.frag","fragment",nil,tnp_proto_fragments)
 f.len    = ProtoField.uint16("tnp.len","length",base.DEC)
 f.seq    = ProtoField.uint16("tnp.seq","sequence",base.DEC)
@@ -211,14 +214,14 @@ f.ttl    = ProtoField.uint8("tnp.ttl","ttl",base.DEC)
 f.saddr  = ProtoField.bytes("tnp.addr.src","src addr",base.HEX)
 f.daddr  = ProtoField.bytes("tnp.addr.dst","dst addr",base.HEX)
 -- tnp hello
-f.h_int  = ProtoField.uint16("tnp.hello.int","interval (ms)",base.DEC) 
+f.h_int  = ProtoField.uint16("tnp.hello.int","interval (ms)",base.DEC)
 f.h_exp  = ProtoField.uint16("tnp.hello.exp","expire (ms)",base.DEC)
-f.hn1_ad = ProtoField.bytes("tnp.hello.neigh1.addr","neighbour address",base.HEX) 
-f.hn1_mt = ProtoField.uint16("tnp.hello.neigh1.mtu","mtu",base.DEC) 
-f.hn1_hc = ProtoField.uint16("tnp.hello.neigh1.hc","hop count",base.DEC) 
+f.hn1_ad = ProtoField.bytes("tnp.hello.neigh1.addr","neighbour address",base.HEX)
+f.hn1_mt = ProtoField.uint16("tnp.hello.neigh1.mtu","mtu",base.DEC)
+f.hn1_hc = ProtoField.uint16("tnp.hello.neigh1.hc","hop count",base.DEC)
 f.hn2_ad = ProtoField.bytes("tnp.hello.neigh2.addr","neighbour address",base.HEX)
-f.hn2_mt = ProtoField.uint16("tnp.hello.neigh2.mtu","mtu",base.DEC) 
-f.hn2_hc = ProtoField.uint16("tnp.hello.neigh2.hc","hop count",base.DEC) 
+f.hn2_mt = ProtoField.uint16("tnp.hello.neigh2.mtu","mtu",base.DEC)
+f.hn2_hc = ProtoField.uint16("tnp.hello.neigh2.hc","hop count",base.DEC)
 -- tnp udp
 f.usport = ProtoField.uint16("tnp.udp.port.src","src port",base.DEC,tnp_proto_udp_known_ports)
 f.udport = ProtoField.uint16("tnp.udp.port.dst","dst port",base.DEC,tnp_proto_udp_known_ports)
@@ -255,11 +258,11 @@ f.edata  = ProtoField.bytes("tnp.control.data","data")
 -- tnp tunnel
 f.ttype  = ProtoField.uint8("tnp.tunnel.type","type",base.DEC,tnp_proto_tunnel_types)
 f.tprio  = ProtoField.uint8("tnp.tunnel.prio","priority",base.DEC,tnp_proto_tunnel_priority)
-f.tprot  = ProtoField.uint8("tnp.tunnel.prot","protocol",base.DEC,tnp_proto_protocols) 
-f.tqueue = ProtoField.uint8("tnp.tunnel.queue","queue",base.DEC) 
-f.tiflidx= ProtoField.uint32("tnp.tunnel.ifl_idx","ifl_index",base.HEX) 
-f.tlen   = ProtoField.uint16("tnp.tunnel.length","length",base.DEC) 
-f.tnh_dm = ProtoField.uint16("tnp.tunnel.nh_dstmask","nh_destmask",base.HEX) 
+f.tprot  = ProtoField.uint8("tnp.tunnel.prot","protocol",base.DEC,tnp_proto_protocols)
+f.tqueue = ProtoField.uint8("tnp.tunnel.queue","queue",base.DEC)
+f.tiflidx= ProtoField.uint32("tnp.tunnel.ifl_idx","ifl_index",base.HEX)
+f.tlen   = ProtoField.uint16("tnp.tunnel.length","length",base.DEC)
+f.tnh_dm = ProtoField.uint16("tnp.tunnel.nh_dstmask","nh_destmask",base.HEX)
 f.tnh_idx= ProtoField.uint32("tnp.tunnel.nh_idx","nh_index",base.HEX)
 f.thint  = ProtoField.uint32("tnp.tunnel.hint","hint",base.HEX)
 f.tdata  = ProtoField.bytes("tnp.tunnel.data","data")
@@ -281,7 +284,7 @@ function tnp_proto.dissector(buf,pinfo,tree)
     if (tnpver == 3) then pinfo.cols.protocol:append("v3")
     elseif (tnpver == 2) then pinfo.cols.protocol:append("v2")
     elseif (tnpver == 1) then pinfo.cols.protocol:append("v1")
-    else 
+    else
       pinfo.cols.protocol:append("v?")
       -- unknown version, probably malformed packet
       -- dropping out
@@ -291,7 +294,7 @@ function tnp_proto.dissector(buf,pinfo,tree)
     tnpheader:add(f.ver,buf(0,1))
 
     local tnpprotoname = "unknown"
-    
+
     if tnp_proto_protocol_types[tnpproto] ~= nil then
       tnpprotoname = tnp_proto_protocol_types[tnpproto]
     end
@@ -301,7 +304,7 @@ function tnp_proto.dissector(buf,pinfo,tree)
     local tnpfrag = "number"
     local tnpfragval = buf(1,1):uint()
     if (tnpfragval == 0) then
-      tnpfrag = "none" 
+      tnpfrag = "none"
     elseif (tnpfragval == 128) then
       tnpfrag = "first/more"
       pinfo.cols.info:append(", more frags")
@@ -316,9 +319,9 @@ function tnp_proto.dissector(buf,pinfo,tree)
 
     local tnpsrcaddr=""
     local tnpdstaddr=""
-   
+
     pinfo.cols.info = ""
-    local offset = 16 -- end of the header for TNPv2 and TNPv3 
+    local offset = 16 -- end of the header for TNPv2 and TNPv3
     if (tnpver == 1) then
       tnpheader:add(f.daddr,buf(6,1))
       tnpheader:add(f.saddr,buf(7,1))
@@ -332,13 +335,13 @@ function tnp_proto.dissector(buf,pinfo,tree)
       tnpheader:add(f.saddr,buf(12,4))
       pinfo.cols.info:append(buf(12,4) .. " > " .. buf(8,4))
     end
-    
+
     pinfo.cols.info:append(" proto:" .. tnpprotoname)
 
     -- TODO: why this doesn't work?
     -- pinfo.cols.src:set(tnpsrcaddr)
     -- pinfo.cols.dst:set(tnpdstaddr)
-  
+
     -- if this is a fragment we don't go any further
     if (tnpfrag == "number") then
       pinfo.cols.info:append(", fragment")
@@ -360,7 +363,7 @@ function tnp_proto.dissector(buf,pinfo,tree)
       tnphello:add(f.h_int,buf(offset,2))
       tnphello:add(f.h_exp,buf(offset+2,2))
       pinfo.cols.info:append(", interval: " .. tnphellointval .. ", expire: " .. tnphelloexpireval)
-     
+
       local neigh1
       if (tnpver == 1) then
         neigh1 = tnphello:add(f.hn1_ad,buf(offset+6,1))
@@ -371,8 +374,8 @@ function tnp_proto.dissector(buf,pinfo,tree)
         neigh1:add(f.hn1_mt,buf(offset+4,2))
         neigh1:add(f.hn1_hc,buf(offset+10,2))
       end
-     
-      -- second neighbour, only for TNPv2 and above 
+
+      -- second neighbour, only for TNPv2 and above
       if (tnpdatalen>12 and tnpver > 1) then
         offset = offset + 12
         local neigh2 = tnphello:add(f.hn2_ad,buf(offset+2,4))
@@ -380,11 +383,11 @@ function tnp_proto.dissector(buf,pinfo,tree)
         neigh2:add(f.hn2_mt,buf(offset,2))
         neigh2:add(f.hn2_hc,buf(offset+6,2))
       end
-   
+
     elseif (tnpprotoname == "udp") then
       ------------
       --- udp type -- standard UDP - mostly
-      
+
       local tnpudp = subtree:add("TNP UDP msg")
       tnpudp:add(f.usport,buf(offset,2))
       tnpudp:add(f.udport,buf(offset+2,2))
@@ -405,19 +408,19 @@ function tnp_proto.dissector(buf,pinfo,tree)
 
       -- our own SNTP dissector
       if buf(offset,2):uint() == 123 or buf(offset+2,2):uint() == 123 then
-        sntp_proto.dissector:call (buf(offset+8):tvb(), pinfo, tree)  
+        sntp_proto.dissector:call (buf(offset+8):tvb(), pinfo, tree)
       end
 
       -- standard dissector for UDP
       -- udp_dissector = Dissector.get ("udp")
       -- udp_dissector:call (buf(offset):tvb(), pinfo, tree)
-      
+
     elseif (tnpprotoname == "rdp") then
       -----------------------------------
       --- rdp type - RFC 908 and RFC 1151
-      
+
       local rdp = subtree:add("TNP rdp msg (RFC 908 & 1151)")
-      
+
       local rdpflag = buf(offset,1):uint()
 
       rdpflags = rdp:add(buf(offset,1),"flags    : 0x" .. buf(offset,1))
@@ -431,11 +434,11 @@ function tnp_proto.dissector(buf,pinfo,tree)
 
       local rdpver = 2
       local rdpsyn = 0
-    
-      -- TODO can we optimize this? 
-      -- maybe make a global array 
-      -- with all possible values as indexes 
-      
+
+      -- TODO can we optimize this?
+      -- maybe make a global array
+      -- with all possible values as indexes
+
       if (tonumber(bit.band(rdpflag,0x02)) > 0 ) then
         pinfo.cols.info:append(", ver:2")
       end
@@ -443,7 +446,7 @@ function tnp_proto.dissector(buf,pinfo,tree)
         pinfo.cols.info:append(", ver:1");
         rdpver=1
       end
-      
+
       pinfo.cols.info:append(", [")
       if (tonumber(bit.band(rdpflag,0x80)) > 0 ) then
         pinfo.cols.info:append("syn,")
@@ -454,7 +457,7 @@ function tnp_proto.dissector(buf,pinfo,tree)
       if (tonumber(bit.band(rdpflag,0x10)) > 0 ) then pinfo.cols.info:append("rst,") end
       if (tonumber(bit.band(rdpflag,0x08)) > 0 ) then pinfo.cols.info:append("nul,") end
       if (tonumber(bit.band(rdpflag,0x04)) > 0 ) then pinfo.cols.info:append("keepalive,") end
-      
+
       pinfo.cols.info:append("]")
 
       rdp:add(f.rhl,buf(offset+1,1))
@@ -466,27 +469,27 @@ function tnp_proto.dissector(buf,pinfo,tree)
         dstport = buf(offset+3,1):uint()
         rdp:add(f.rsport,buf(offset+2,1))
         rdp:add(f.rdport,buf(offset+3,1))
-        
+
         offset = offset+4
       else
         srcport = buf(offset+2,2):uint()
         dstport = buf(offset+4,2):uint()
         rdp:add(f.rsport,buf(offset+2,2))
         rdp:add(f.rdport,buf(offset+4,2))
-        offset = offset+6 
+        offset = offset+6
       end
-      
+
       if tnp_proto_rdp_known_ports[srcport] ~= nil then
         srcport = srcport .. " (" ..tnp_proto_rdp_known_ports[srcport] ..")"
       end
       if tnp_proto_rdp_known_ports[dstport] ~= nil then
         dstport = dstport .. " (" ..tnp_proto_rdp_known_ports[dstport] ..")"
       end
-      
-      pinfo.cols.info:append(", " .. srcport .. " > " .. dstport) 
-      
+
+      pinfo.cols.info:append(", " .. srcport .. " > " .. dstport)
+
       local tnprdpdl = buf(offset,2):uint()
-      
+
       rdp:add(f.rlen,buf(offset,2))
       rdp:add(f.rseq,buf(offset+2,4))
       rdp:add(f.rack,buf(offset+6,4))
@@ -506,8 +509,8 @@ function tnp_proto.dissector(buf,pinfo,tree)
 
     elseif (tnpprotoname == "control") then
       ---------------
-      -- control type 
-      
+      -- control type
+
       local control = subtree:add("TNP control msg")
       control:add(f.elen,buf(offset,4))
       control:add(f.etype,buf(offset+4,2))
@@ -519,19 +522,19 @@ function tnp_proto.dissector(buf,pinfo,tree)
       local ctrltype = "unknown"
       if tnp_proto_control_types[buf(offset+4,2):uint()] ~= nil then
         ctrltype = tnp_proto_control_types[buf(offset+4,2):uint()]
-      end 
-      
-      pinfo.cols.info:append(", type:" .. ctrltype .. ", id:" .. buf(offset+6,2):uint()) 
-    
+      end
+
+      pinfo.cols.info:append(", type:" .. ctrltype .. ", id:" .. buf(offset+6,2):uint())
+
     elseif (tnpprotoname == "tunnel") then
       --------------
-      -- tunnel type 
+      -- tunnel type
       local tunnel = subtree:add("TNP tunnel msg")
-    
+
       local tunneltype = "unknown"
       if tnp_proto_tunnel_types[buf(offset,1)] ~= nil then
         tunneltype = tnp_proto_tunnel_types[buf(offset,1)]
-      end 
+      end
 
       tunnel:add(f.ttype,buf(offset,1))
       tunnel:add(f.tprio,buf(offset+1,1))
@@ -566,7 +569,7 @@ function tnp_proto.dissector(buf,pinfo,tree)
       -- TODO check if this is normal STP or something else ;)
       stp_dissector = Dissector.get ("stp")
       stp_dissector:call (buf(offset,tnpdatalen):tvb(), pinfo, tree)
-    
+
     elseif (tnpprotoname == "sdrp") then
       ------------
       -- sdrp type
@@ -580,7 +583,7 @@ end
 -- Simple Network Time Protocol --
 -- ---------------------------- --
 -- https://tools.ietf.org/html/rfc4330
-sntp_proto = Proto("SNTP","Simple Network Time Protocol") 
+sntp_proto = Proto("SNTP","Simple Network Time Protocol")
 
 local sntp_proto_li = {
   [0] = "no warning",
@@ -608,14 +611,14 @@ sf.stratum = ProtoField.uint8("sntp.stratum","stratum",base.DEC)
 sf.poll = ProtoField.uint8("sntp.poll","poll",base.HEX)
 sf.precis = ProtoField.int8("sntp.precision","precision",base.DEC)
 sf.rootdelay = ProtoField.uint32("sntp.root_delay","root delay",base.DEC)
-sf.rootdispe = ProtoField.uint32("sntp.root_dispersion","root dispersion",base.DEC) 
+sf.rootdispe = ProtoField.uint32("sntp.root_dispersion","root dispersion",base.DEC)
 sf.refid = ProtoField.uint32("sntp.ref_id","reference id",base.HEX)
-sf.refts = ProtoField.uint64("sntp.ref_ts","reference timestamp",base.HEX) 
-sf.orgts = ProtoField.uint64("sntp.org_ts","originate timestamp",base.HEX) 
+sf.refts = ProtoField.uint64("sntp.ref_ts","reference timestamp",base.HEX)
+sf.orgts = ProtoField.uint64("sntp.org_ts","originate timestamp",base.HEX)
 sf.rxts = ProtoField.uint64("sntp.tx_ts","receive timestamp",base.HEX)
 sf.txts = ProtoField.uint64("sntp.rx_ts","transmit timestamp",base.HEX)
 
-function sntp_proto.dissector(buf,pinfo,tree) 
+function sntp_proto.dissector(buf,pinfo,tree)
   local subtree = tree:add(sntp_proto,buf(),"Simple Network Time Protocol")
   subtree:add(sf.li,buf(0,1))
   subtree:add(sf.vn,buf(0,1))
@@ -646,7 +649,7 @@ function lclexpjnpr_proto.dissector(buf,pinfo,tree)
 --    inside_dis = Dissector.get ("ip")
 --    inside_dis:call (buf(2):tvb(), pinfo, tree)
   end
-end  
+end
 
 
 -- binds to the wireshark dissector table

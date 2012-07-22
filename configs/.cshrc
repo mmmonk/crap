@@ -1,9 +1,12 @@
+# $Id: 20120722$
+# $Date: 2012-07-22 09:48:23$
+
 # A righteous umask
 if ($uid == 0) then
 	umask 022
   cp -u /home/case/{.cshrc,.vimrc,.aliases,.tmux.conf,.screenrc} ~/
 else
-	umask 77 
+	umask 77
 endif
 
 set path = (/sbin /bin /usr/sbin /usr/bin /usr/games /usr/local/sbin /usr/local/bin /usr/X11R6/bin $HOME/bin )
@@ -32,7 +35,7 @@ if ($?prompt) then
   set autolist
   set color
   set colorcat
-  set complete = "Enhance" 
+  set complete = "Enhance"
   set dunique
   set filec
   set histdup = 'erase'
@@ -116,15 +119,15 @@ if ($?prompt) then
     switch ($TERM)
       case "rxvt*":
       case "xterm*":
-        alias postcmd 'printf "\033]0;$user@$SHOST \!#:0 \007"'
-        alias precmd  'printf "\033]0;${USER}@${SHOST} \007"'
+        alias postcmd 'printf "\033]0;$user@$SHOST \007"'
+        #alias precmd  'printf "\033]0;${USER}@${SHOST} \007"'
         breaksw
       case "screen*":
         if ($?TMUX) then
-          alias postcmd 'printf "\033]$user@$SHOST \!#:0 \007"'
-          alias precmd  'printf "\033]${USER}@${SHOST} \007"'
-        else
-          alias precmd  'printf "\033k\033\134"'
+          alias postcmd 'printf "\033]$user@$SHOST \007"'
+          #alias precmd  'printf "\033]${USER}@${SHOST} \007"'
+          #else
+          #alias precmd  'printf "\033k\033\134"'
         endif
         breaksw
     endsw
@@ -144,12 +147,12 @@ if ($?prompt) then
   complete alias 'p/1/a/'
   complete bindkey 'p/*/b/'
   complete cd 'p/1/d/'
-  complete chown 'c/*:/g/' 'p/1/u/:' 
+  complete chown 'c/*:/g/' 'p/1/u/:'
   complete dpkg 'p/1/(-I -l -L)/' 'n/-L/`dpkg -l | awk \{print\ \$2\}`/' 'n/-i/f:*.deb/'
   complete env 'c/*=/f/' 'p/1/e/=/' 'p/2/c/'
   complete find 'p/1/d/'
   complete last 'p/1/u/'
-  complete ln 'c/-/(s)/' 
+  complete ln 'c/-/(s)/'
   complete man 'p/*/c/'
   complete menv 'p/1/$sshhosts/'
   complete rmdir 'p/1/d/'
@@ -162,20 +165,21 @@ if ($?prompt) then
   complete which 'p/1/c/'
 
   complete t 'p@1@`awk \$0\ \!\~\ \/^\\s\*#\/\ \{print\ \$2\} /etc/hosts`@'
-  complete tc 'p@1@`awk \$0\ \!\~\ \/^\\s\*#\/\ \{print\ \$2\} /etc/hosts`@' 
+  complete tc 'p@1@`awk \$0\ \!\~\ \/^\\s\*#\/\ \{print\ \$2\} /etc/hosts`@'
   complete sc 'p@1@`awk \$0\ \!\~\ \/^\\s\*#\/\ \{print\ \$2\} /etc/hosts`@'
   complete scp "c,*:/,F:/," "c,*:,F:$HOME," 'c/*@/$sshhosts/:/'
-  complete s 'c/*@/$sshhosts/' 'p/*/$sshhostsandusers//' 
+  complete s 'c/*@/$sshhosts/' 'p/*/$sshhostsandusers//'
   complete sfm 'p/1/(-L -R -D)/' 'p@*@`ls 1 ~/.ssh/sockets/ | sed "s/=//g;s/:.*//g"`@'
   complete sftp 'p/*/$sshhosts/'
   complete skm 'p@*@`ls -1 ~/.ssh/sockets/ | sed "s/=//g;s/:.*//g"`@'
   complete sk 'p/*/$sshhosts/'
   complete ssh 'c/*@/$sshhosts/' 'p/*/$sshhostsandusers//'
+  complete telnet 'p@*@`awk \{print\ \$2\} /etc/hosts`@'
 
   ## some docs handling
   complete epdfview 'p/1/f:*.{pdf,PDF}/'
   complete xchm 'p/1/f:*.{chm,CHM}/'
-  complete geeqie 'p/1/f:*.{jpg,JPG}/'
+  complete geeqie 'p/1/f:*.{jpg,JPG,png,PNG}/'
   complete unzip 'p/1/f:*.{zip,ZIP}/'
   complete FBReader 'p/1/f:*.{epub,EPUB}/'
   complete tar 'p/2/f:*.{tar,TAR,tar.gz,TAR.GZ,tgz,TGZ,tar.bz2,TAR.BZ2,tbz2,TBZ2}/'
@@ -193,4 +197,6 @@ if ($?prompt) then
     complete kill 'c/-/(s)/' 'n/-s/S/' 'p/*/`ps chx | awk \{print\ \$1\}`/'
     complete killall 'c/-/(s)/' 'n/-s/S/' 'p/*/`ps chx | awk \{print\ \$5\}`/'
   endif
+
+  stty -ixon
 endif

@@ -1,5 +1,8 @@
 #!/usr/bin/python -u
 
+# $Id: 20120722$
+# $Date: 2012-07-22 08:47:17$
+
 import socket
 from select import select
 import sys
@@ -17,12 +20,12 @@ seq = randint(1,255) # our sequence number
 ack = 1 # seq number of the peer
 rtt = 0.1 # round trip time of the pkt
 snt = 1 # last time a pkt was send
-notyet = 1 # we didn't yet received an ack from peer 
-maxmiss = 4 # how many rtts we can wait till resending pkt 
-paddlen = 251 # 256 - header size 
+notyet = 1 # we didn't yet received an ack from peer
+maxmiss = 4 # how many rtts we can wait till resending pkt
+paddlen = 251 # 256 - header size
 headsize = 5 # header size
 
-buff = {} 
+buff = {}
 
 def dtime(lt,dt):
   if time.time()-lt > dt:
@@ -128,14 +131,14 @@ while True:
     clidata = sys.stdin.read(maxlen)
     if len(clidata) == 0:
       sys.exit()
-    
+
     else:
       # client sends data here
       snt = sending(padding,sock,dstaddr,seq,ack,clidata,paddlen)
       notyet = 1 # we need to wait
 
-  
-  # send a packet either to get more data or 
+
+  # send a packet either to get more data or
   # to check if the server has anything to send
   if (getmore == 1 or dtime(snt,rtt)) and notyet == 0:
     snt = sending(padding,sock,dstaddr,seq,ack,"",paddlen)

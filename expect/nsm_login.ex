@@ -1,6 +1,7 @@
 #!/usr/bin/expect -f
 
-# ver: 20120719
+# $Id: 20120722$
+# $Date: 2012-07-22 08:46:56$
 #
 # ChangeLog:
 # 20120719
@@ -138,7 +139,7 @@ expect timeout {
   send "echo \${SHELL}\r"
 }
 
-log_user 0 
+log_user 0
 
 ### make sure we are running bash
 expect "*#" {
@@ -237,7 +238,7 @@ if { $app == "nsm" } {
     echo;echo \"+++++++++++++++++++++++++++++++++++++++++++++++++++\";\
     cat /home/admin/.info;\
     echo \"+++++++++++++++++++++++++++++++++++++++++++++++++++\";echo;fi;\
-    history -r ~/.bash_history\r" 
+    history -r ~/.bash_history\r"
   }
 }
 
@@ -440,7 +441,7 @@ and remember the jtac_ commands\n"
         global ourip
         set ourip $expect_out(1,string)
         send "\r"
-      
+
       # default - unknown choice
       } else {
         send_user "\nUnknown choice\n"

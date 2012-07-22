@@ -1,7 +1,7 @@
 #!/bin/tcsh
 
 # $Id: 20120722$
-# $Date: 2012-07-22 08:44:31$
+# $Date: 2012-07-22 14:50:27$
 
 unalias *
 
@@ -46,8 +46,8 @@ alias ..      "cd .."
 where gvim > /dev/null
 
 if ( ${status} == 0 ) then
-  alias gvim gvim --servername GVIM --remote-tab-silent
-  alias vim vim --servername GVIM --remote-tab-silent
+  alias gvim gvim --servername ${SHOST} --remote-tab-silent
+  alias vim vim --servername ${SHOST} --remote-tab-silent
 endif
 
 where vim > /dev/null && alias vi  vim

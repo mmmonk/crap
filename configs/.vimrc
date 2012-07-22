@@ -1,31 +1,40 @@
+" $Id: 20120722$
+" $Date: 2012-07-22 10:10:04$
+"
+" ideas http://amix.dk/vim/vimrc.html
+" vim --servername GVIM --remote-tab-silent
+
 if $HOSTNAME=~"solix"
   let weAreOnSolix=1
 endif
 
-set nocompatible 
 set autoindent    " autoindent
-"set autoread      " automatically read a file when it was modified outside of Vim
+set autoread      " automatically read a file when it was modified outside of Vim
 set background=dark
 set backspace=indent,eol,start " powerful backspaces
-set display=uhex  " include "uhex" to show unprintable characters as a hex number 
+set display=uhex  " include "uhex" to show unprintable characters as a hex number
 set enc=iso-8859-2
-set esckeys       " recognize keys that start with <Esc> in Insert mode 
-set expandtab     " spaces instead of tabs 
-set ff=unix       " force unix fileformat
+set esckeys       " recognize keys that start with <Esc> in Insert mode
+set expandtab     " spaces instead of tabs
 set ffs=unix,dos  " list of file formats to look for when editing a file
+set ff=unix       " force unix fileformat
 set hidden        " allows hidden buffers to stay unsaved
+"set hls
 set ignorecase    " ignore case when using a search pattern
 set incsearch     " Incremental search.
-set laststatus=2  " when to use a status line for the last window 
+set laststatus=2  " when to use a status line for the last window
 set linebreak     " wrap long lines at a character in 'breakat'
 set modeline
 set modelines=1
 set mouse=a
 set nobackup      " no backups
+set nowritebackup
+set nocompatible
 set noerrorbells
 set nosplitbelow
 "set paste
 set ruler
+set scs
 set shiftwidth=2
 set showcmd       " Show current vim command in status bar
 set showmatch     " Show matching parentheses/brackets
@@ -36,6 +45,7 @@ set textwidth=0   " don't wrap words
 set ttymouse=xterm
 set visualbell    " use a visual bell instead of beeping
 set wrap          " Wrap too long lines
+"set verbose=5
 
 " Tell vim to remember certain things when we exit
 "  '10  :  marks will be remembered for up to 10 previously edited files
@@ -43,39 +53,78 @@ set wrap          " Wrap too long lines
 "  :20  :  up to 20 lines of command-line history will be remembered
 "  %    :  saves and restores the buffer list
 "  n... :  where to save the viminfo files
-set viminfo='10,\"100,:20,%,n~/.viminfo
+set viminfo='20,\"200,:50,%,n~/.viminfo
 fixdel
 
 filetype plugin on
 filetype indent on
 
-if !exists('weAreOnSolix')
-  set ttyfast       " better terminal
-  set completeopt=longest,menu,preview " completion options
-  colorscheme desert
-else
-  set lazyredraw " do not redraw while running macros (much faster) (LazyRedraw)
-endif
+" set statusline=[%02n]\ %f\ %(\[%M%R%H]%)%=\ %4l,%02c%2V\ %P%*
+set statusline=%f[%{strlen(&fenc)?&fenc:'none'},%{&ff}]%h%m%r%y%=%c,%l/%L\ %P
+"set tabline=%T%X
 
 let maplocalleader=','        " all my macros start with ,
-
-if has('diff')
-  set diffopt=filler        " insert filler to make lines match up
-  set diffopt+=iwhite       " ignore all whitespace
-  if !exists('weAreOnSolix')
-    set diffopt+=vertical     " make :diffsplit default to vertical
-  endif
-endif
 
 if has("syntax")
   syntax on
 endif
 
-if has('gui_running')
-  set guioptions-=T         " no toolbar
-  "set number                " line numbers
-  set guifont=Monospace\ 10 " gui font
-  set nomh                  " no mouse hide
+if has('diff')
+  set diffopt=filler        " insert filler to make lines match up
+  set diffopt+=iwhite       " ignore all whitespace
+endif
+
+if !exists('weAreOnSolix')
+  set showtabline=2
+  set diffopt+=vertical     " make :diffsplit default to vertical
+
+  function! SwitchColorScheme(c1,c2)
+    if g:colors_name == a:c1
+      exe ":colorscheme ".a:c2
+    else
+      exe ":colorscheme ".a:c1
+    endif
+    set background=dark
+  endfunction
+
+  function! SetColorSchemaBaseOnTime(c1,c2)
+    let hour = system("date +%H")
+    if hour > 19 " between 19 and 8 use the c1
+      exe ":colorscheme ".a:c1
+    elseif hour < 8
+      exe ":colorscheme ".a:c1
+    else " during the day use c2
+      exe ":colorscheme ".a:c2
+    endif
+    set background=dark
+  endfunction
+
+  set ttyfast       " better terminal
+  set completeopt=longest,menu,preview " completion options
+
+  "call SetColorSchemaBaseOnTime("desert","ron")
+  colorscheme ron
+  map <F3> :call SwitchColorScheme("desert","ron")<CR>
+
+  if has('gui_running')
+    " set the gui options to:
+    "   g: grey inactive menu items
+    "   m: display menu bar
+    "   r: display scrollbar on right side of window
+    "   b: display scrollbar at bottom of window
+    "   t: enable tearoff menus on Win32
+    "   T: enable toolbar on Win32
+    set guioptions=r
+    " set guioptions-=T         " no toolbar
+    set number                " line numbers
+    set guifont=Monospace\ 10 " gui font
+    set nomh                  " no mouse hide
+    "call SetColorSchemaBaseOnTime("desert","pablo")
+    colorscheme pablo
+    map <F3> :call SwitchColorScheme("desert","pablo")<CR>
+  endif
+else
+  set lazyredraw            " do not redraw while running macros (much faster) (LazyRedraw)
 endif
 
 if has('spell')
@@ -85,7 +134,7 @@ if has('spell')
   nmap <LocalLeader>sp :set spl=pl<CR>
 
   " <se> set dictionary to English
-  nmap <LocalLeader>se :set spl=en<CR> 
+  nmap <LocalLeader>se :set spl=en<CR>
   set spl=en
   set sps=best
 endif
@@ -97,7 +146,7 @@ nmap <F1> :set hls!<CR>
 nnoremap <F2> :set list!<CR>
 
 " toggle line numbers
-map <F3> :set number!<CR>
+" map <F3> :set number!<CR>
 
 " toggle syntax
 map <F4> :if exists("g:syntax_on") <bar> syntax off <bar> else <bar> syntax on <bar> endif<CR>
@@ -108,6 +157,18 @@ nmap <F6> :% ! gpg --verify<CR>
 nmap <F7> :% ! gpg --encrypt<CR>
 nmap a<F7> :% ! gpg -a --encrypt<CR>
 nmap <F8> :% ! gpg --decrypt<CR>
+
+map <C-t><up> :tabr<cr>
+map <C-t><down> :tabl<cr>
+" map <C-t><left> :tabp<cr>
+" map <C-t><right> :tabn<cr>
+
+map <C-n> :tabnext<CR>
+map <C-p> :tabprevious<CR>
+map <C-t> :tabnew<CR>
+map <C-e> :tabedit
+map <C-r> :tabdo
+map <C-s> :vsplit<CR>
 
 inoremap <F9> <C-O>za
 nnoremap <F9> za
@@ -120,9 +181,8 @@ nmap <LocalLeader>ww :set wrap! wrap?<cr>
 " toggle paste mode.  Everything is inserted literally - no indending
 set pastetoggle=<F11>
 
-
 if has('autocmd')
-  
+
   function! ResCur()
     if line("'\"") <= line("$")
       normal! g`"
@@ -130,37 +190,65 @@ if has('autocmd')
     endif
   endfunction
 
-  augroup resCur
-    autocmd!
-    autocmd BufWinEnter * call ResCur()
+  " this function as the name suggests strips the trailing
+  " white characters from the end of the lines
+  function! StripTrailingWhitespace()
+    %s/\s\+$//e
+  endfunction
+
+  " this function modifies automatically the version number
+  " and the last modified timestamp
+  function! VersionUpdate()
+    if &modified == 1
+      try
+        exe ":1,20 s/\$Id.*\$/$Id: ".strftime("%Y%m%d")."$/e"
+        exe ":1,20 s/\$Date.*\$/$Date: ".strftime("%F %T")."$/e"
+      catch
+      endtry
+    endif
+  endfunction
+
+  augroup ResCur
+    au!
+    au BufWinEnter * call ResCur()
   augroup END
 
-  augroup openssl-enc
+  au BufWrite * call VersionUpdate()
+  au BufWrite * call StripTrailingWhitespace()
+
+  augroup Openssl-enc
+    au!
     au BufNewFile,BufReadPre *.enc :set secure viminfo= noswapfile nobackup nowritebackup history=0
-    au BufRead *.enc :% ! openssl enc -a -d -aes-256-cbc 
+    au BufRead *.enc :% ! openssl enc -a -d -aes-256-cbc
     au BufWrite *.enc :% ! openssl enc -a -aes-256-cbc
   augroup END
 
-  augroup makefile
+  augroup Makefile
+    au!
     au BufRead Makefile :set noexpandtab
   augroup END
 
-"  augroup openssl-enca
+"  augroup Openssl-enca
+"    au!
 "    au BufNewFile,BufReadPre *.enca :set secure viminfo= noswapfile nobackup nowritebackup history=0 binary
-"    au BufRead *.enca :% ! openssl enc -a -d -aes-256-cbc 
+"    au BufRead *.enca :% ! openssl enc -a -d -aes-256-cbc
 "    au BufWrite *.enca :% ! openssl enc -a -aes-256-cbc
 "  augroup END
 
   augroup VimConfig
     au!
-    autocmd BufWritePost ~/.vimrc       so ~/.vimrc
-    autocmd BufWritePost vimrc          so ~/.vimrc
+    au BufWritePost ~/.vimrc so ~/.vimrc
+    au BufWritePost .vimrc   so ~/.vimrc
   augroup END
 endif
 
-" local changes 
+" local changes
 if filereadable(expand("~/.vimrc.local"))
-  source ~/.vimrc.local
+  so ~/.vimrc.local
 endif
 
 set secure
+
+abbre sws call StripTrailingWhitespace()
+abbre wu call VersionUpdate()
+abbre te tabedit

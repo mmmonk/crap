@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+# $Id: 20120722$
+# $Date: 2012-07-22 17:27:42$
+# $Author: Marek Lukaszuk$
+
 import socket
 import time
 from select import select
@@ -15,9 +19,9 @@ ack = 1 # seq number of the peer
 rtt = 0.1 # round trip time of the pkt
 snt = time.time() # last time a pkt was send
 notyet = 0 # we didn't yet received an ack from peer
-maxmiss = 4 # how many rtts we can wait till resending pkt 
+maxmiss = 4 # how many rtts we can wait till resending pkt
 paddlen = 251
-headsize = 5 
+headsize = 5
 
 def encode_head(seq,ack,size,moredata=0):
   return struct.pack("BBHB",seq,ack,size+headsize,moredata)
@@ -28,7 +32,7 @@ def decode_head(dat):
 def incseq(seq):
   seq += 1
   if seq > 255:
-    return 1 
+    return 1
   return seq
 
 def calcrtt(snt):
@@ -36,7 +40,7 @@ def calcrtt(snt):
   if rtt < 0.2:
     return 0.2
   if rtt > 1:
-    return 1 
+    return 1
   return rtt
 
 def xored(x,msg):
@@ -67,7 +71,7 @@ sock = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
 sock.bind((IP,PORT))
 sock.setblocking(1)
 
-# this is the start value for to which we will compare 
+# this is the start value for to which we will compare
 # connecting hosts to know if there is a new connection or not
 caddr = ("",0)
 
@@ -123,7 +127,7 @@ while True:
       # new padding
       padding = open("/dev/urandom").read(paddlen)
       caddr = addr
-      seq = 1 # resetting seq number 
+      seq = 1 # resetting seq number
       head = decode_head(xored(seq,data[:headsize]))
       seq = head[1]
 

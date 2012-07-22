@@ -1,6 +1,6 @@
 " ~/.vimrc file
 " $Id: 20120722$
-" $Date: 2012-07-22 17:02:48$
+" $Date: 2012-07-22 22:10:55$
 " $Author: Marek Lukaszuk$
 "
 " ideas http://amix.dk/vim/vimrc.html
@@ -295,4 +295,3 @@ abbre ah call AddStdHeader()
 abbre sws call StripTrailingWhitespace()
 abbre wu call VersionUpdate()
 abbre te tabedit
-

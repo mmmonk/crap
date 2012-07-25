@@ -1,6 +1,8 @@
 #!/usr/bin/perl -W
 
-# $Id$
+# $Id: 20120725$
+# $Date: 2012-07-25 21:32:46$
+# $Author: Marek Lukaszuk$
 
 #use strict;
 

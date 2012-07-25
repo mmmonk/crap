@@ -1,10 +1,14 @@
 #!/usr/bin/env python 
 
+# $Id: 20120725$
+# $Date: 2012-07-25 21:06:39$
+# $Author: Marek Lukaszuk$
+
 from time import strftime,tzset
 from os import environ, statvfs
 from os.path import exists as fs_exists, ismount
 
-tzlist = ["America/Los_Angeles","America/New_York", "GMT", "Asia/Kolkata","Asia/Tokyo","Pacific/Auckland"]
+tzlist = ["America/Los_Angeles","America/New_York","GMT","Asia/Kolkata","Asia/Tokyo","Pacific/Auckland"]
 mntlist = ["/","/home"]
 
 txt = ""
@@ -97,6 +101,5 @@ if fs_exists("/var/local/datausage.dat"):
     txt+=str(int(float(open("/var/local/datausage.dat","r").readline().split()[2])/1024/500*100))+"%"
   except:
     txt+="?%"
-
 
 print txt

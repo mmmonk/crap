@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
-# $Id$
+# $Id: 20120725$
+# $Date: 2012-07-25 21:29:42$
+# $Author: Marek Lukaszuk$
 
 # idea from: http://www.marksdailyapple.com/how-light-affects-our-sleep/
 

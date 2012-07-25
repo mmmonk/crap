@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
-#
-# $Id$
-#
+# $Id: 20120725$
+# $Date: 2012-07-25 21:28:49$
+# $Author: Marek Lukaszuk$
 
 from time import time
 from struct import pack,unpack

@@ -1,7 +1,7 @@
 #!/usr/bin/python -u
 
-# $Id: 20120722$
-# $Date: 2012-07-22 13:40:12$
+# $Id: 20120724$
+# $Date: 2012-07-24 16:21:52$
 # $Author: Marek Lukaszuk$
 
 import urllib2
@@ -9,7 +9,7 @@ from urlparse import urljoin
 import sgmllib
 import re
 
-jrels = ["9.3","10.0","10.2","10.4","11.1","11.2","11.3","11.4","12.1"]
+jrels = ["9.3","10.0","10.2","10.4","11.1","11.2","11.3","11.4","12.1","12.2","12.3","12.4"]
 
 class MyParser(sgmllib.SGMLParser):
 

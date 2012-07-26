@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
 
-# $Id: 20120722$
-# $Date: 2012-07-22 13:44:17$
+# $Id: 20120726$
+# $Date: 2012-07-26 10:09:20$
 # $Author: Marek Lukaszuk$
 #
 # ChangeLog:
@@ -364,6 +364,7 @@ and remember the jtac_ commands\n"
  6 - print the command needed to import the db from xdif ($filetime),
  7 - disables encryption between devSvr and the devices,
  8 - set the IP used by this server, if not autodetected,
+ 9 - delete all the containers in the xdb/data folder, leaving  __db.001 and DB_CONFIG files,
 
  input: "
       stty cooked echo
@@ -424,15 +425,20 @@ and remember the jtac_ commands\n"
         } elseif { $os == "SunOS" } {
           send -s "pkgrm -n `pkginfo -c application | grep -i netscreen | grep -v NSCNpostgres | awk '{print \$2}' | xargs` &&  rm -rf /var/netscreen/ /usr/netscreen/"
         }
+      
+      # exporting the db
       } elseif { $action == 5 } {
         send -s "unset NS_PRINTER_LEVEL;/usr/netscreen/GuiSvr/utils/xdbExporter.sh /var/netscreen/GuiSvr/xdb/ /var/tmp/xdif_$filetime.txt; export NS_PRINTER_LEVEL=debug"
 
+      # importing the db
       } elseif { $action == 6 } {
         send -s "/usr/netscreen/GuiSvr/utils/xdifImporter.sh /var/tmp/xdif_$filetime.txt /var/netscreen/GuiSvr/xdb/init/ "
 
+      # disabling the encryption for the devices
       } elseif { $action == 7 } {
         send -s "/etc/init.d/devSvr stop; perl -pi\".[backuptimeproc]\" -e 's/(devSvrManager.cryptoKeyLength\\s*) \\d+/\$1 0/' /usr/netscreen/DevSvr/var/devSvr.cfg && /etc/init.d/devSvr start\r"
 
+      # changing the IP of this NSM installation that the script uses
       } elseif { $action == 8 } {
         send_user "\nThe IP of this server is: "
 
@@ -442,6 +448,10 @@ and remember the jtac_ commands\n"
         global ourip
         set ourip $expect_out(1,string)
         send "\r"
+      
+      # removing all containers from xdb/data
+      } elseif { $action == 9 } {
+        send -s "find /var/netscreen/GuiSvr/xdb/data -type f | egrep -v \"__db.001|DB_CONFIG\" | xargs rm\r"
 
       # default - unknown choice
       } else {

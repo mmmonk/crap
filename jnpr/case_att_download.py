@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120722$
-# $Date: 2012-07-22 13:39:28$
+# $Id: 20120731$
+# $Date: 2012-07-31 12:45:11$
 # $Author: Marek Lukaszuk$
 
 from cookielib import CookieJar
@@ -11,7 +11,7 @@ from sgmllib import SGMLParser
 import sys
 import os
 import re
-from time import sleep,time
+from time import sleep,time,strptime,mktime
 from ftplib import FTP,error_perm
 
 ### TODO:
@@ -165,6 +165,12 @@ def ftpcheck(filelist,caseid,casedir,ftp):
 
     global ftpatt
     ftpatt = str(filename)
+    
+    try:
+      atttime = mktime(strptime((str(ftp.sendcmd("MDTM "+filename)).split())[1],"%Y%m%d%H%M%S"))
+    except:
+      atttime = time()
+
     try:
       filelist[ftpatt] += 1
     except KeyError:
@@ -218,8 +224,9 @@ def ftpcheck(filelist,caseid,casedir,ftp):
           continue
 
         print "[+] Download of "+str(ftpatt)+" size: "+str(fcount/1024)+" kB done in "+str(ts2time(int(time()-ftpstime),1))
-      else:
-        print "[+] File already exists: "+str(ftpatt)
+        os.utime(casedir+os.sep+ftpatt,(atttime,atttime))
+    else:
+      print "[+] File already exists: "+str(ftpatt)
 
 class LoginForm(SGMLParser):
   '''
@@ -547,6 +554,8 @@ if __name__ == '__main__':
     attach = re.findall("href=\"(AttachDown/.+?)\"",text)
     attssize = re.findall("<td class=\"tbc\" width=\"\d+%\">\s*(\d+)\s*<\/td>",text)
     attssize.reverse()
+    attmtime = re.findall("<td class=\"tbc\" width=\"\d+%\">\s*(\d+-\d+-\d+ \d+:\d+:\d+)\.0\s*<\/td>",text) 
+    attmtime.reverse()
 
     opt_dir = opt_dir.rstrip(os.sep)
     casedir = str(opt_dir)+os.sep+str(caseid)+os.sep
@@ -576,6 +585,11 @@ if __name__ == '__main__':
         attsize = int(attssize.pop())
       except IndexError:
         attsize = "?"
+
+      try:
+        atttime = int(mktime(strptime(attmtime.pop(),"%Y-%m-%d %H:%M:%S")))
+      except:
+        atttime = int(time())
 
       # just listing attachments
       if opt_list == 1:
@@ -684,6 +698,7 @@ if __name__ == '__main__':
               save.write(data)
             save.close()
             print "[+] Download of "+str(caseatt)+" size: "+str(csize/1024)+" kB done in "+str(ts2time(int(time()-stime),1))
+            os.utime(casedir+os.sep+caseatt,(atttime,atttime))
           except IOError as errstr:
             os.unlink(casedir+caseatt)
             print "[!] error while downloading file: "+str(caseatt)+" ERROR:"+str(errstr)

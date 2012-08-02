@@ -1,6 +1,6 @@
 " ~/.vimrc file
-" $Id: 20120722$
-" $Date: 2012-07-22 22:10:55$
+" $Id: 20120802$
+" $Date: 2012-08-02 13:50:45$
 " $Author: Marek Lukaszuk$
 "
 " ideas http://amix.dk/vim/vimrc.html
@@ -107,6 +107,22 @@ if !exists('weAreOnSolix')
   "call SetColorSchemaBaseOnTime("desert","ron")
   colorscheme ron
   map <F3> :call SwitchColorScheme("desert","ron")<CR>
+
+  set foldenable
+
+  if !has('diff')
+    " Make folding indent sensitive
+    set foldmethod=manual
+    
+    " Don't autofold anything (but I can still fold manually)
+    set foldlevel=100
+    
+    " don't open folds when you search into them
+    set foldopen-=search
+    
+    " don't open folds when you undo stuff
+    set foldopen-=undo
+  endif
 
   if has('gui_running')
     " set the gui options to:

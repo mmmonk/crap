@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120731$
-# $Date: 2012-07-31 12:45:11$
+# $Id: 20120802$
+# $Date: 2012-08-02 14:24:30$
 # $Author: Marek Lukaszuk$
 
 from cookielib import CookieJar
@@ -11,7 +11,7 @@ from sgmllib import SGMLParser
 import sys
 import os
 import re
-from time import sleep,time,strptime,mktime
+import time
 from ftplib import FTP,error_perm
 
 ### TODO:
@@ -19,7 +19,7 @@ from ftplib import FTP,error_perm
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
 # - and in general try to verify all the data from the server
 
-version = "20120613"
+version = "20120802"
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -135,7 +135,7 @@ def ftpcallback(data):
   if done == 0:
     eta = "?"
   else:
-    eta = ts2time(int(((time()-ftpstime)/done)*(100-done)))
+    eta = ts2time(int(((time.time()-ftpstime)/done)*(100-done)))
   print "["+str(ftpprogind)+"] Getting "+str(ftpatt)+" "+str(fcount/1024)+" kB ("+str(int(done))+"% ETA:"+str(eta)+")        \r",
 
 def ftpcheck(filelist,caseid,casedir,ftp):
@@ -167,9 +167,9 @@ def ftpcheck(filelist,caseid,casedir,ftp):
     ftpatt = str(filename)
     
     try:
-      atttime = mktime(strptime((str(ftp.sendcmd("MDTM "+filename)).split())[1],"%Y%m%d%H%M%S"))
+      atttime = time.mktime(time.strptime((str(ftp.sendcmd("MDTM "+filename)).split())[1],"%Y%m%d%H%M%S"))
     except:
-      atttime = time()
+      atttime = time.time()
 
     try:
       filelist[ftpatt] += 1
@@ -215,7 +215,7 @@ def ftpcheck(filelist,caseid,casedir,ftp):
           ftp.sendcmd("TYPE i")
           fsize = ftp.size(str(filename))
           ftpprogind = "|"
-          ftpstime = time()
+          ftpstime = time.time()
           ftp.retrbinary("RETR "+str(filename),ftpcallback,blocksize=32768)
           ftpfile.close()
         except:
@@ -223,8 +223,10 @@ def ftpcheck(filelist,caseid,casedir,ftp):
           print "[!] error while downloading file: "+str(ftpatt)
           continue
 
-        print "[+] Download of "+str(ftpatt)+" size: "+str(fcount/1024)+" kB done in "+str(ts2time(int(time()-ftpstime),1))
+        print "[+] Download of "+str(ftpatt)+" size: "+str(fcount/1024)+" kB done in "+str(ts2time(int(time.time()-ftpstime),1))
         os.utime(casedir+os.sep+ftpatt,(atttime,atttime))
+        if os.name == "posix":
+          os.chmod(casedir+os.sep+ftpatt,0644)
     else:
       print "[+] File already exists: "+str(ftpatt)
 
@@ -482,7 +484,7 @@ if __name__ == '__main__':
       print "[!] problem with connecting to the CM,\nERROR:"+str(errstr)
       sys.exit(1)
 
-    sleep(0.5)
+    time.sleep(0.5)
 
     print "[+] logging into the cm\r",
     try:
@@ -496,7 +498,7 @@ if __name__ == '__main__':
       print "[!] error while logging into cm,\nERROR:"+str(errstr)
       sys.exit(1)
 
-    sleep(0.25)
+    time.sleep(0.25)
 
     print "[+] searching for "+str(caseid)+"\r",
     try:
@@ -510,7 +512,7 @@ if __name__ == '__main__':
       print "[!] error while searching for the case "+str(caseid)+",\nERROR:"+str(errstr)
       sys.exit(1)
 
-    sleep(0.25)
+    time.sleep(0.25)
 
     print "[+] "+str(caseid)+": getting details\r",
     try:
@@ -528,7 +530,7 @@ if __name__ == '__main__':
       print "[!] error while trying to get case "+str(caseid)+" details,\nERROR:"+str(errstr)
       sys.exit(1)
 
-    sleep(0.25)
+    time.sleep(0.25)
 
     # this is for printing the detail status of the case
     if opt_stat == 1:
@@ -549,7 +551,7 @@ if __name__ == '__main__':
       print "[!] error while searching for case "+str(caseid)+" attachments."
       sys.exit(1)
 
-    sleep(0.25)
+    time.sleep(0.25)
     text = dat.read()
     attach = re.findall("href=\"(AttachDown/.+?)\"",text)
     attssize = re.findall("<td class=\"tbc\" width=\"\d+%\">\s*(\d+)\s*<\/td>",text)
@@ -587,9 +589,15 @@ if __name__ == '__main__':
         attsize = "?"
 
       try:
-        atttime = int(mktime(strptime(attmtime.pop(),"%Y-%m-%d %H:%M:%S")))
+        # attachemnts upload time is in PST/PDT we need to convert it to local time
+        os.environ['TZ'] = "America/Los_Angeles"
+        time.tzset()
+        atttime = int(time.mktime(time.strptime(attmtime.pop(),"%Y-%m-%d %H:%M:%S")))
+        os.environ.pop('TZ')
+        time.tzset()
+
       except:
-        atttime = int(time())
+        atttime = int(time.time())
 
       # just listing attachments
       if opt_list == 1:
@@ -679,7 +687,7 @@ if __name__ == '__main__':
           try:
             save = open(casedir+os.sep+caseatt,"w")
             progind = "|"
-            stime = time()
+            stime = time.time()
             while 1:
               data = att.read(32768)
               csize = csize + len(data)
@@ -691,14 +699,16 @@ if __name__ == '__main__':
                 if done == 0:
                   eta = "?"
                 else:
-                  eta = ts2time(int(((time()-stime)/done)*(100-done)))
+                  eta = ts2time(int(((time.time()-stime)/done)*(100-done)))
                 print "["+str(progind)+"] Getting "+str(caseatt)+" : "+str(csize/1024)+" kB ("+str(int(done))+"% ETA:"+str(eta)+")        \r",
               if not data:
                 break
               save.write(data)
             save.close()
-            print "[+] Download of "+str(caseatt)+" size: "+str(csize/1024)+" kB done in "+str(ts2time(int(time()-stime),1))
+            print "[+] Download of "+str(caseatt)+" size: "+str(csize/1024)+" kB done in "+str(ts2time(int(time.time()-stime),1))
             os.utime(casedir+os.sep+caseatt,(atttime,atttime))
+            if os.name == "posix":
+              os.chmod(casedir+os.sep+caseatt,0644)
           except IOError as errstr:
             os.unlink(casedir+caseatt)
             print "[!] error while downloading file: "+str(caseatt)+" ERROR:"+str(errstr)

@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
 
-# $Id: 20120726$
-# $Date: 2012-07-26 10:09:20$
+# $Id: 20120803$
+# $Date: 2012-08-03 12:40:21$
 # $Author: Marek Lukaszuk$
 #
 # ChangeLog:
@@ -45,7 +45,7 @@ proc backuptimeproc { } {
 }
 
 proc online_help {ourip} {
-      send_user "
+      send_user "\033\[1;31m
 --- Help ---
 
 IP that will be used during the installation is: $ourip
@@ -58,7 +58,7 @@ Ctrl+a i - can be entered during the nsm installation will answer all the questi
 Ctrl+a x - stop/status/start/restart/version on all three services,
 Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for naming backups/copies of files,
 
-and check also jtac_ cli commands
+and check also jtac_ cli commands\033\[m 
 
 "
       send "\r"
@@ -236,9 +236,9 @@ if { $app == "nsm" } {
   sleep 0.5;
   expect "*#" {
     send "if \[ -f /home/admin/.info \]; then\
-    echo;echo \"+++++++++++++++++++++++++++++++++++++++++++++++++++\";\
+    echo;echo -e \"\\e\[0;31m+++++++++++++++++++++++++++++++++++++++++++++++++++\";\
     cat /home/admin/.info;\
-    echo \"+++++++++++++++++++++++++++++++++++++++++++++++++++\";echo;fi;\
+    echo -e \"+++++++++++++++++++++++++++++++++++++++++++++++++++\\e\[m\";echo;fi;\
     history -r ~/.bash_history\r"
   }
 }
@@ -250,10 +250,10 @@ expect "*# " {
   log_file "$logdir/$host-$filetime.log"
   send_log "\n---------- log start at $stime ----------\n"
 
-  send_user "
+  send_user "\033\[1;31m
 --- Help key ---
 Ctrl+a h - all shortcuts
-and remember the jtac_ commands\n"
+and remember the jtac_ commands\033\[m\n"
 
   send "\r"
 
@@ -355,7 +355,7 @@ and remember the jtac_ commands\n"
     }
 
     \001c {
-      send_user "\nType the action number:
+      send_user "\033\[1;31m\nType the action number:
  1 - correct /usr/netscreen/DevSvr/var/devSvr.cfg by removing unneeded white characters (make a copy) and restart DevSvr,
  2 - truncate the schema,
  3 - correct the customer db (super password, IPs),
@@ -366,7 +366,7 @@ and remember the jtac_ commands\n"
  8 - set the IP used by this server, if not autodetected,
  9 - delete all the containers in the xdb/data folder, leaving  __db.001 and DB_CONFIG files,
 
- input: "
+ input: \033\[m"
       stty cooked echo
       expect_user -re "(.*)\n"
       stty raw -echo
@@ -455,7 +455,7 @@ and remember the jtac_ commands\n"
 
       # default - unknown choice
       } else {
-        send_user "\nUnknown choice\n"
+        send_user "\033\[1;31m\nUnknown choice\033\[m\n"
       }
     }
 
@@ -539,6 +539,6 @@ set time     [ timestamp -format "%Y/%m/%d %H:%M:%S"]
 send_log "\n---------- log close at $time ----------\n"
 log_file
 exec /bin/bzip2 $logdir/$host-$filetime.log
-send_user "\n\[+\] session lasted from $stime to $time\n\[+\] logfile: $logdir/$host-$filetime.log.bz2\n"
+send_user "\033\[1;31m\n\[+\] session lasted from $stime to $time\n\[+\] logfile: $logdir/$host-$filetime.log.bz2\033\[m\n"
 exit
 

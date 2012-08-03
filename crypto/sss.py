@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20120803$
-# $Date: 2012-08-03 12:00:41$
+# $Date: 2012-08-03 12:33:09$
 # $Author: Marek Lukaszuk$
 
 import sys
@@ -43,6 +43,7 @@ def usage():
   https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing\n\n\
   -h      - this screen,\n\
   -e msg  - generate secrets for msg,\n\
+  -i file - generate secrets for the data in the file,\n\
   -d      - recover secret based on the data in file (-f),\n\
   -f file - file to either write secrets or read them,\n\
   -a num  - overall number of secrets (not less then -r),\n\
@@ -54,6 +55,7 @@ if __name__ == "__main__":
   maxargv = len(sys.argv)
 
   opt_enc = ""
+  opt_efd = ""
   opt_dec = 0
   opt_fd = ""
   opt_all = 0
@@ -75,6 +77,11 @@ if __name__ == "__main__":
         if i >= maxargv:
           sys.exit(1)
         opt_enc = sys.argv[i]+" "
+      elif arg == "-i": # encode file
+        i += 1
+        if i >= maxargv:
+          sys.exit(1)
+        opt_efd = sys.argv[i]
       elif arg == "-d": # decode
         opt_dec = 1
       elif arg == "-f": # filename
@@ -99,18 +106,25 @@ if __name__ == "__main__":
     usage()
     sys.exit(1)
 
-  if not opt_enc == "" and opt_req > 1: # we are encoding it here
+  if not (opt_enc == "" and opt_efd == "") and opt_req > 1: # we are encoding it here
 
     if opt_all < opt_req:
       opt_all = opt_req
 
     # check if output files exists and exit if it does
     try:
-      open(opt_fd):
+      open(opt_fd)
       print "output file "+str(opt_fd)+" exists, exiting"
       sys.exit(1)
     except IOError:
       pass
+
+    if not opt_efd == "":
+      try:
+        opt_enc = open(opt_efd).read()+" "
+      except IOError:
+        print "[-] problem reading from file: "+str(opt_efd)
+        sys.exit(1)
 
     xv = []
     a = int(opt_enc.encode('hex'),16)

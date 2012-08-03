@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120722$
-# $Date: 2012-07-22 13:49:06$
+# $Id: 20120803$
+# $Date: 2012-08-03 12:00:41$
 # $Author: Marek Lukaszuk$
 
 import sys
@@ -103,6 +103,14 @@ if __name__ == "__main__":
 
     if opt_all < opt_req:
       opt_all = opt_req
+
+    # check if output files exists and exit if it does
+    try:
+      open(opt_fd):
+      print "output file "+str(opt_fd)+" exists, exiting"
+      sys.exit(1)
+    except IOError:
+      pass
 
     xv = []
     a = int(opt_enc.encode('hex'),16)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20120808$
-# $Date: 2012-08-08 23:30:11$
+# $Date: 2012-08-08 23:39:29$
 # $Author: Marek Lukaszuk$
 
 from cookielib import CookieJar
@@ -166,7 +166,7 @@ def ftpcheck(filelist,caseid,casedir,ftp):
 
     global ftpatt
     ftpatt = str(filename)
-    
+
     try:
       atttime = time.mktime(time.strptime((str(ftp.sendcmd("MDTM "+filename)).split())[1],"%Y%m%d%H%M%S"))
     except:
@@ -469,11 +469,11 @@ if __name__ == '__main__':
         opt_ucwd = 1
 
     # just to check we have enough information to go further
-    if caseid == "" or opt_user == "": 
+    if caseid == "" or opt_user == "":
       print "[!] error: either case id or user name was not defined"
       usage()
 
-    if not opt_pass == "":
+    if opt_pass == "":
       try:
         opt_pass = getpass("Please enter password: ").strip()
       except:
@@ -563,7 +563,7 @@ if __name__ == '__main__':
     attach = re.findall("href=\"(AttachDown/.+?)\"",text)
     attssize = re.findall("<td class=\"tbc\" width=\"\d+%\">\s*(\d+)\s*<\/td>",text)
     attssize.reverse()
-    attmtime = re.findall("<td class=\"tbc\" width=\"\d+%\">\s*(\d+-\d+-\d+ \d+:\d+:\d+)\.0\s*<\/td>",text) 
+    attmtime = re.findall("<td class=\"tbc\" width=\"\d+%\">\s*(\d+-\d+-\d+ \d+:\d+:\d+)\.0\s*<\/td>",text)
     attmtime.reverse()
 
     opt_dir = opt_dir.rstrip(os.sep)

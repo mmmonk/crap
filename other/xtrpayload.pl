@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
-# $Id: 20120806$
-# $Date: 2012-08-06 23:10:52$
+# $Id: 20120808$
+# $Date: 2012-08-08 06:56:26$
 # $Author: Marek Lukaszuk$
 
 use strict;
@@ -22,12 +22,12 @@ It uses tcpdump and ngrep.\n";
 
 my %pairs=();
 
-# finding uniq communication streams
+# finding unique communication streams
 my $cmd = "tcpdump -nr $file \"$bpf\"";
 open(CMD,"$cmd |");
 while(<CMD>){
   chomp;
-  # extracting uniq src dst pairs, should work for tcp and udp
+  # extracting unique src dst pairs, should work for tcp and udp
   s/^\S+? \S+? (\S+?)\.(\d+) > (\S+?)\.(\d+): .*/$1 $2 $3 $4/;
   $pairs{$_}=1;
 }

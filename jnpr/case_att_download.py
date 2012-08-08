@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 
 # $Id: 20120808$
-# $Date: 2012-08-08 15:20:34$
+# $Date: 2012-08-08 23:30:11$
 # $Author: Marek Lukaszuk$
 
 from cookielib import CookieJar
-from urllib import urlencode,unquote,quote
-import urllib2
+from ftplib import FTP,error_perm
+from getpass import getpass
 from sgmllib import SGMLParser
-import sys
+from urllib import urlencode,unquote,quote
 import os
 import re
+import sys
 import time
-from ftplib import FTP,error_perm
+import urllib2
 
 ### TODO:
 # - add check for unicode,
@@ -468,9 +469,15 @@ if __name__ == '__main__':
         opt_ucwd = 1
 
     # just to check we have enough information to go further
-    if caseid == "" or opt_user == "" or opt_pass == "":
-      print "[!] error: either case id or user name or password was not defined"
+    if caseid == "" or opt_user == "": 
+      print "[!] error: either case id or user name was not defined"
       usage()
+
+    if not opt_pass == "":
+      try:
+        opt_pass = getpass("Please enter password: ").strip()
+      except:
+        usage()
 
     if opt_fpass == "":
       opt_fpass = opt_pass

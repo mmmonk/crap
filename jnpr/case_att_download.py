@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120802$
-# $Date: 2012-08-02 14:24:30$
+# $Id: 20120808$
+# $Date: 2012-08-08 15:20:34$
 # $Author: Marek Lukaszuk$
 
 from cookielib import CookieJar
@@ -641,6 +641,7 @@ if __name__ == '__main__':
         # lets make sure that we have the destination directory
         if not os.path.exists(casedir):
           os.makedirs(casedir)
+          os.chmod(casedir,0755)
 
         # and that the names don't repeat
         caseatt = str(filename.group(1))

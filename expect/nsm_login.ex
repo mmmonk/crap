@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
 
-# $Id: 20120803$
-# $Date: 2012-08-03 12:40:21$
+# $Id: 20120806$
+# $Date: 2012-08-06 10:13:05$
 # $Author: Marek Lukaszuk$
 #
 # ChangeLog:
@@ -217,7 +217,7 @@ if { $app == "nsm" } {
     alias xdbViewEdit=/usr/netscreen/GuiSvr/utils/.xdbViewEdit.sh;\
     alias jtac_db_size='ls -lrhS /var/netscreen/GuiSvr/xdb/data/';\
     function jtac_import() { /usr/netscreen/GuiSvr/utils/xdifImporter.sh \$1 /var/netscreen/GuiSvr/xdb/init/; };\
-    alias jtac_export=/usr/netscreen/GuiSvr/utils/xdbExporter.sh /var/netscreen/GuiSvr/xdb/ ;\
+    alias jtac_export=\"/usr/netscreen/GuiSvr/utils/xdbExporter.sh /var/netscreen/GuiSvr/xdb/ \";\
     alias jtac_edit=/usr/netscreen/GuiSvr/utils/.xdbViewEdit.sh;\
     function jtac_extract_contariner_from_xdif() { perl -e '\$a=0;\$b=shift;while(<>){\$a=0 if (/^END/); \$a=1 if (/^\$b/);print if (\$a==1);}' \$1 \$2; };\
     function jtac_container_xdif_to_init() { perl -ne 'if (/^\\)/){ print \"#####TUPLE_DATA_END#####\\n\"; next; } if (/^\\((.{8})(.{4})(.{4})\\s*/){ print \"#####TUPLE_DATA_BEGIN#####\\n\"; print hex(\$1),\"\\n\",hex(\$3),\"\\n\"; next; } next if (/^\\S+/); s/^\\t//; s/^: \\d+\\s+//; print;' \$1; };\

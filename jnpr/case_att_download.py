@@ -1,26 +1,26 @@
 #!/usr/bin/env python
 
 # $Id: 20120809$
-# $Date: 2012-08-09 09:10:39$
+# $Date: 2012-08-09 13:25:26$
 # $Author: Marek Lukaszuk$
 
-from cookielib import CookieJar
-from ftplib import FTP,error_perm
-from getpass import getpass
-from sgmllib import SGMLParser
-from urllib import urlencode,unquote,quote
 import os
 import re
 import sys
 import time
 import urllib2
+from sgmllib import SGMLParser
+from urllib import urlencode,unquote,quote
+from cookielib import CookieJar
+from ftplib import FTP,error_perm
+from getpass import getpass
 
 ### TODO:
 # - add check for unicode,
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
 # - and in general try to verify all the data from the server
 
-version = "20120802"
+version = "20120803"
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -52,6 +52,7 @@ Options:\n\
 -o            force overwrite of the files,\n\
 -p pass       password used for the CM,\n\
 -fp pass      password used for ftp (if not set this will be the same as -p),\n\
+              if value of this will be \"0\" then you will be asked for the password,\n\
 -s            show case status, customer information and exit, don't download anything,\n\
 -t            this will download attachments to a folder \"temp\"\n\
               in the destination folder (for cases that you just want to look at),\n\
@@ -474,6 +475,7 @@ if __name__ == '__main__':
       print "[!] error: either case id or user name was not defined"
       usage()
 
+    # normal password
     if opt_pass == "":
       try:
         opt_pass = getpass("Please enter password: ").strip()
@@ -484,9 +486,17 @@ if __name__ == '__main__':
       print "[!] error: password can not be empty"
       usage()
 
+    # ftp password
+    if opt_fpass == "0":
+      try:
+        opt_fpass = getpass("Please enter FTP password: ").strip()
+      except:
+        usage()
+
     if opt_fpass == "":
       opt_fpass = opt_pass
 
+    # here we start the actual connection 
     cj = CookieJar()
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
     urllib2.install_opener(opener)

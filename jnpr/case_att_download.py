@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120808$
-# $Date: 2012-08-08 23:39:29$
+# $Id: 20120809$
+# $Date: 2012-08-09 09:10:39$
 # $Author: Marek Lukaszuk$
 
 from cookielib import CookieJar
@@ -378,6 +378,7 @@ if __name__ == '__main__':
   opt_ucwd = 0
   opt_news = 0
   opt_stat = 0
+  cases = []
 
   try:
     LoadConf(conffile)
@@ -454,22 +455,22 @@ if __name__ == '__main__':
           opt_fpass = sys.argv[i]
         else:
           if re.match("^\d{4}-\d{4}-\d{4}$",arg):
-            caseid = arg
+            cases.append(arg)
           else:
             sys.exit(1)
         i += 1
     except:
       usage()
 
-    if caseid == "":
+    if len(cases) == 0:
       m = re.match("^\d{4}-\d{4}-\d{4}",os.path.basename(os.getcwd()))
       if m != None:
-        caseid = m.group(0)
+        cases.append(m.group(0))
         opt_dir = ""
         opt_ucwd = 1
 
     # just to check we have enough information to go further
-    if caseid == "" or opt_user == "":
+    if len(cases) == 0 or opt_user == "":
       print "[!] error: either case id or user name was not defined"
       usage()
 
@@ -478,6 +479,10 @@ if __name__ == '__main__':
         opt_pass = getpass("Please enter password: ").strip()
       except:
         usage()
+
+    if opt_pass == "":
+      print "[!] error: password can not be empty"
+      usage()
 
     if opt_fpass == "":
       opt_fpass = opt_pass
@@ -491,8 +496,6 @@ if __name__ == '__main__':
       print "[!] problem with connecting to the CM,\nERROR:"+str(errstr)
       sys.exit(1)
 
-    time.sleep(0.5)
-
     print "[+] logging into the cm\r",
     try:
       fparser = LoginForm()
@@ -502,254 +505,260 @@ if __name__ == '__main__':
       form['PASSWORD'] = opt_pass
       dat = urllib2.urlopen(dat.geturl(),urlencode(form))
     except urllib2.URLError as errstr:
-      print "[!] error while logging into cm,\nERROR:"+str(errstr)
+      print "[!] error while logging into CM,\nERROR:"+str(errstr)
       sys.exit(1)
 
-    time.sleep(0.25)
+    mainpage = dat.read()
 
-    print "[+] searching for "+str(caseid)+"\r",
-    try:
-      fparser = CaseForm()
-      fparser.parse(dat.read())
-      form = fparser.get_form()
-      form['keyword'] = caseid
-      form['fr'] = "5"
-      dat = urllib2.urlopen(urlcm+"case_results.jsp",urlencode(form))
-    except urllib2.URLError as errstr:
-      print "[!] error while searching for the case "+str(caseid)+",\nERROR:"+str(errstr)
-      sys.exit(1)
-
-    time.sleep(0.25)
-
-    print "[+] "+str(caseid)+": getting details\r",
-    try:
-      text = dat.read()
-      cid = re.search("href=\"javascript:setCid\(\'(.+?)\'",text)
-      fparser = CaseDetailsForm()
-      fparser.parse(text)
-      form = fparser.get_form()
-      form['cid'] = cid.group(1)
-      dat = urllib2.urlopen(urlcm+"case_detail.jsp",urlencode(form))
-    except AttributeError as errstr:
-      print "[!] error while trying to get case "+str(caseid)+" details. >>> Probably your password and/or username are incorrect <<< .\nERROR:"+str(errstr)
-      sys.exit(1)
-    except urllib2.URLError as errstr:
-      print "[!] error while trying to get case "+str(caseid)+" details,\nERROR:"+str(errstr)
-      sys.exit(1)
-
-    time.sleep(0.25)
-
-    # this is for printing the detail status of the case
-    if opt_stat == 1:
-      text = re.sub("\s+"," ",dat.read().replace("\n","").replace("\r",""))
-      cd = re.findall("<b>((?:\w|\s)+?):&nbsp;&nbsp;<\/b>(.+?)<",text,re.I)
-      for desc,value in cd:
-        if not "Current Status" in desc:
-          print "["+str(caseid)+"] "+str(desc)+": "+str(value).replace("&nbsp;","").strip()
-      sys.exit(0)
-
-    print "[+] "+str(caseid)+": searching for files\r",
-    try:
-      fparser = CaseAttachForm()
-      fparser.parse(dat.read())
-      form = fparser.get_form()
-      dat = urllib2.urlopen(urlcm+"case_attachments.jsp",urlencode(form))
-    except urllib2.URLError:
-      print "[!] error while searching for case "+str(caseid)+" attachments."
-      sys.exit(1)
-
-    time.sleep(0.25)
-    text = dat.read()
-    attach = re.findall("href=\"(AttachDown/.+?)\"",text)
-    attssize = re.findall("<td class=\"tbc\" width=\"\d+%\">\s*(\d+)\s*<\/td>",text)
-    attssize.reverse()
-    attmtime = re.findall("<td class=\"tbc\" width=\"\d+%\">\s*(\d+-\d+-\d+ \d+:\d+:\d+)\.0\s*<\/td>",text)
-    attmtime.reverse()
-
-    opt_dir = opt_dir.rstrip(os.sep)
-    casedir = str(opt_dir)+os.sep+str(caseid)+os.sep
-    if opt_temp == 1:
-      casedir = str(opt_dir)+os.sep+"temp"+os.sep+str(caseid)+os.sep
-
-    if opt_ucwd == 1:
-      casedir = os.curdir+os.sep
-
-    if opt_nmkd == 1:
-      casedir = str(opt_dir)+os.sep
-
-    casedir = os.path.normpath(casedir)
-    if opt_list == 0:
-      print "[+] "+str(caseid)+": will download to "+str(casedir)+"         "
-
-    maxcmatt = len(attach)
-    print "[+] "+str(caseid)+": found total of "+str(maxcmatt)+" attachment(s)"
-
-    filelist = dict()
-
-    curcmatt = 1
-    # looping through the attachments
-    for att in attach:
-      filename = re.search("AttachDown/(.+?)\?OBJID=(.+?)\&",att)
-      try:
-        attsize = int(attssize.pop())
-      except IndexError:
-        attsize = "?"
-
-      try:
-        # attachemnts upload time is in PST/PDT we need to convert it to local time
-        os.environ['TZ'] = "America/Los_Angeles"
-        time.tzset()
-        atttime = int(time.mktime(time.strptime(attmtime.pop(),"%Y-%m-%d %H:%M:%S")))
-        os.environ.pop('TZ')
-        time.tzset()
-
-      except:
-        atttime = int(time.time())
-
-      # just listing attachments
-      if opt_list == 1:
-
-        # filtering - include
-        if not opt_incl == "":
-          if not re.search(opt_incl,filename.group(1)):
-            continue
-
-        #filtering - exclude
-        if not opt_excl == "":
-          if re.search(opt_excl,filename.group(1)):
-            continue
-
-        # download N newest attachements
-        if opt_news > 0:
-          if curcmatt <= maxcmatt - opt_news:
-            curcmatt += 1
-            continue
-
-        print "[+] ObjID: "+str(unquote(filename.group(2)))+"  Filename: "+str(filename.group(1))+"  Size: "+str(attsize)+" KB"
-      else:
-
-        # downloading attachments
-        # filtering - include
-        if not opt_incl == "":
-          if not re.search(opt_incl,filename.group(1)):
-            continue
-
-        # filtering - exclude
-        if not opt_excl == "":
-          if re.search(opt_excl,filename.group(1)):
-            continue
-
-        # download N newest attachments
-        if opt_news > 0:
-          if curcmatt <= maxcmatt - opt_news:
-            curcmatt += 1
-            continue
-
-        # lets make sure that we have the destination directory
-        if not os.path.exists(casedir):
-          os.makedirs(casedir)
-          os.chmod(casedir,0755)
-
-        # and that the names don't repeat
-        caseatt = str(filename.group(1))
-        try:
-          filelist[caseatt] += 1
-        except KeyError:
-          filelist[caseatt] = 0
-
-        # if the name repeats modify the name
-        if filelist[caseatt] > 0:
-          name = re.search("^(.+)(\.\S{1,4})$",caseatt)
-          if name: # if we have extension, then add a number before ext
-            temp = name.group(1)+"_"+str(filelist[caseatt])+name.group(2)
-            caseatt = temp
-          else: # if we don't see any extension then add the number at the end
-            temp = caseatt + "_"+str(filelist[caseatt])
-            caseatt = temp
-
-        exists = 0
-
-        # do we overwrite or not?
-        if opt_over == 0:
-          try:
-            save = open(casedir+os.sep+caseatt,"r")
-            save.close()
-            exists = 1
-          except IOError:
-            pass
-
-        if exists == 0:
-          try:
-            att = quote(att)
-            # this is to encode dot ".", otherwise we get 500
-            att = re.sub("\.","%46",att)
-            att = urllib2.urlopen(urlcm+att)
-          except urllib2.HTTPError as errstr:
-            if "302" in str(errstr):
-              print "[+] Got HTTP 302 for "+str(caseatt)+", this is probably from sftp, will get it later"
-            else:
-              print "[!] HTTP error while downloading "+str(caseatt)+" ERROR:"+str(errstr).replace(os.linesep," ")
-            continue
-
-          csize = 0
-          try:
-            save = open(casedir+os.sep+caseatt,"w")
-            progind = "|"
-            stime = time.time()
-            while 1:
-              data = att.read(32768)
-              csize = csize + len(data)
-              progind = progressindicator(progind)
-              if attsize == "?":
-                print "["+str(progind)+"] Getting "+str(caseatt)+" : "+str(csize/1024)+" kB\r",
-              else:
-                done = (float(csize)/(attsize*1000))*100
-                if done == 0:
-                  eta = "?"
-                else:
-                  eta = ts2time(int(((time.time()-stime)/done)*(100-done)))
-                print "["+str(progind)+"] Getting "+str(caseatt)+" : "+str(csize/1024)+" kB ("+str(int(done))+"% ETA:"+str(eta)+")        \r",
-              if not data:
-                break
-              save.write(data)
-            save.close()
-            print "[+] Download of "+str(caseatt)+" size: "+str(csize/1024)+" kB done in "+str(ts2time(int(time.time()-stime),1))
-            os.utime(casedir+os.sep+caseatt,(atttime,atttime))
-            if os.name == "posix":
-              os.chmod(casedir+os.sep+caseatt,0644)
-          except IOError as errstr:
-            os.unlink(casedir+caseatt)
-            print "[!] error while downloading file: "+str(caseatt)+" ERROR:"+str(errstr)
-        else:
-          print "[+] File already exists: "+str(caseatt)
-
-    ### FTP SERVER
-    if opt_news == 0:
-      print "[+] Checking ftp server "+str(ftpserver)
+    if opt_news == 0 and opt_stat == 0:
+      print "[+] logging into ftp server\r",
       # trying to login to the ftp server
       try:
         ftp = FTP(ftpserver)
         ftp.login(opt_user,opt_fpass)
       except:
-        print "[!] error while connecting to the ftp server"
+        print "[!] error while connecting to the ftp server "+str(ftpserver)
         sys.exit(1)
 
-      ### checking ftp upload directory
-      try:
-        ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
-        ftpcheck(filelist,caseid,casedir,ftp)
-      except error_perm:
-        pass
+    for caseid in cases:
 
-      ### checking sftp upload directory
+      print "[+] searching for "+str(caseid)+"\r",
       try:
-        ftp.cwd("/volume/sftp/pub/incoming/"+caseid)
-        ftpcheck(filelist,caseid,casedir,ftp)
-      except error_perm:
-        pass
+        fparser = CaseForm()
+        fparser.parse(mainpage)
+        form = fparser.get_form()
+        form['keyword'] = caseid
+        form['fr'] = "5"
+        dat = urllib2.urlopen(urlcm+"case_results.jsp",urlencode(form))
+      except urllib2.URLError as errstr:
+        print "[!] error while searching for the case "+str(caseid)+",\nERROR:"+str(errstr)
+        sys.exit(1)
 
+      time.sleep(0.25)
+
+      print "[+] "+str(caseid)+": getting details\r",
+      try:
+        text = dat.read()
+        cid = re.search("href=\"javascript:setCid\(\'(.+?)\'",text)
+        fparser = CaseDetailsForm()
+        fparser.parse(text)
+        form = fparser.get_form()
+        form['cid'] = cid.group(1)
+        dat = urllib2.urlopen(urlcm+"case_detail.jsp",urlencode(form))
+      except AttributeError as errstr:
+        print "[!] error while trying to get case "+str(caseid)+" details. >>> Probably your password and/or username are incorrect <<< .\nERROR:"+str(errstr)
+        sys.exit(1)
+      except urllib2.URLError as errstr:
+        print "[!] error while trying to get case "+str(caseid)+" details,\nERROR:"+str(errstr)
+        sys.exit(1)
+
+      time.sleep(0.25)
+
+      # this is for printing the detail status of the case
+      if opt_stat == 1:
+        text = re.sub("\s+"," ",dat.read().replace("\n","").replace("\r",""))
+        cd = re.findall("<b>((?:\w|\s)+?):&nbsp;&nbsp;<\/b>(.+?)<",text,re.I)
+        for desc,value in cd:
+          if not "Current Status" in desc:
+            print "["+str(caseid)+"] "+str(desc)+": "+str(value).replace("&nbsp;","").strip()
+        continue # we close the loop here
+
+      print "[+] "+str(caseid)+": searching for files\r",
+      try:
+        fparser = CaseAttachForm()
+        fparser.parse(dat.read())
+        form = fparser.get_form()
+        dat = urllib2.urlopen(urlcm+"case_attachments.jsp",urlencode(form))
+      except urllib2.URLError:
+        print "[!] error while searching for case "+str(caseid)+" attachments."
+        sys.exit(1)
+
+      time.sleep(0.25)
+      text = dat.read()
+      attach = re.findall("href=\"(AttachDown/.+?)\"",text)
+      attssize = re.findall("<td class=\"tbc\" width=\"\d+%\">\s*(\d+)\s*<\/td>",text)
+      attssize.reverse()
+      attmtime = re.findall("<td class=\"tbc\" width=\"\d+%\">\s*(\d+-\d+-\d+ \d+:\d+:\d+)\.0\s*<\/td>",text)
+      attmtime.reverse()
+
+      opt_dir = opt_dir.rstrip(os.sep)
+      casedir = str(opt_dir)+os.sep+str(caseid)+os.sep
+      if opt_temp == 1:
+        casedir = str(opt_dir)+os.sep+"temp"+os.sep+str(caseid)+os.sep
+
+      if opt_ucwd == 1:
+        casedir = os.curdir+os.sep
+
+      if opt_nmkd == 1:
+        casedir = str(opt_dir)+os.sep
+
+      casedir = os.path.normpath(casedir)
+      if opt_list == 0:
+        print "[+] "+str(caseid)+": will download to "+str(casedir)+"         "
+
+      maxcmatt = len(attach)
+      print "[+] "+str(caseid)+": found total of "+str(maxcmatt)+" attachment(s)"
+
+      filelist = dict()
+
+      curcmatt = 1
+      # looping through the attachments
+      for att in attach:
+        filename = re.search("AttachDown/(.+?)\?OBJID=(.+?)\&",att)
+        try:
+          attsize = int(attssize.pop())
+        except IndexError:
+          attsize = "?"
+
+        try:
+          # attachemnts upload time is in PST/PDT we need to convert it to local time
+          os.environ['TZ'] = "America/Los_Angeles"
+          time.tzset()
+          atttime = int(time.mktime(time.strptime(attmtime.pop(),"%Y-%m-%d %H:%M:%S")))
+          os.environ.pop('TZ')
+          time.tzset()
+
+        except:
+          atttime = int(time.time())
+
+        # just listing attachments
+        if opt_list == 1:
+
+          # filtering - include
+          if not opt_incl == "":
+            if not re.search(opt_incl,filename.group(1)):
+              continue
+
+          #filtering - exclude
+          if not opt_excl == "":
+            if re.search(opt_excl,filename.group(1)):
+              continue
+
+          # download N newest attachements
+          if opt_news > 0:
+            if curcmatt <= maxcmatt - opt_news:
+              curcmatt += 1
+              continue
+
+          print "[+] ObjID: "+str(unquote(filename.group(2)))+"  Filename: "+str(filename.group(1))+"  Size: "+str(attsize)+" KB"
+        else:
+
+          # downloading attachments
+          # filtering - include
+          if not opt_incl == "":
+            if not re.search(opt_incl,filename.group(1)):
+              continue
+
+          # filtering - exclude
+          if not opt_excl == "":
+            if re.search(opt_excl,filename.group(1)):
+              continue
+
+          # download N newest attachments
+          if opt_news > 0:
+            if curcmatt <= maxcmatt - opt_news:
+              curcmatt += 1
+              continue
+
+          # lets make sure that we have the destination directory
+          if not os.path.exists(casedir):
+            os.makedirs(casedir)
+            os.chmod(casedir,0755)
+
+          # and that the names don't repeat
+          caseatt = str(filename.group(1))
+          try:
+            filelist[caseatt] += 1
+          except KeyError:
+            filelist[caseatt] = 0
+
+          # if the name repeats modify the name
+          if filelist[caseatt] > 0:
+            name = re.search("^(.+)(\.\S{1,4})$",caseatt)
+            if name: # if we have extension, then add a number before ext
+              temp = name.group(1)+"_"+str(filelist[caseatt])+name.group(2)
+              caseatt = temp
+            else: # if we don't see any extension then add the number at the end
+              temp = caseatt + "_"+str(filelist[caseatt])
+              caseatt = temp
+
+          exists = 0
+
+          # do we overwrite or not?
+          if opt_over == 0:
+            try:
+              save = open(casedir+os.sep+caseatt,"r")
+              save.close()
+              exists = 1
+            except IOError:
+              pass
+
+          if exists == 0:
+            try:
+              att = quote(att)
+              # this is to encode dot ".", otherwise we get 500
+              att = re.sub("\.","%46",att)
+              att = urllib2.urlopen(urlcm+att)
+            except urllib2.HTTPError as errstr:
+              if "302" in str(errstr):
+                print "[+] Got HTTP 302 for "+str(caseatt)+", this is probably from sftp, will get it later"
+              else:
+                print "[!] HTTP error while downloading "+str(caseatt)+" ERROR:"+str(errstr).replace(os.linesep," ")
+              continue
+
+            csize = 0
+            try:
+              save = open(casedir+os.sep+caseatt,"w")
+              progind = "|"
+              stime = time.time()
+              while 1:
+                data = att.read(32768)
+                csize = csize + len(data)
+                progind = progressindicator(progind)
+                if attsize == "?":
+                  print "["+str(progind)+"] Getting "+str(caseatt)+" : "+str(csize/1024)+" kB\r",
+                else:
+                  done = (float(csize)/(attsize*1000))*100
+                  if done == 0:
+                    eta = "?"
+                  else:
+                    eta = ts2time(int(((time.time()-stime)/done)*(100-done)))
+                  print "["+str(progind)+"] Getting "+str(caseatt)+" : "+str(csize/1024)+" kB ("+str(int(done))+"% ETA:"+str(eta)+")        \r",
+                if not data:
+                  break
+                save.write(data)
+              save.close()
+              print "[+] Download of "+str(caseatt)+" size: "+str(csize/1024)+" kB done in "+str(ts2time(int(time.time()-stime),1))
+              os.utime(casedir+os.sep+caseatt,(atttime,atttime))
+              if os.name == "posix":
+                os.chmod(casedir+os.sep+caseatt,0644)
+            except IOError as errstr:
+              os.unlink(casedir+caseatt)
+              print "[!] error while downloading file: "+str(caseatt)+" ERROR:"+str(errstr)
+          else:
+            print "[+] File already exists: "+str(caseatt)
+
+      ### FTP SERVER
+      if opt_news == 0:
+
+        ### checking ftp upload directory
+        try:
+          ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
+          ftpcheck(filelist,caseid,casedir,ftp)
+        except error_perm:
+          pass
+
+        ### checking sftp upload directory
+        try:
+          ftp.cwd("/volume/sftp/pub/incoming/"+caseid)
+          ftpcheck(filelist,caseid,casedir,ftp)
+        except error_perm:
+          pass
+
+    if opt_news == 0 and opt_stat == 0:
       ftp.quit()
 
   except KeyboardInterrupt:
     print "[!] program interrupted, exiting"
     sys.exit(1)
+

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-# $Id: 20120808$
-# $Date: 2012-08-08 23:24:41$
+# $Id: 20120809$
+# $Date: 2012-08-09 16:38:17$
 # $Author: Marek Lukaszuk$
 
 # idea from http://pastebin.com/dSJbGSBD
@@ -19,16 +19,28 @@ import os
 import sys
 
 
-def SameTimeStrCmp(v1,v2):
-  res = 0
-  if v1 == v2:
-    res = 1
-  return res
+def constantTimeCompare(a, b):
+    if isinstance(a, unicode):
+        if not isinstance(b, unicode):
+            raise inputMismatchError
+        isPy3Bytes = False
+    elif isinstance(a, bytes):
+        if not isinstance(b, bytes):
+            raise inputMismatchError
+        isPy3Bytes = sys.version_info >= (3, 0)
+    else:
+        raise inputMismatchError
 
+    if isPy3Bytes:
+        for x, y in zip(a, b):
+            result |= x ^ y
+    else:
+        for x, y in zip(a, b):
+            result |= ord(x) ^ ord(y)
+    return result == 0
 
 def genotp():
   return "{} {}{}{} {}{}{} {}{}{} {}{}{} {}{}{}".format(*b32encode(sha1(str(randint(0,9999999999999999))).digest()[:10]).lower())
-
 
 def otpchk(key, response):
 
@@ -54,7 +66,7 @@ def otpchk(key, response):
 
     code = "0"*(6-len(str(code)))+str(code)
 
-    if SameTimeStrCmp(code,response):
+    if constantTimeCompare(code,response):
       return True
 
   return False

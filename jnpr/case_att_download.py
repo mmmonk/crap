@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20120811$
-# $Date: 2012-08-11 01:24:14$
+# $Date: 2012-08-11 10:32:01$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -234,41 +234,13 @@ def ftpcheck(filelist,caseid,casedir,ftp):
     else:
       print ct.style(ct.ok,"[+]")+ct.style(ct.text," File already exists: ")+ct.style(ct.att,str(ftpatt))
 
-class LoginForm(SGMLParser):
+class GenericForm(SGMLParser):
   '''
-  This class analyses the Login form
+  This is a generic form parser
+  it will be used as a basis for
+  all other From classes
   '''
-  def parse(self, s):
-    self.feed(s)
-    self.close()
 
-  def __init__(self, verbose = 0):
-    SGMLParser.__init__(self, verbose)
-    self.form = {}
-    self.inside_auth_form = 0
-
-  def do_input(self, attributes):
-    if self.inside_auth_form == 1:
-      if 'hidden' in attributes[0]:
-        self.form[attributes[1][1]] = attributes[2][1]
-
-  def start_form(self, attributes):
-    for name, value in attributes:
-      if name == "name" and value == "Login":
-        self.inside_auth_form = 1
-        break
-
-  def end_form(self):
-    self.inside_auth_form = 0
-
-  def get_form(self):
-    return self.form
-
-
-class CaseForm(SGMLParser):
-  '''
-  This class analyses the Case search form
-  '''
   def parse(self, s):
     self.feed(s)
     self.close()
@@ -277,11 +249,22 @@ class CaseForm(SGMLParser):
     SGMLParser.__init__(self, verbose)
     self.form = {}
     self.inside_form = 0
-
+  
   def do_input(self, attributes):
     if self.inside_form == 1:
       if 'hidden' in attributes[0]:
         self.form[attributes[1][1]] = attributes[2][1]
+
+  def end_form(self):
+    self.inside_form = 0
+
+  def get_form(self):
+    return self.form
+
+class LoginForm(GenericForm):
+  '''
+  This class analyses the Login form and case search form
+  '''
 
   def start_form(self, attributes):
     for name, value in attributes:
@@ -289,29 +272,10 @@ class CaseForm(SGMLParser):
         self.inside_form = 1
         break
 
-  def end_form(self):
-    self.inside_form = 0
-
-  def get_form(self):
-    return self.form
-
-class CaseDetailsForm(SGMLParser):
+class CaseDetailsForm(GenericForm):
   '''
   This class analyses the Case details form
   '''
-  def parse(self, s):
-    self.feed(s)
-    self.close()
-
-  def __init__(self, verbose = 0):
-    SGMLParser.__init__(self, verbose)
-    self.form = {}
-    self.inside_form = 0
-
-  def do_input(self, attributes):
-    if self.inside_form == 1:
-      if 'hidden' in attributes[0]:
-        self.form[attributes[1][1]] = attributes[2][1]
 
   def start_form(self, attributes):
     for name, value in attributes:
@@ -319,42 +283,16 @@ class CaseDetailsForm(SGMLParser):
         self.inside_form = 1
         break
 
-  def end_form(self):
-    self.inside_form = 0
-
-  def get_form(self):
-    return self.form
-
-class CaseAttachForm(SGMLParser):
+class CaseAttachForm(GenericForm):
   '''
   This class analyses the Case attachments form
   '''
-  def parse(self, s):
-    self.feed(s)
-    self.close()
-
-  def __init__(self, verbose = 0):
-    SGMLParser.__init__(self, verbose)
-    self.form = {}
-    self.inside_form = 0
-
-  def do_input(self, attributes):
-    if self.inside_form == 1:
-      if 'hidden' in attributes[0]:
-        self.form[attributes[1][1]] = attributes[2][1]
 
   def start_form(self, attributes):
     for name, value in attributes:
       if name == "name" and value == "case_detail":
         self.inside_form = 1
         break
-
-  def end_form(self):
-    self.inside_form = 0
-
-  def get_form(self):
-    return self.form
-
 
 class Color:
   normal = "\033[0m"
@@ -377,32 +315,31 @@ class default_theme:
   def style(self,style,text):
     return str(style)+str(text)+str(self.norm)
 
-  att  = ""
-  case = ""
-  done = ""
-  err  = ""
-  norm = ""
-  ok   = ""
-  row1 = ""
-  row2 = ""
-  text = ""
-  fold = ""
-  num  = ""
+  att  = "" # filename color
+  case = "" # case id color
+  err  = "" # error color
+  fold = "" # folder/directory color
+  norm = "" # normal/default settings
+  num  = "" # numbers 
+  ok   = "" # [+] color
+  row1 = "" # first color for case details display
+  row2 = "" # second color for case details display
+  text = "" # normal text color
 
 class nocolor_theme(default_theme):
   pass
 
 class color_theme(default_theme):
-  ok   = Color.blue+Color.bold
-  err  = Color.red
-  norm = Color.normal
-  text = Color.green
+  att  = Color.purple
   case = Color.purple
+  err  = Color.red+Color.bold
+  fold = Color.grey
+  norm = Color.normal
+  num  = Color.yellow+Color.bold
+  ok   = Color.blue+Color.bold
   row1 = Color.cyan+Color.bold
   row2 = Color.cyan
-  att  = Color.purple
-  fold = Color.grey
-  num  = Color.yellow+Color.bold
+  text = Color.green+Color.bold
 
 class bbg_theme(default_theme):
   pass
@@ -416,6 +353,7 @@ if __name__ == '__main__':
   urlcm = "https://tools.online.juniper.net/cm/"
   ftpserver = "svl-jtac-tool02.juniper.net"
 
+  # I admit this is a bit ugly, I need to find a way how to do it in a different way
   global caseid,opt_incl,opt_excl,opt_list,opt_temp
   global opt_over,opt_user,opt_pass,opt_ucwd,opt_dir
 
@@ -451,7 +389,8 @@ if __name__ == '__main__':
       opt_dir = confvar['cmdir']
     except KeyError:
       pass
-
+    
+    # by default we use colors
     ct = color_theme()
     
     # options parsing
@@ -595,7 +534,7 @@ if __name__ == '__main__':
 
       print ct.style(ct.ok,"[+]")+" "+ct.style(ct.case,str(caseid))+ct.style(ct.text,": searching")+"\r",
       try:
-        fparser = CaseForm()
+        fparser = LoginForm()
         fparser.parse(mainpage)
         form = fparser.get_form()
         form['keyword'] = caseid

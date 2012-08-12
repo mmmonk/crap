@@ -1,6 +1,6 @@
 " ~/.vimrc file
-" $Id: 20120802$
-" $Date: 2012-08-02 13:50:45$
+" $Id: 20120812$
+" $Date: 2012-08-12 07:31:08$
 " $Author: Marek Lukaszuk$
 "
 " ideas http://amix.dk/vim/vimrc.html
@@ -108,22 +108,6 @@ if !exists('weAreOnSolix')
   colorscheme ron
   map <F3> :call SwitchColorScheme("desert","ron")<CR>
 
-  set foldenable
-
-  if !has('diff')
-    " Make folding indent sensitive
-    set foldmethod=manual
-    
-    " Don't autofold anything (but I can still fold manually)
-    set foldlevel=100
-    
-    " don't open folds when you search into them
-    set foldopen-=search
-    
-    " don't open folds when you undo stuff
-    set foldopen-=undo
-  endif
-
   if has('gui_running')
     " set the gui options to:
     "   g: grey inactive menu items
@@ -132,14 +116,14 @@ if !exists('weAreOnSolix')
     "   b: display scrollbar at bottom of window
     "   t: enable tearoff menus on Win32
     "   T: enable toolbar on Win32
-    set guioptions=r
+    set guioptions=
     " set guioptions-=T         " no toolbar
     set number                " line numbers
     set guifont=Monospace\ 10 " gui font
     set nomh                  " no mouse hide
     "call SetColorSchemaBaseOnTime("desert","pablo")
-    colorscheme pablo
-    map <F3> :call SwitchColorScheme("desert","pablo")<CR>
+    colorscheme ron
+    map <F3> :call SwitchColorScheme("desert","ron")<CR>
   endif
 else
   set lazyredraw            " do not redraw while running macros (much faster) (LazyRedraw)
@@ -227,7 +211,7 @@ if has('autocmd')
   " and the last modified timestamp
   function! VersionUpdate()
     if &modified
-      let endl = min ([20,line("$")]) " we will search max 20 first lines 
+      let endl = min ([20,line("$")]) " we will search max 20 first lines
       exec "normal ma" | " this saves the current position in the file
       try
         exe ":1,".endl." s/\$Id.*\$/$Id: ".strftime("%Y%m%d")."$/e"
@@ -258,7 +242,7 @@ if has('autocmd')
 
   au BufWrite * call VersionUpdate()
   " clean up trailing white spaces in my scripts
-  au BufWrite $HOME/store/tools/* call StripTrailingWhitespace()
+  au BufWrite $HOME/* call StripTrailingWhitespace()
   " clean up files after reading in the cases subdirectory
   au BufRead $HOME/store/juniper/* call FileCleanUpCases()
 

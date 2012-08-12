@@ -1,11 +1,15 @@
 #!/usr/bin/python -u
 
+# $Id: 20120812$
+# $Date: 2012-08-12 07:36:01$
+# $Author: Marek Lukaszuk$
+
 version = "20111201"
 
-from fcntl import fcntl, F_SETFL 
+from fcntl import fcntl, F_SETFL
 from os import O_NONBLOCK
 from select import select
-from struct import pack,unpack 
+from struct import pack,unpack
 import sys
 import socket
 
@@ -62,11 +66,11 @@ def socks4(s,host,port,s_send,s_recv):
   code = unpack('BBH',data[:4])[1]
 
   if code == 90:
-    return 1 
-  
-  return 0 
+    return 1
 
-# SOCKS5 proxy 
+  return 0
+
+# SOCKS5 proxy
 def socks5(s,host,port,s_send,s_recv):
 
   error = ["succeeded", "general SOCKS server failure", "connection not allowed by ruleset", "Network unreachable", "Host unreachable", "Connection refused", "TTL expired", "Command not supported", "Address type not supported", "unassigned"]
@@ -94,7 +98,7 @@ def socks5(s,host,port,s_send,s_recv):
       return 0
 
     if code == 0:
-      return 1 
+      return 1
     if code > 9:
       code=9
     sys.stderr.write("[-] socks server sent an error: "+error[code]+"\n")
@@ -102,21 +106,21 @@ def socks5(s,host,port,s_send,s_recv):
 
   else:
     sys.stderr.write("[-] socks server requires authentication\n")
-    return 0 
+    return 0
 
 # HTTP CONNECT proxy
 def http_connect(s,host,port,s_send,s_recv):
 
   request = "CONNECT "+str(host)+":"+str(port)+" HTTP/1.0\n\n"
- 
+
   s_send(request)
   data = s_recv(256)
   if "HTTP/1.1 200 " in data or "HTTP/1.0 200 " in data:
     sys.stderr.write("[+] http proxy server allowed the connection\n");
     return 1
-  
-  sys.stderr.write("[-] http proxy server doesn't allow our connection\n"); 
-  
+
+  sys.stderr.write("[-] http proxy server doesn't allow our connection\n");
+
   return 0
 
 def upnp(s,host,port):
@@ -139,13 +143,13 @@ if __name__ == '__main__':
 
 
   len_argv=len(sys.argv)
-  if len_argv >= 5 and len_argv <= 8: 
-    
+  if len_argv >= 5 and len_argv <= 8:
+
     proxytype = "socks5"
     cork = 0
-    spawn = "" 
+    spawn = ""
 
-    try: 
+    try:
       i = 1
       while i<len_argv:
         if sys.argv[i] == '-p':
@@ -179,14 +183,14 @@ if __name__ == '__main__':
     wr = 0
     rd = 0
 
-    if spawn == "": 
+    if spawn == "":
 
       if ":" in phost and socket.has_ipv6 == True:
         proxy = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
       else:
         proxy = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      
-      if cork: 
+
+      if cork:
         proxy.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK,1)
 
       try:
@@ -194,43 +198,43 @@ if __name__ == '__main__':
       except socket.error:
         sys.stderr.write("[-] problem connecting to "+str(phost)+":"+str(pport)+"\n")
         proxy.close()
-        sys.exit()  
+        sys.exit()
 
       sys.stderr.write("[+] connecting via tcp "+str(phost)+":"+str(pport)+" to "+str(host)+":"+str(port)+" proto:"+str(proxytype)+"\n")
 
       wr = proxy.send
       rd = proxy.recv
     else:
-      import subprocess  
-     
+      import subprocess
+
       sys.stderr.write("[+] connecting using cmd \""+str(spawn)+"\"\n")
 
       proxy = subprocess.Popen(spawn.split(),stdin=subprocess.PIPE, stdout=subprocess.PIPE,bufsize=0)
-  
+
       sys.stderr.write("[+] connecting using cmd \""+str(spawn)+"\" to "+str(host)+":"+str(port)+" proto:"+str(proxytype)+"\n")
 
       wr = proxy.stdin.write
       rd = proxy.stdout.readline
 
-    proxyingok = 0 
+    proxyingok = 0
 
     if (proxytype == "socks5" and socks5(proxy,host,port,wr,rd)):
-      proxyingok = 1 
+      proxyingok = 1
 
     if (proxytype == "socks4" and socks4(proxy,host,port,wr,rd)):
-      proxyingok = 1 
+      proxyingok = 1
 
     if (proxytype == "http" and http_connect(proxy,host,port,wr,rd)):
-      proxyingok = 1 
-    
-    if (proxytype == "upnp" and upnp(proxy,host,port,wr,rd)):
-      proxyingok = 1 
+      proxyingok = 1
 
-    if proxyingok == 1: 
+    if (proxytype == "upnp" and upnp(proxy,host,port,wr,rd)):
+      proxyingok = 1
+
+    if proxyingok == 1:
       sys.stderr.write("[+] connection established\n")
       try:
         exchange(proxy,spawn,wr,rd)
-      except KeyboardInterrupt: 
+      except KeyboardInterrupt:
         pass
       proxy.close()
     else:
@@ -238,4 +242,4 @@ if __name__ == '__main__':
 
 
   else:
-    usage() 
+    usage()

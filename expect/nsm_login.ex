@@ -58,7 +58,7 @@ Ctrl+a i - can be entered during the nsm installation will answer all the questi
 Ctrl+a x - stop/status/start/restart/version on all three services,
 Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for naming backups/copies of files,
 
-and check also jtac_ cli commands\033\[m 
+and check also jtac_ cli commands\033\[m
 
 "
       send "\r"
@@ -425,7 +425,7 @@ and remember the jtac_ commands\033\[m\n"
         } elseif { $os == "SunOS" } {
           send -s "pkgrm -n `pkginfo -c application | grep -i netscreen | grep -v NSCNpostgres | awk '{print \$2}' | xargs` &&  rm -rf /var/netscreen/ /usr/netscreen/"
         }
-      
+
       # exporting the db
       } elseif { $action == 5 } {
         send -s "unset NS_PRINTER_LEVEL;/usr/netscreen/GuiSvr/utils/xdbExporter.sh /var/netscreen/GuiSvr/xdb/ /var/tmp/xdif_$filetime.txt; export NS_PRINTER_LEVEL=debug"
@@ -448,7 +448,7 @@ and remember the jtac_ commands\033\[m\n"
         global ourip
         set ourip $expect_out(1,string)
         send "\r"
-      
+
       # removing all containers from xdb/data
       } elseif { $action == 9 } {
         send -s "find /var/netscreen/GuiSvr/xdb/data -type f | egrep -v \"__db.001|DB_CONFIG\" | xargs rm\r"

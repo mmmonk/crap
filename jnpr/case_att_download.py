@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20120813$
-# $Date: 2012-08-13 16:19:39$
+# $Date: 2012-08-13 23:49:53$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -581,13 +581,14 @@ if __name__ == '__main__':
 
       # this is for printing the detail status of the case
       if opt_stat == 1:
-        text = re.sub("\s+"," ",dat.read().replace("\n","").replace("\r",""))
+        text = re.sub("\s+"," ",dat.read()) #.replace("\n"," ").replace("\r"," "))
+        #text = dat.read()
         contact = re.findall("onclick=\"NewWindow\('(my_contact_info\.jsp\?contact=.+?')",text)
 
         line = 0
         if len(contact) > 0:
           dat = urllib2.urlopen(urlcm+contact[0])
-          contact = re.sub("\s+"," ",dat.read().replace("\n","").replace("\r",""))
+          contact = re.sub("\s+"," ",dat.read().replace("\n"," ").replace("\r"," "))
           contact = re.sub("</?a(>| href=.+?>)","",contact)
           for desc,value in re.findall("<td class=\"tbcbold\">(.+?):</td>.*?<td class=\"tbc\">(.+?)</td>",contact):
             if line % 2 == 0:
@@ -597,14 +598,16 @@ if __name__ == '__main__':
             txt.ok(ct.style(rowcol,"Contact details - "+str(desc)+": "+str(value).replace("&nbsp;","").strip())+"\n")
             line += 1
 
-        for desc,value in re.findall("<b>((?:\w|\s)+?):&nbsp;&nbsp;<\/b>(.+?)<",text,re.I):
-          if not desc in ["Current Status","Problem Description"]:
-            if line % 2 == 0:
-              rowcol = ct.row1
-            else:
-              rowcol = ct.row2
-            txt.ok(ct.style(rowcol,str(desc)+": "+str(value).replace("&nbsp;","").strip())+"\n")
-            line += 1
+        for desc,value in re.findall("<b>((?:\w|\s)+?):&nbsp;&nbsp;<\/b>(.+?)</t",text,re.M):
+          value = re.sub("<a.+?>.+?</a>"," ",value)
+          value = re.sub("<br/?>","\n",value,count=0,flags=re.I)
+          value = re.sub("<.+?>"," ",value,count=0)
+          if line % 2 == 0:
+            rowcol = ct.row1
+          else:
+            rowcol = ct.row2
+          txt.ok(ct.style(rowcol,str(desc)+": "+str(value).replace("&nbsp;"," ").strip())+"\n")
+          line += 1
         continue # we drop out of the loop here
 
       txt.ok(ct.style(ct.text,"searching for files")+"\r")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120811$
-# $Date: 2012-08-11 22:40:03$
+# $Id: 20120813$
+# $Date: 2012-08-13 16:19:39$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -234,22 +234,18 @@ def ftpcheck(filelist,caseid,casedir,ftp):
     else:
       txt.ok(ct.style(ct.text,"file already exists: ")+ct.style(ct.att,str(ftpatt))+"\n")
 
-class GenericForm(SGMLParser):
+class FormParser(SGMLParser):
   '''
   This is a generic form parser
-  it will be used as a basis for
-  all other From classes
   '''
 
-  def parse(self, s):
-    self.feed(s)
-    self.close()
+  this_form = ""
 
   def __init__(self, verbose = 0):
     SGMLParser.__init__(self, verbose)
     self.form = {}
     self.inside_form = 0
-  
+
   def do_input(self, attributes):
     if self.inside_form == 1:
       if 'hidden' in attributes[0]:
@@ -258,39 +254,16 @@ class GenericForm(SGMLParser):
   def end_form(self):
     self.inside_form = 0
 
-  def get_form(self):
+  def get_form(self,s,f):
+    self.reset()
+    self.this_form = f
+    self.feed(s)
+    self.close()
     return self.form
 
-class LoginForm(GenericForm):
-  '''
-  This class analyses the Login form and case search form
-  '''
-
   def start_form(self, attributes):
     for name, value in attributes:
-      if name == "name" and value == "Login":
-        self.inside_form = 1
-        break
-
-class CaseDetailsForm(GenericForm):
-  '''
-  This class analyses the Case details form
-  '''
-
-  def start_form(self, attributes):
-    for name, value in attributes:
-      if name == "name" and value == "case_results":
-        self.inside_form = 1
-        break
-
-class CaseAttachForm(GenericForm):
-  '''
-  This class analyses the Case attachments form
-  '''
-
-  def start_form(self, attributes):
-    for name, value in attributes:
-      if name == "name" and value == "case_detail":
+      if name == "name" and value == self.this_form:
         self.inside_form = 1
         break
 
@@ -325,7 +298,7 @@ class default_theme:
   err  = "" # error color
   fold = "" # folder/directory color
   norm = "" # normal/default settings
-  num  = "" # numbers 
+  num  = "" # numbers
   ok   = "" # [+] color
   row1 = "" # first color for case details display
   row2 = "" # second color for case details display
@@ -342,16 +315,16 @@ class color_theme(default_theme):
   '''
   default color theme
   '''
-  att  = Color.purple
+  att  = Color.purple+Color.bold
   case = Color.purple
   err  = Color.red+Color.bold
   fold = Color.grey
   norm = Color.normal
   num  = Color.yellow+Color.bold
-  ok   = Color.blue+Color.bold
+  ok   = Color.green
   row1 = Color.cyan+Color.bold
   row2 = Color.cyan
-  text = Color.green
+#  text = Color.green+Color.bold
   warn = Color.yellow+Color.bold
 
 class bbg_theme(default_theme):
@@ -390,7 +363,7 @@ class msg:
       print ct.style(ct.warn,"[-] warning: "+str(mesg)),
     else:
       print ct.style(ct.warn,"["+str(self.caseid)+"] warning: "+str(mesg)),
-  
+
   def err(self,mesg):
     '''
     error messages
@@ -400,7 +373,6 @@ class msg:
     else:
       print ct.style(ct.err,"["+str(self.caseid)+"] error: "+str(mesg)),
     sys.exit(1)
-  
 
 if __name__ == '__main__':
 
@@ -447,10 +419,10 @@ if __name__ == '__main__':
       opt_dir = confvar['cmdir']
     except KeyError:
       pass
-    
+
     # by default we use colors
     ct = color_theme()
-    
+
     # options parsing
     i = 1
     imax = len(sys.argv)
@@ -468,7 +440,7 @@ if __name__ == '__main__':
         elif arg == "-s": # print the case data
           opt_stat = 1
         elif arg == "-dc": # color support disabled
-          ct = nocolor_theme() 
+          ct = nocolor_theme()
         elif arg == "-bbg": # brigh background theme
           ct = bbg_theme()
         elif arg == "-nd": # don't create the case dir
@@ -552,7 +524,7 @@ if __name__ == '__main__':
     if opt_fpass == "":
       opt_fpass = opt_pass
 
-    # here we start the actual connection 
+    # here we start the actual connection
     cj = CookieJar()
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
     urllib2.install_opener(opener)
@@ -561,11 +533,10 @@ if __name__ == '__main__':
     except urllib2.URLError as errstr:
       txt.err("problem with connecting to the CM,\nERROR:"+str(errstr))
 
+    fparser = FormParser()
     txt.ok(ct.style(ct.text,"logging into the CM")+"\r")
     try:
-      fparser = LoginForm()
-      fparser.parse(dat.read())
-      form = fparser.get_form()
+      form = fparser.get_form(dat.read(),"Login")
       form['USER'] = opt_user
       form['PASSWORD'] = opt_pass
       dat = urllib2.urlopen(dat.geturl(),urlencode(form))
@@ -587,11 +558,9 @@ if __name__ == '__main__':
     for caseid in cases:
 
       txt.case(caseid)
-      txt.ok(ct.style(ct.text,"case search")+"\r") 
+      txt.ok(ct.style(ct.text,"case search")+"\r")
       try:
-        fparser = LoginForm()
-        fparser.parse(mainpage)
-        form = fparser.get_form()
+        form = fparser.get_form(mainpage,"Login")
         form['keyword'] = caseid
         form['fr'] = "5"
         dat = urllib2.urlopen(urlcm+"case_results.jsp",urlencode(form))
@@ -602,22 +571,20 @@ if __name__ == '__main__':
       try:
         text = dat.read()
         cid = re.search("href=\"javascript:setCid\(\'(.+?)\'",text)
-        fparser = CaseDetailsForm()
-        fparser.parse(text)
-        form = fparser.get_form()
+        form = fparser.get_form(text,"case_results")
         form['cid'] = cid.group(1)
         dat = urllib2.urlopen(urlcm+"case_detail.jsp",urlencode(form))
       except AttributeError as errstr:
         txt.err("while trying to get case details. >>> Probably your password and/or username are incorrect <<< .\nERROR:"+str(errstr))
       except urllib2.URLError as errstr:
-        txt.err("while trying to get case details.\nERROR:"+str(errstr)) 
+        txt.err("while trying to get case details.\nERROR:"+str(errstr))
 
       # this is for printing the detail status of the case
       if opt_stat == 1:
         text = re.sub("\s+"," ",dat.read().replace("\n","").replace("\r",""))
         contact = re.findall("onclick=\"NewWindow\('(my_contact_info\.jsp\?contact=.+?')",text)
-        
-        line = 0 
+
+        line = 0
         if len(contact) > 0:
           dat = urllib2.urlopen(urlcm+contact[0])
           contact = re.sub("\s+"," ",dat.read().replace("\n","").replace("\r",""))
@@ -629,7 +596,7 @@ if __name__ == '__main__':
               rowcol = ct.row2
             txt.ok(ct.style(rowcol,"Contact details - "+str(desc)+": "+str(value).replace("&nbsp;","").strip())+"\n")
             line += 1
-        
+
         for desc,value in re.findall("<b>((?:\w|\s)+?):&nbsp;&nbsp;<\/b>(.+?)<",text,re.I):
           if not desc in ["Current Status","Problem Description"]:
             if line % 2 == 0:
@@ -642,9 +609,7 @@ if __name__ == '__main__':
 
       txt.ok(ct.style(ct.text,"searching for files")+"\r")
       try:
-        fparser = CaseAttachForm()
-        fparser.parse(dat.read())
-        form = fparser.get_form()
+        form = fparser.get_form(dat.read(),"case_detail")
         dat = urllib2.urlopen(urlcm+"case_attachments.jsp",urlencode(form))
       except urllib2.URLError:
         txt.err("while searching for case attachments.")
@@ -837,4 +802,3 @@ if __name__ == '__main__':
   except KeyboardInterrupt:
     txt.err("program interrupted, exiting")
     sys.exit(1)
-

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20120814$
-# $Date: 2012-08-14 13:40:07$
+# $Date: 2012-08-14 13:44:04$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -20,7 +20,7 @@ from getpass import getpass
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
 # - and in general try to verify all the data from the server
 
-version = "20120814"
+version = "20120814a"
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -600,7 +600,7 @@ if __name__ == '__main__':
 
         for desc,value in re.findall("<b>((?:\w|\s)+?):&nbsp;&nbsp;<\/b>(.+?)</t",text,re.M):
           value = re.sub("<a.+?>.+?</a>"," ",value)
-          value = re.sub("<br/?>","\n",value,0,re.I)
+          value = re.sub("<(br|BR)/?>","\n",value,0)
           value = re.sub("<.+?>"," ",value,count=0)
           if line % 2 == 0:
             rowcol = ct.row1

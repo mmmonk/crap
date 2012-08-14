@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20120814$
-# $Date: 2012-08-14 13:44:04$
+# $Date: 2012-08-14 14:36:47$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -11,7 +11,7 @@ import time
 import urllib2
 from sgmllib import SGMLParser
 from urllib import urlencode,unquote,quote
-from cookielib import CookieJar
+from cookielib import LWPCookieJar
 from ftplib import FTP,error_perm
 from getpass import getpass
 
@@ -20,7 +20,7 @@ from getpass import getpass
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
 # - and in general try to verify all the data from the server
 
-version = "20120814a"
+version = "20120814b"
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -374,12 +374,25 @@ class msg:
       print ct.style(ct.err,"["+str(self.caseid)+"] error: "+str(mesg)),
     sys.exit(1)
 
+class cookiemonster (LWPCookieJar):
+  def store(self):
+    if not self.filename == "":
+      try:
+        self.save(self.filename,ignore_discard=True,ignore_expires=True)
+        if os.name == "posix":
+          os.chmod(self.filename,0600)
+      except:
+        pass
+
 if __name__ == '__main__':
 
   sys.stdout = Unbuffered(sys.stdout)
 
+  cookiefile = ""
+
   if os.name == "posix":
     conffile = str(os.environ['HOME'])+os.sep+'.cm.conf'
+    cookiefile = str(os.environ['HOME'])+os.sep+'.cm.cookies'
   urlcm = "https://tools.online.juniper.net/cm/"
   ftpserver = "svl-jtac-tool02.juniper.net"
 
@@ -525,7 +538,8 @@ if __name__ == '__main__':
       opt_fpass = opt_pass
 
     # here we start the actual connection
-    cj = CookieJar()
+    cj = cookiemonster(filename=cookiefile)
+    cj.load(ignore_discard=True, ignore_expires=True)
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
     urllib2.install_opener(opener)
     try:
@@ -534,14 +548,20 @@ if __name__ == '__main__':
       txt.err("problem with connecting to the CM,\nERROR:"+str(errstr))
 
     fparser = FormParser()
-    txt.ok(ct.style(ct.text,"logging into the CM")+"\r")
-    try:
-      form = fparser.get_form(dat.read(),"Login")
-      form['USER'] = opt_user
-      form['PASSWORD'] = opt_pass
-      dat = urllib2.urlopen(dat.geturl(),urlencode(form))
-    except urllib2.URLError as errstr:
-      txt.err("can't log into CM,\nERROR:"+str(errstr))
+
+    text = dat.read()
+
+    if not "Case Management Home" in text:
+      txt.ok(ct.style(ct.text,"logging into the CM")+"\r")
+      try:
+        form = fparser.get_form(text,"Login")
+        form['USER'] = opt_user
+        form['PASSWORD'] = opt_pass
+        dat = urllib2.urlopen(dat.geturl(),urlencode(form))
+      except urllib2.URLError as errstr:
+        txt.err("can't log into CM,\nERROR:"+str(errstr))
+    else:
+      txt.ok(ct.style(ct.text,"in the CM")+"\r")
 
     mainpage = dat.read()
 
@@ -579,6 +599,7 @@ if __name__ == '__main__':
       except urllib2.URLError as errstr:
         txt.err("while trying to get case details.\nERROR:"+str(errstr))
 
+      cj.store()
       # this is for printing the detail status of the case
       if opt_stat == 1:
         text = re.sub("\s+"," ",dat.read()) #.replace("\n"," ").replace("\r"," "))
@@ -802,6 +823,8 @@ if __name__ == '__main__':
     if opt_news == 0 and opt_stat == 0:
       ftp.quit()
 
+    cj.store()
   except KeyboardInterrupt:
     txt.err("program interrupted, exiting")
+    cj.store()
     sys.exit(1)

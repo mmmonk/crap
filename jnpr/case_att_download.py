@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120814$
-# $Date: 2012-08-14 14:36:47$
+# $Id: 20120820$
+# $Date: 2012-08-20 11:08:53$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -20,7 +20,7 @@ from getpass import getpass
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
 # - and in general try to verify all the data from the server
 
-version = "20120814b"
+version = "20120815"
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -97,19 +97,26 @@ def LoadConf(filename):
       pass
     line = conf.readline()
 
+def fileexists(filename):
+  try:
+    save = open(filename,"r")
+    save.close()
+    return 1
+  except IOError:
+    return 0
+
 def progressindicator(sign):
   '''
   rotating line, progress indicator
   '''
   if sign == "|":
-    sign = "/"
+    return "/"
   elif sign == "/":
-    sign = "-"
+    return "-"
   elif sign == "-":
-    sign = "\\"
+    return "\\"
   else:
-    sign = "|"
-  return sign
+    return "|"
 
 def ts2time(ts,withseconds=0):
   ts = int(ts)
@@ -193,16 +200,11 @@ def ftpcheck(filelist,caseid,casedir,ftp):
 
     # do we overwrite or not?
     if opt_over == 0:
-      try:
-        save = open(casedir+os.sep+ftpatt,"r")
-        save.close()
-        exists = 1
-      except IOError:
-        pass
+      exists = fileexists(casedir+os.sep+ftpatt)
 
     if exists == 0:
       notdir = 1
-      try:
+      try: # this checks if we have directories, if we do we go recursive
         ftp.cwd(filename)
         ftpcheck(filelist,caseid,casedir+os.sep+filename,ftp)
         ftp.cwd("..")
@@ -238,7 +240,6 @@ class FormParser(SGMLParser):
   '''
   This is a generic form parser
   '''
-
   this_form = ""
 
   def __init__(self, verbose = 0):
@@ -375,6 +376,9 @@ class msg:
     sys.exit(1)
 
 class cookiemonster (LWPCookieJar):
+  '''
+  extension of cookie class for reusing cookie between sessions
+  '''
   def store(self):
     if not self.filename == "":
       try:
@@ -506,6 +510,9 @@ if __name__ == '__main__':
 
     txt = msg()
 
+    if not sys.stdout.isatty():
+      ct = nocolor_theme()
+
     if len(cases) == 0:
       m = re.match("^\d{4}-\d{4}-\d{4}",os.path.basename(os.getcwd()))
       if m != None:
@@ -516,26 +523,6 @@ if __name__ == '__main__':
     # just to check we have enough information to go further
     if len(cases) == 0 or opt_user == "":
       txt.err("either case id or user name was not defined")
-
-    # normal password
-    if opt_pass == "":
-      try:
-        opt_pass = getpass("Please enter password: ").strip()
-      except:
-        usage()
-
-    if opt_pass == "":
-      txt.err("password can not be empty")
-
-    # ftp password
-    if opt_fpass == "0":
-      try:
-        opt_fpass = getpass("Please enter FTP password: ").strip()
-      except:
-        usage()
-
-    if opt_fpass == "":
-      opt_fpass = opt_pass
 
     # here we start the actual connection
     cj = cookiemonster(filename=cookiefile)
@@ -550,6 +537,27 @@ if __name__ == '__main__':
     fparser = FormParser()
 
     text = dat.read()
+
+    if not "Case Management Home" in text:
+      # normal password
+      if opt_pass == "":
+        try:
+          opt_pass = getpass("Please enter password: ").strip()
+        except:
+          usage()
+
+      if opt_pass == "":
+        txt.err("password can not be empty")
+
+    # ftp password
+    if opt_fpass == "0":
+      try:
+        opt_fpass = getpass("Please enter FTP password: ").strip()
+      except:
+        usage()
+
+    if opt_fpass == "":
+      opt_fpass = opt_pass
 
     if not "Case Management Home" in text:
       txt.ok(ct.style(ct.text,"logging into the CM")+"\r")
@@ -704,7 +712,8 @@ if __name__ == '__main__':
               curcmatt += 1
               continue
 
-          txt.ok(ct.style(ct.text,"ObjID: "+str(unquote(filename.group(2)))+"  filename: ")+ct.style(ct.att,str(filename.group(1)))+ct.style(ct.    text," size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB")+"\n")
+          #txt.ok(ct.style(ct.text,"ObjID: "+str(unquote(filename.group(2)))+"  filename: ")+ct.style(ct.att,str(filename.group(1)))+ct.style(ct.text,"  size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB  time: ")+ct.style(ct.fold,time.asctime(time.localtime(atttime)))+"\n")
+          txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(filename.group(1)))+ct.style(ct.text,"  size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB  time: ")+ct.style(ct.fold,time.asctime(time.localtime(atttime)))+"\n")
         else:
 
           # downloading attachments
@@ -751,12 +760,7 @@ if __name__ == '__main__':
 
           # do we overwrite or not?
           if opt_over == 0:
-            try:
-              save = open(casedir+os.sep+caseatt,"r")
-              save.close()
-              exists = 1
-            except IOError:
-              pass
+            exists = fileexists(casedir+os.sep+caseatt)
 
           if exists == 0:
             try:
@@ -827,4 +831,6 @@ if __name__ == '__main__':
   except KeyboardInterrupt:
     txt.err("program interrupted, exiting")
     cj.store()
-    sys.exit(1)
+  except IOError:
+    txt.err("program interrupted, exiting")
+    cj.store()

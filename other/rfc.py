@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# $Id: 20120815$
+# $Date: 2012-08-15 16:43:59$
+# $Author: Marek Lukaszuk$
+
 from subprocess import call,Popen,PIPE
 from time import time
 import os
@@ -24,8 +28,8 @@ except:
 
 if query.isdigit():
   try:
-    
-    if not os.path.isfile(rfcdir+"/rfc"+query+".bz2"): 
+
+    if not os.path.isfile(rfcdir+"/rfc"+query+".bz2"):
       call(wget+" - https://tools.ietf.org/rfc/rfc"+query+".txt | "+bzip2+" > "+rfcdir+"/rfc"+query+".bz2", shell=True)
     print Popen(bzip2+" -d "+rfcdir+"/rfc"+query+".bz2", shell=True, stdout=PIPE).stdout.read()
   except:
@@ -37,10 +41,10 @@ else:
       mtime = (int(time())-int(os.stat(rfcdir+"/rfc-index").st_mtime))/3600
     except OSError:
       mtime = maxtime+1;
-    
+
     if mtime > maxtime:
       call(wget+rfcdir+"/rfc-index ftp://ftp.ietf.org/rfc/rfc-index",shell=True)
-    
+
     rfc = open(rfcdir+"/rfc-index","r")
   except:
     print "can't open rfc index"
@@ -59,9 +63,9 @@ else:
 
       if start == True and query.lower() in title:
         print title
-      
+
       title = ""
     else:
       title += " "+line.strip().lower()
 
-  
+

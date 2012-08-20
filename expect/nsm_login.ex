@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
 
-# $Id: 20120806$
-# $Date: 2012-08-06 10:13:05$
+# $Id: 20120817$
+# $Date: 2012-08-17 15:54:17$
 # $Author: Marek Lukaszuk$
 #
 # ChangeLog:
@@ -30,9 +30,7 @@
 # 20120213:
 # - added env support for easier usage of dbxml,
 
-
-#### TO DO:
-#
+#### TODO:
 # - auto installation of NSM possible from inside this client,
 # - auto log monitoring and doing an action once a pattern is found,
 
@@ -45,7 +43,7 @@ proc backuptimeproc { } {
 }
 
 proc online_help {ourip} {
-      send_user "\033\[1;31m
+  send_user "\033\[1;31m
 --- Help ---
 
 IP that will be used during the installation is: $ourip
@@ -61,7 +59,7 @@ Ctrl+a t - prints current timestamp in the format %Y%m%d%H%M%S suitable for nami
 and check also jtac_ cli commands\033\[m
 
 "
-      send "\r"
+  send "\r"
 }
 
 
@@ -409,7 +407,6 @@ and remember the jtac_ commands\033\[m\n"
         expect "*# " { send -s "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb server 0 1 /__/ip \"$ourip\" > /dev/null\r"}
         sleep 1
         expect "*# " { send -s "/usr/netscreen/GuiSvr/utils/.xdbUpdate.sh /usr/netscreen/GuiSvr/var/xdb shadow_server 0 1 /__/clientOneTimePassword \"dk2003ns\" > /dev/null\r"}
-        sleep 1
         expect "*# " { send -s "perl -npi\".old_[backuptimeproc]\" -e 's/ +/ /g;\
         s/(clientOneTimePassword\\s+)\\S*/\$1 dk2003ns/i;\
         s/(default.printLevel\\s+)\\S*/\$1 debug/i;\

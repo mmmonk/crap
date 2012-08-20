@@ -1,19 +1,23 @@
 #!/usr/bin/env python
 
 # $Id: 20120820$
-# $Date: 2012-08-20 11:08:53$
+# $Date: 2012-08-20 11:20:10$
 # $Author: Marek Lukaszuk$
 
 import os
 import re
 import sys
 import time
+import socket
 import urllib2
 from sgmllib import SGMLParser
 from urllib import urlencode,unquote,quote
 from cookielib import LWPCookieJar
 from ftplib import FTP,error_perm
 from getpass import getpass
+
+# the default timeout for all operations
+socket.setdefaulttimeout(60.0)
 
 ### TODO:
 # - add check for unicode,
@@ -526,7 +530,10 @@ if __name__ == '__main__':
 
     # here we start the actual connection
     cj = cookiemonster(filename=cookiefile)
-    cj.load(ignore_discard=True, ignore_expires=True)
+    try:
+      cj.load(ignore_discard=True, ignore_expires=True)
+    except IOError:
+      pass
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
     urllib2.install_opener(opener)
     try:

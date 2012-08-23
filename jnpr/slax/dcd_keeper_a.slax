@@ -1,0 +1,67 @@
+/*
+ *  $Id: 20120823$
+ *  $Date: 2012-08-23 12:10:54$
+ *  $Author: Marek Lukaszuk$
+ *
+ * This is a SLAX script: https://libslax.googlecode.com/
+ *
+ * description of the object is from "| display xml"
+ */
+
+version 1.0;
+
+ns junos = "http://xml.juniper.net/junos/*/junos";
+ns xnm = "http://xml.juniper.net/xnm/1.1/xnm";
+ns jcs = "http://xml.juniper.net/junos/commit-scripts/1.0";
+
+import "../import/junos.xsl";
+
+match / {
+  <op-script-results> {
+    var $cluster = jcs:sysctl("hw.re.mcluster_status","i");
+    if ($cluster == 1) {
+      var $cmd1 = {<command> 'file list /var/db/dcd.snmp_ix detail'; }
+      var $res1 := jcs:invoke($cmd1);
+      var $lastmod = $res1/directory/file-information/file-date;
+
+      var $cmd2 = {<command> 'file show /tmp/dcd_snmp'; }
+      var $res2 := jcs:invoke($cmd2);
+
+      if ($lastmod > $res2) {
+        var $me_node = jcs:sysctl("kern.junos_hostname","s");
+
+        if ($me_node == "node0") {
+          var $rpc = <file-copy> {
+            <source> "/var/db/dcd.snmp_ix";
+            <destination> "node1:/var/db/";
+          }
+          var $res5 = jcs:invoke($rpc);
+          var $rpc = <file-copy> {
+            <source> "/dcd.snmp_ix";
+            <destination> "node1:/var/db/";
+          }
+          var $res5 = jcs:invoke($rpc);
+        } else {
+          var $rpc = <file-copy> {
+            <source> "/var/db/dcd.snmp_ix";
+            <destination> "node0:/var/db/";
+          }
+          var $res5 = jcs:invoke($rpc);
+        }
+
+      }
+
+      var $fileput = {
+        <file-put> {
+          <filename>"/tmp/dcd_snmp";
+          <permission>'0644';
+          <encoding>"ascii";
+          <delete-if-exist>;
+          <file-contents>$lastmod;
+        }
+      }
+      var $save-local = jcs:invoke($fileput);
+    }
+  }
+}
+

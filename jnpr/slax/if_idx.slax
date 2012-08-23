@@ -1,0 +1,36 @@
+/*
+ *  $Id: 20120822$
+ *  $Date: 2012-08-22 17:01:28$
+ *  $Author: Marek Lukaszuk$
+ *
+ * This is a SLAX script: https://libslax.googlecode.com/
+ *
+ * description of the object is from "| display xml"
+ */
+
+version 1.0;
+
+ns junos = "http://xml.juniper.net/junos/*/junos";
+ns xnm = "http://xml.juniper.net/xnm/1.1/xnm";
+ns jcs = "http://xml.juniper.net/junos/commit-scripts/1.0";
+ns ext = "http://xmlsoft.org/XSLT/namespace";
+
+import "../import/junos.xsl";
+
+match / {
+  <op-script-results> {
+    var $cmd3 = {<command> 'show snmp mib walk .1.3.6.1.2.1.31.1.1.1.1'; }
+    var $res3 := jcs:invoke($cmd3);
+    <output> "snmp-indices {";
+    for-each ($res3/snmp-object) {
+      var $name = jcs:regex("(.*)\\.(.*)",./object-value);
+      if (jcs:empty($name[3])) {
+        <output> "  " _ ./index/index-value _ " \"" _ ./object-value _ "\" 0 0 1;";
+      } else {
+        <output> "  " _ ./index/index-value _ " \"" _ $name[2] _ "\" " _ $name[3] _ " 1 1;";
+      }
+    }
+    <output> "}";
+  }
+}
+

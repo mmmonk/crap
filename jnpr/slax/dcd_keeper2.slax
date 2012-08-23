@@ -1,0 +1,64 @@
+/*
+ *  $Id: 20120822$
+ *  $Date: 2012-08-22 16:59:39$
+ *  $Author: Marek Lukaszuk$
+ *
+ * This is a SLAX script: https://libslax.googlecode.com/
+ *
+ * description of the object is from "| display xml"
+ */
+
+version 1.0;
+
+ns junos = "http://xml.juniper.net/junos/*/junos";
+ns xnm = "http://xml.juniper.net/xnm/1.1/xnm";
+ns jcs = "http://xml.juniper.net/junos/commit-scripts/1.0";
+ns ext = "http://xmlsoft.org/XSLT/namespace";
+
+import "../import/junos.xsl";
+
+match / {
+  <op-script-results> {
+    var $cluster = jcs:sysctl("hw.re.mcluster_status","i");
+    if ($cluster == 0) {
+      <output> "master";
+    } else {
+      var $cmd1 = {<command> 'file list /var/db/dcd.snmp_ix detail'; }
+      var $res1 := jcs:invoke($cmd1);
+      var $lastmod = $res1/directory/file-information/file-date;
+
+      var $cmd2 = {<command> 'file show /tmp/dcd_snmp'; }
+      var $res2 := jcs:invoke($cmd2);
+
+      if ($lastmod >= $res2) {
+        var $me_node = jcs:sysctl("kern.junos_hostname","s");
+        <output> $me_node;
+
+        var $cmd3 = {<command> 'show snmp mib walk .1.3.6.1.2.1.31.1.1.1.1'; }
+        var $res3 := jcs:invoke($cmd3);
+        call save($str ="snmp-indices {");
+        for-each ($res3/snmp-object) {
+          var $name = jcs:regex("(.*)\\.(.*)",./object-value);
+          if (jcs:empty($name[3])) {
+            call save($str = "  " _ ./index/index-value _ " \"" _ ./object-value _ "\" 0 0 1;");
+          } else {
+            call save($str = "  " _ ./index/index-value _ " \"" _ $name[2] _ "\" " _ $name[3] _ " 1 1;");
+          }
+        }
+        call save($str="}");
+      } else {
+        var $fileput = {
+          <file-put> {
+            <filename>"/tmp/dcd_snmp";
+            <permission>'0644';
+            <encoding>"ascii";
+            <delete-if-exist>;
+            <file-contents>$lastmod;
+          }
+        }
+        var $save-local = jcs:invoke($fileput);
+      }
+    }
+  }
+}
+

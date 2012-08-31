@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20120831$
-# $Date: 2012-08-31 10:25:08$
+# $Date: 2012-08-31 11:29:19$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -24,7 +24,7 @@ socket.setdefaulttimeout(60.0)
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
 # - and in general try to verify all the data from the server
 
-version = "20120815"
+version = "20120831"
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -40,11 +40,12 @@ def usage():
   '''
   function printing usage/help information
   '''
-  print "\nUsage: "+str(sys.argv[0])+" <options> Case-IDCa-seID\n\
+  print "\nUsage: "+str(sys.argv[0])+" <options> Case-IDCa-seID Case-IDCa-seID Case-IDCa-seID\n\
 \n\
 Author: Marek Lukaszuk\n\
 Version: "+str(version)+"\n\n\
 Options:\n\
+-q            be quiet, print only information when a file is downloaded,\n\
 -d directory  directory where to download attachments,\n\
               inside that directory a directory with the case number will be created,\n\
 -nd           don't create the case directory just dump eveything into root of the specified directory,\n\
@@ -337,7 +338,6 @@ class bbg_theme(default_theme):
   bright background color theme
   '''
   pass
-
 
 class msg:
   '''

@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
-# $Id: 20120902$
-# $Date: 2012-09-02 11:01:36$
+# $Id: 20120903$
+# $Date: 2012-09-03 09:39:55$
 # $Author: Marek Lukaszuk$
 
 # this script converts this to something that wireshark can open
@@ -22,7 +22,9 @@ my $seen = 0;
 my $inside = 0;
 
 while(<>){
+
   $inside = 1 if (/vpn=/);
+
   if ($inside == 1) {
     s/\((o|i)t\)/($1)/;
     s/vpn=.*$/len=1500:def012345678->123456789abc\/0800/;
@@ -31,9 +33,10 @@ while(<>){
       $seen = 1;
     }
   }
+
   if ($inside == 1 and /^\s*$/){
-    $seen =0;
-    $inside = 1;
+    $seen = 0;
+    $inside = 0;
   }
 
   print;

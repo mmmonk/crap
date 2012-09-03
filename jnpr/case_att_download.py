@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120831$
-# $Date: 2012-08-31 11:29:19$
+# $Id: 20120903$
+# $Date: 2012-09-03 11:45:33$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -13,7 +13,7 @@ import urllib2
 from sgmllib import SGMLParser
 from urllib import urlencode,unquote,quote
 from cookielib import LWPCookieJar
-from ftplib import FTP,error_perm
+from ftplib import FTP,error_perm,error_temp
 from getpass import getpass
 
 # the default timeout for all operations
@@ -831,7 +831,13 @@ if __name__ == '__main__':
 
         ### checking ftp upload directory
         try:
-          ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
+          try:
+            ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
+          except error_temp: # this is to do a relogin if downloading the files from CM takes too long
+            ftp = FTP(ftpserver)
+            ftp.login(opt_user,opt_fpass)
+            ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
+
           ftpcheck(filelist,caseid,casedir,ftp)
         except error_perm:
           pass

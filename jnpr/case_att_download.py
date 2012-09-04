@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20120904$
-# $Date: 2012-09-04 15:57:43$
+# $Date: 2012-09-04 22:21:28$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -24,7 +24,7 @@ socket.setdefaulttimeout(60.0)
 # - add check if the filename is not anything funny, like for example "~/.ssh/config"
 # - and in general try to verify all the data from the server
 
-version = "20120831"
+version = "20120904"
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -48,7 +48,7 @@ Options:\n\
 -q            be quiet, print only information when a file is downloaded,\n\
 -d directory  directory where to download attachments,\n\
               inside that directory a directory with the case number will be created,\n\
--nd           don't create the case directory just dump eveything into root of the specified directory,\n\
+-nd           don't create the case directory just dump everything into root of the specified directory,\n\
 -i regexp     (include) download or list only attachments which filenames match regexp,\n\
 -e regexp     (exclude) skip attachments which filenames match regexp,\n\
 -h            this help,\n\
@@ -83,7 +83,6 @@ def LoadConf(filename):
   the syntax of the file looks like:
   attributename = attributevalue
   '''
-  global confvar
 
   confvar = {}
   try:
@@ -101,6 +100,8 @@ def LoadConf(filename):
     except:
       pass
     line = conf.readline()
+
+  return confvar
 
 def fileexists(filename):
   try:
@@ -139,22 +140,41 @@ def ts2time(ts,withseconds=0):
     else:
       return str(ts/3600)+"h "+str((ts%3600)/60)+"m"
 
-def ftpcallback(data):
+class ftpcallback:
   '''
-  call back function used while getting data via ftplib
+  class for the ftp callback
   '''
-  global fcount, ftpfile, ftpprogind
-  fcount+=len(data)
-  ftpfile.write(data)
-  ftpprogind = progressindicator(ftpprogind)
-  done = (float(fcount)/fsize)*100
-  if done == 0:
-    eta = "?"
-  else:
-    eta = ts2time(int(((time.time()-ftpstime)/done)*(100-done)))
-  txt.ok(ct.style(ct.ok,"["+str(ftpprogind)+"]")+ct.style(ct.text," Getting ")+ct.style(ct.att,str(ftpatt))+" "+ct.style(ct.num,str(fcount/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+"        \r",1)
+  def __init__(self, ftpatt, ftpfile, fsize, ftpstime):
+    self.fcount = 0
+    self.fsize = fsize
+    self.ftpatt = ftpatt
+    self.ftpfile = ftpfile
+    self.ftpprogind = "|"
+    self.ftpstime = ftpstime
+    self.lastprint = int(time.time())
 
-def ftpcheck(filelist,caseid,lcasedir,ftp):
+  def main(self, data):
+    '''
+    call back function used while getting data via ftplib
+    '''
+    self.fcount += len(data)
+    self.ftpfile.write(data)
+
+    if self.lastprint < int(time.time()):
+
+      self.lastprint = int(time.time())
+
+      done = (float(self.fcount)/self.fsize)*100
+
+      if done == 0:
+        eta = "?"
+      else:
+        eta = ts2time(int(((time.time()-self.ftpstime)/done)*(100-done)))
+
+      self.ftpprogind = progressindicator(self.ftpprogind)
+      txt.ok(ct.style(ct.ok,"["+str(self.ftpprogind)+"]")+ct.style(ct.text," Getting ")+ct.style(ct.att,str(self.ftpatt))+" "+ct.style(ct.num,str(self.fcount/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+"        \r",1)
+
+def ftpcheck(filelist,caseid,lcasedir,ftp,opt_incl,opt_excl,opt_list,opt_over):
   '''
   this checks for files inside the specific folder
   of the ftp server, it also makes sure not to overwrite files
@@ -170,7 +190,7 @@ def ftpcheck(filelist,caseid,lcasedir,ftp):
 
     try: # this checks if we have directories, if we do we go recursive
       ftp.cwd(filename)
-      ftpcheck(filelist,caseid,lcasedir+os.sep+filename,ftp)
+      ftpcheck(filelist,caseid,lcasedir+os.sep+filename,ftp,opt_incl,opt_excl,opt_list,opt_over)
       ftp.cwd("..")
       continue
     except error_perm:
@@ -198,7 +218,6 @@ def ftpcheck(filelist,caseid,lcasedir,ftp):
     except:
       atttime = time.time()
 
-    global ftpatt
     ftpatt = str(filename)
 
     try:
@@ -225,15 +244,14 @@ def ftpcheck(filelist,caseid,lcasedir,ftp):
 
       txt.ok(ct.style(ct.text,"downloading ")+ct.style(ct.att,str(ftpatt))+"\r",1)
       try:
-        global ftpfile, fcount, fsize, ftpprogind, ftpstime
         ftpfile = open(lcasedir+os.sep+ftpatt,"wb")
-        fcount = 0
         ftp.sendcmd("TYPE i")
         fsize = ftp.size(str(filename))
-        ftpprogind = "|"
         ftpstime = time.time()
-        ftp.retrbinary("RETR "+str(filename),ftpcallback,blocksize=32768)
+        ftpcb = ftpcallback(ftpatt, ftpfile, fsize, ftpstime)
+        ftp.retrbinary("RETR "+str(filename),ftpcb.main,blocksize=32768)
         ftpfile.close()
+        fcount = ftpcb.fcount
       except:
         os.unlink(lcasedir+os.sep+ftpatt)
         txt.warn("error while downloading file: "+ct.style(ct.att,str(ftpatt)))
@@ -280,7 +298,7 @@ class FormParser(SGMLParser):
 
 class Color:
   '''
-  ascii codes
+  ASCII codes
   '''
   normal = "\033[0m"
   black = "\033[30m"
@@ -409,10 +427,6 @@ if __name__ == '__main__':
   urlcm = "https://tools.online.juniper.net/cm/"
   ftpserver = "svl-jtac-tool02.juniper.net"
 
-  # I admit this is a bit ugly, I need to find a way how to do it in a different way
-  global caseid,opt_incl,opt_excl,opt_list,opt_temp
-  global opt_over,opt_user,opt_pass,opt_ucwd,opt_dir
-
   cases = dict()
   opt_dir = os.curdir
   opt_excl = ""
@@ -423,14 +437,14 @@ if __name__ == '__main__':
   opt_nmkd = 0
   opt_over = 0
   opt_pass = ""
+  opt_quiet = 0
   opt_stat = 0
   opt_temp = 0
   opt_ucwd = 0
   opt_user = ""
-  opt_quiet = 0
 
   try:
-    LoadConf(conffile)
+    confvar = LoadConf(conffile)
 
     try:
       opt_user = confvar['cmuser']
@@ -592,6 +606,10 @@ if __name__ == '__main__':
 
     mainpage = dat.read()
 
+    if "Login Error" in mainpage:
+      txt.err("wrong credentials for CM.")
+      sys.exit(1)
+
     if opt_news == 0 and opt_stat == 0:
       txt.ok(ct.style(ct.text,"logging into ftp server")+"\r")
       # trying to login to the ftp server
@@ -619,14 +637,14 @@ if __name__ == '__main__':
       txt.ok(ct.style(ct.text,"getting details")+"\r")
       try:
         text = dat.read()
+        if "Your search did not find any matching results." in text:
+          txt.warn("this case id doesn't exists in CM.")
+          continue
         cid = re.search("href=\"javascript:setCid\(\'(.+?)\'",text)
         form = fparser.get_form(text,"case_results")
         form['cid'] = cid.group(1)
         dat = urllib2.urlopen(urlcm+"case_detail.jsp",urlencode(form))
-      except AttributeError as errstr:
-        txt.err("while trying to get case details. >>> Probably your password and/or username are incorrect <<< .\nERROR:"+str(errstr))
-        continue
-      except urllib2.URLError as errstr:
+      except (AttributeError,urllib2.URLError) as errstr:
         txt.err("while trying to get case details.\nERROR:"+str(errstr))
         continue
 
@@ -707,7 +725,7 @@ if __name__ == '__main__':
           attsize = "?"
 
         try:
-          # attachemnts upload time is in PST/PDT we need to convert it to local time
+          # attachments upload time is in PST/PDT we need to convert it to local time
           os.environ['TZ'] = "America/Los_Angeles"
           time.tzset()
           atttime = int(time.mktime(time.strptime(attmtime.pop(),"%Y-%m-%d %H:%M:%S")))
@@ -730,7 +748,7 @@ if __name__ == '__main__':
             if re.search(opt_excl,filename.group(1)):
               continue
 
-          # download N newest attachements
+          # download N newest attachments
           if opt_news > 0:
             if curcmatt <= maxcmatt - opt_news:
               curcmatt += 1
@@ -804,22 +822,29 @@ if __name__ == '__main__':
               save = open(casedir+os.sep+caseatt,"w")
               progind = "|"
               stime = time.time()
+              lastprint = int(time.time())
               while 1:
                 data = att.read(32768)
-                csize = csize + len(data)
-                progind = progressindicator(progind)
-                if attsize == "?":
-                  txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB")+"\r",1)
-                else:
-                  done = (float(csize)/(attsize*1000))*100
-                  if done == 0:
-                    eta = "?"
-                  else:
-                    eta = ts2time(int(((time.time()-stime)/done)*(100-done)))
-                  txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+"        \r",1)
+
                 if not data:
                   break
+
                 save.write(data)
+                csize = csize + len(data)
+
+                if lastprint < int(time.time()):
+                  lastprint = int(time.time())
+                  progind = progressindicator(progind)
+                  if attsize == "?":
+                    txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB")+"\r",1)
+                  else:
+                    done = (float(csize)/(attsize*1000))*100
+                    if done == 0:
+                      eta = "?"
+                    else:
+                      eta = ts2time(int(((time.time()-stime)/done)*(100-done)))
+                    txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+"        \r",1)
+
               save.close()
               txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-stime),1)))+"\n",1)
               os.utime(casedir+os.sep+caseatt,(atttime,atttime))
@@ -843,14 +868,14 @@ if __name__ == '__main__':
             ftp.login(opt_user,opt_fpass)
             ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
 
-          ftpcheck(filelist,caseid,casedir,ftp)
+          ftpcheck(filelist,caseid,casedir,ftp,opt_incl,opt_excl,opt_list,opt_over)
         except error_perm:
           pass
 
         ### checking sftp upload directory
         try:
           ftp.cwd("/volume/sftp/pub/incoming/"+caseid)
-          ftpcheck(filelist,caseid,casedir,ftp)
+          ftpcheck(filelist,caseid,casedir,ftp,opt_incl,opt_excl,opt_list,opt_over)
         except error_perm:
           pass
 

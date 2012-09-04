@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120903$
-# $Date: 2012-09-03 11:45:33$
+# $Id: 20120904$
+# $Date: 2012-09-04 15:57:43$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -154,14 +154,28 @@ def ftpcallback(data):
     eta = ts2time(int(((time.time()-ftpstime)/done)*(100-done)))
   txt.ok(ct.style(ct.ok,"["+str(ftpprogind)+"]")+ct.style(ct.text," Getting ")+ct.style(ct.att,str(ftpatt))+" "+ct.style(ct.num,str(fcount/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+"        \r",1)
 
-def ftpcheck(filelist,caseid,casedir,ftp):
+def ftpcheck(filelist,caseid,lcasedir,ftp):
   '''
   this checks for files inside the specific folder
   of the ftp server, it also makes sure not to overwrite files
   '''
-  ftplist = ftp.nlst()
+  try:
+    ftplist = ftp.nlst()
+  except error_perm:
+    return
+
   txt.ok(ct.style(ct.text,"found ")+ct.style(ct.num,str(len(ftplist)))+ct.style(ct.text," file(s) in ")+ct.style(ct.fold,str(ftp.pwd()))+"\n")
+
   for filename in ftplist:
+
+    try: # this checks if we have directories, if we do we go recursive
+      ftp.cwd(filename)
+      ftpcheck(filelist,caseid,lcasedir+os.sep+filename,ftp)
+      ftp.cwd("..")
+      continue
+    except error_perm:
+      pass
+
     # downloading attachments
     if not opt_incl == "":
       if not re.search(opt_incl,filename):
@@ -176,16 +190,16 @@ def ftpcheck(filelist,caseid,casedir,ftp):
       txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(filename))+ct.style(ct.text," size: ")+ct.style(ct.num,str(int(ftp.size(str(filename)))/1024))+ct.style(ct.text," kB")+"\n",1)
       continue
 
-    if not os.path.exists(casedir):
-      os.makedirs(casedir)
-
-    global ftpatt
-    ftpatt = str(filename)
+    if not os.path.exists(lcasedir):
+      os.makedirs(lcasedir)
 
     try:
       atttime = time.mktime(time.strptime((str(ftp.sendcmd("MDTM "+filename)).split())[1],"%Y%m%d%H%M%S"))
     except:
       atttime = time.time()
+
+    global ftpatt
+    ftpatt = str(filename)
 
     try:
       filelist[ftpatt] += 1
@@ -205,39 +219,30 @@ def ftpcheck(filelist,caseid,casedir,ftp):
 
     # do we overwrite or not?
     if opt_over == 0:
-      exists = fileexists(casedir+os.sep+ftpatt)
+      exists = fileexists(lcasedir+os.sep+ftpatt)
 
     if exists == 0:
-      notdir = 1
-      try: # this checks if we have directories, if we do we go recursive
-        ftp.cwd(filename)
-        ftpcheck(filelist,caseid,casedir+os.sep+filename,ftp)
-        ftp.cwd("..")
-        notdir = 0
-      except error_perm:
-        pass
 
-      if notdir == 1:
-        txt.ok(ct.style(ct.text,"downloading ")+ct.style(ct.att,str(ftpatt))+"\r",1)
-        try:
-          global ftpfile, fcount, fsize, ftpprogind, ftpstime
-          ftpfile = open(casedir+os.sep+ftpatt,"wb")
-          fcount = 0
-          ftp.sendcmd("TYPE i")
-          fsize = ftp.size(str(filename))
-          ftpprogind = "|"
-          ftpstime = time.time()
-          ftp.retrbinary("RETR "+str(filename),ftpcallback,blocksize=32768)
-          ftpfile.close()
-        except:
-          os.unlink(casedir+os.sep+ftpatt)
-          txt.warn("error while downloading file: "+ct.style(ct.att,str(ftpatt)))
-          continue
+      txt.ok(ct.style(ct.text,"downloading ")+ct.style(ct.att,str(ftpatt))+"\r",1)
+      try:
+        global ftpfile, fcount, fsize, ftpprogind, ftpstime
+        ftpfile = open(lcasedir+os.sep+ftpatt,"wb")
+        fcount = 0
+        ftp.sendcmd("TYPE i")
+        fsize = ftp.size(str(filename))
+        ftpprogind = "|"
+        ftpstime = time.time()
+        ftp.retrbinary("RETR "+str(filename),ftpcallback,blocksize=32768)
+        ftpfile.close()
+      except:
+        os.unlink(lcasedir+os.sep+ftpatt)
+        txt.warn("error while downloading file: "+ct.style(ct.att,str(ftpatt)))
+        continue
 
-        txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(ftpatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(fcount/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-ftpstime),1)))+"\n",1)
-        os.utime(casedir+os.sep+ftpatt,(atttime,atttime))
-        if os.name == "posix":
-          os.chmod(casedir+os.sep+ftpatt,0644)
+      txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(ftpatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(fcount/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-ftpstime),1)))+"\n",1)
+      os.utime(lcasedir+os.sep+ftpatt,(atttime,atttime))
+      if os.name == "posix":
+        os.chmod(lcasedir+os.sep+ftpatt,0644)
     else:
       txt.ok(ct.style(ct.text,"file already exists: ")+ct.style(ct.att,str(ftpatt))+"\n")
 

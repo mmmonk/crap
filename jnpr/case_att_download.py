@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120904$
-# $Date: 2012-09-04 22:21:28$
+# $Id: 20120905$
+# $Date: 2012-09-05 10:26:45$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -160,7 +160,7 @@ class ftpcallback:
     self.fcount += len(data)
     self.ftpfile.write(data)
 
-    if self.lastprint < int(time.time()):
+    if self.lastprint < int(time.time()) and sys.stdout.isatty():
 
       self.lastprint = int(time.time())
 
@@ -196,7 +196,6 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,opt_incl,opt_excl,opt_list,opt_over):
     except error_perm:
       pass
 
-    # downloading attachments
     if not opt_incl == "":
       if not re.search(opt_incl,filename):
         continue
@@ -209,9 +208,6 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,opt_incl,opt_excl,opt_list,opt_over):
       ftp.sendcmd("TYPE i")
       txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(filename))+ct.style(ct.text," size: ")+ct.style(ct.num,str(int(ftp.size(str(filename)))/1024))+ct.style(ct.text," kB")+"\n",1)
       continue
-
-    if not os.path.exists(lcasedir):
-      os.makedirs(lcasedir)
 
     try:
       atttime = time.mktime(time.strptime((str(ftp.sendcmd("MDTM "+filename)).split())[1],"%Y%m%d%H%M%S"))
@@ -234,35 +230,35 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,opt_incl,opt_excl,opt_list,opt_over):
         temp = ftpatt + "_"+str(filelist[ftpatt])
         ftpatt = temp
 
-    exists = 0
-
     # do we overwrite or not?
-    if opt_over == 0:
-      exists = fileexists(lcasedir+os.sep+ftpatt)
-
-    if exists == 0:
-
-      txt.ok(ct.style(ct.text,"downloading ")+ct.style(ct.att,str(ftpatt))+"\r",1)
-      try:
-        ftpfile = open(lcasedir+os.sep+ftpatt,"wb")
-        ftp.sendcmd("TYPE i")
-        fsize = ftp.size(str(filename))
-        ftpstime = time.time()
-        ftpcb = ftpcallback(ftpatt, ftpfile, fsize, ftpstime)
-        ftp.retrbinary("RETR "+str(filename),ftpcb.main,blocksize=32768)
-        ftpfile.close()
-        fcount = ftpcb.fcount
-      except:
-        os.unlink(lcasedir+os.sep+ftpatt)
-        txt.warn("error while downloading file: "+ct.style(ct.att,str(ftpatt)))
-        continue
-
-      txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(ftpatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(fcount/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-ftpstime),1)))+"\n",1)
-      os.utime(lcasedir+os.sep+ftpatt,(atttime,atttime))
-      if os.name == "posix":
-        os.chmod(lcasedir+os.sep+ftpatt,0644)
-    else:
+    if opt_over == 0 and fileexists(lcasedir+os.sep+ftpatt):
       txt.ok(ct.style(ct.text,"file already exists: ")+ct.style(ct.att,str(ftpatt))+"\n")
+      continue
+
+    if not os.path.exists(lcasedir):
+      os.makedirs(lcasedir)
+      if os.name == "posix":
+        os.chmod(lcasedir,0755)
+
+    txt.ok(ct.style(ct.text,"downloading ")+ct.style(ct.att,str(ftpatt))+"\r",1)
+    try:
+      ftpfile = open(lcasedir+os.sep+ftpatt,"wb")
+      ftp.sendcmd("TYPE i")
+      fsize = ftp.size(ftpatt)
+      ftpstime = time.time()
+      ftpcb = ftpcallback(ftpatt, ftpfile, fsize, ftpstime)
+      ftp.retrbinary("RETR "+ftpatt,ftpcb.main,blocksize=32768)
+      ftpfile.close()
+      fcount = ftpcb.fcount
+    except:
+      os.unlink(lcasedir+os.sep+ftpatt)
+      txt.warn("error while downloading file: "+ct.style(ct.att,str(ftpatt)))
+      continue
+
+    txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(ftpatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(fcount/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-ftpstime),1)))+"\n",1)
+    os.utime(lcasedir+os.sep+ftpatt,(atttime,atttime))
+    if os.name == "posix":
+      os.chmod(lcasedir+os.sep+ftpatt,0644)
 
 class FormParser(SGMLParser):
   '''
@@ -389,22 +385,22 @@ class msg:
     warning messages
     '''
     if self.caseid == "":
-      print ct.style(ct.warn,"[-] warning: "+str(mesg)),
+      print ct.style(ct.warn,"\n[-] warning: "+str(mesg)),
     else:
-      print ct.style(ct.warn,"["+str(self.caseid)+"] warning: "+str(mesg)),
+      print ct.style(ct.warn,"\n["+str(self.caseid)+"] warning: "+str(mesg)),
 
   def err(self,mesg):
     '''
     error messages
     '''
     if self.caseid == "":
-      print ct.style(ct.err,"[!] error: "+str(mesg))
+      print ct.style(ct.err,"\n[!] error: "+str(mesg))
     else:
-      print ct.style(ct.err,"["+str(self.caseid)+"] error: "+str(mesg))
+      print ct.style(ct.err,"\n["+str(self.caseid)+"] error: "+str(mesg))
 
 class cookiemonster (LWPCookieJar):
   '''
-  extension of cookie class for reusing cookie between sessions
+  extension of cookie class for reusing cookies between sessions
   '''
   def store(self):
     if not self.filename == "":
@@ -538,6 +534,7 @@ if __name__ == '__main__':
 
     if not sys.stdout.isatty():
       ct = nocolor_theme()
+      opt_quiet = 1
 
     if len(cases) == 0:
       m = re.match("^\d{4}-\d{4}-\d{4}",os.path.basename(os.getcwd()))
@@ -651,8 +648,7 @@ if __name__ == '__main__':
       cj.store()
       # this is for printing the detail status of the case
       if opt_stat == 1:
-        text = re.sub("\s+"," ",dat.read()) #.replace("\n"," ").replace("\r"," "))
-        #text = dat.read()
+        text = re.sub("\s+"," ",dat.read())
         contact = re.findall("onclick=\"NewWindow\('(my_contact_info\.jsp\?contact=.+?')",text)
 
         line = 0
@@ -711,7 +707,7 @@ if __name__ == '__main__':
         txt.ok(ct.style(ct.text,"will download to ")+ct.style(ct.fold,str(casedir)+"         ")+"\n")
 
       maxcmatt = len(attach)
-      txt.ok(ct.style(ct.text,"found total of ")+ct.style(ct.num,str(maxcmatt))+ct.style(ct.text," attachment(s)")+"\n")
+      txt.ok(ct.style(ct.text,"found total of ")+ct.style(ct.num,str(maxcmatt))+ct.style(ct.text," attachment(s) in CM")+"\n")
 
       filelist = dict()
 
@@ -775,12 +771,6 @@ if __name__ == '__main__':
               curcmatt += 1
               continue
 
-          # lets make sure that we have the destination directory
-          if not os.path.exists(casedir):
-            os.makedirs(casedir)
-            if os.name == "posix":
-              os.chmod(casedir,0755)
-
           # and that the names don't repeat
           caseatt = str(filename.group(1))
           try:
@@ -798,63 +788,65 @@ if __name__ == '__main__':
               temp = caseatt + "_"+str(filelist[caseatt])
               caseatt = temp
 
-          exists = 0
-
           # do we overwrite or not?
-          if opt_over == 0:
-            exists = fileexists(casedir+os.sep+caseatt)
-
-          if exists == 0:
-            try:
-              att = quote(att)
-              # this is to encode dot ".", otherwise we get HTTP error 500
-              att = re.sub("\.","%46",att)
-              att = urllib2.urlopen(urlcm+att)
-            except urllib2.HTTPError as errstr:
-              if "302" in str(errstr):
-                txt.ok(ct.style(ct.att,str(caseatt))+ct.style(ct.text," - this is probably from SFTP, will try to get it later")+"\n")
-              else:
-                txt.warn("HTTP error while downloading "+str(caseatt)+" ERROR:"+str(errstr).replace(os.linesep," "))
-              continue
-
-            csize = 0
-            try:
-              save = open(casedir+os.sep+caseatt,"w")
-              progind = "|"
-              stime = time.time()
-              lastprint = int(time.time())
-              while 1:
-                data = att.read(32768)
-
-                if not data:
-                  break
-
-                save.write(data)
-                csize = csize + len(data)
-
-                if lastprint < int(time.time()):
-                  lastprint = int(time.time())
-                  progind = progressindicator(progind)
-                  if attsize == "?":
-                    txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB")+"\r",1)
-                  else:
-                    done = (float(csize)/(attsize*1000))*100
-                    if done == 0:
-                      eta = "?"
-                    else:
-                      eta = ts2time(int(((time.time()-stime)/done)*(100-done)))
-                    txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+"        \r",1)
-
-              save.close()
-              txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-stime),1)))+"\n",1)
-              os.utime(casedir+os.sep+caseatt,(atttime,atttime))
-              if os.name == "posix":
-                os.chmod(casedir+os.sep+caseatt,0644)
-            except IOError as errstr:
-              os.unlink(casedir+caseatt)
-              txt.warn("while downloading file: "+ct.style(ct.att,str(caseatt))+" ERROR:"+str(errstr))
-          else:
+          if opt_over == 0 and fileexists(casedir+os.sep+caseatt):
             txt.ok(ct.style(ct.text,"file already exists: ")+ct.style(ct.att,str(caseatt))+"\n")
+            continue
+
+          # lets make sure that we have the destination directory
+          if not os.path.exists(casedir):
+            os.makedirs(casedir)
+            if os.name == "posix":
+              os.chmod(casedir,0755)
+
+          try:
+            att = quote(att)
+            # this is to encode dot ".", otherwise we get HTTP error 500
+            att = re.sub("\.","%46",att)
+            att = urllib2.urlopen(urlcm+att)
+          except urllib2.HTTPError as errstr:
+            if "302" in str(errstr):
+              txt.ok(ct.style(ct.att,str(caseatt))+ct.style(ct.text," - this is probably from SFTP, will try to get it later")+"\n")
+            else:
+              txt.warn("HTTP error while downloading "+str(caseatt)+" ERROR:"+str(errstr).replace(os.linesep," "))
+            continue
+
+          csize = 0
+          try:
+            save = open(casedir+os.sep+caseatt,"w")
+            progind = "|"
+            stime = time.time()
+            lastprint = int(time.time())
+            while 1:
+              data = att.read(32768)
+
+              if not data:
+                break
+
+              save.write(data)
+              csize = csize + len(data)
+
+              if lastprint < int(time.time()) and sys.stdout.isatty():
+                lastprint = int(time.time())
+                progind = progressindicator(progind)
+                if attsize == "?":
+                  txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB")+"\r",1)
+                else:
+                  done = (float(csize)/(attsize*1000))*100
+                  if done == 0:
+                    eta = "?"
+                  else:
+                    eta = ts2time(int(((time.time()-stime)/done)*(100-done)))
+                  txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+"        \r",1)
+
+            save.close()
+            txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-stime),1)))+"\n",1)
+            os.utime(casedir+os.sep+caseatt,(atttime,atttime))
+            if os.name == "posix":
+              os.chmod(casedir+os.sep+caseatt,0644)
+          except IOError as errstr:
+            os.unlink(casedir+caseatt)
+            txt.warn("while downloading file: "+ct.style(ct.att,str(caseatt))+" ERROR:"+str(errstr))
 
       ### FTP SERVER
       if opt_news == 0:

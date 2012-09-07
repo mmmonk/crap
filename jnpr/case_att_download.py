@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120905$
-# $Date: 2012-09-05 10:26:45$
+# $Id: 20120906$
+# $Date: 2012-09-06 21:10:44$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -111,6 +111,22 @@ def fileexists(filename):
   except IOError:
     return 0
 
+def uniqfilename(flist, filename):
+  '''
+  makes sure that the filenames are unique
+  '''
+  try:
+    flist[filename] += 1
+  except KeyError:
+    flist[filename] = 0
+    return filename
+
+  name = re.search("^(.+)(\.\S{1,4})$",filename)
+  if name: # if we have extension, then add a number before ext
+    return name.group(1)+"_"+str(flist[filename])+name.group(2)
+  else: # if we don't see any extension then add the number at the end
+    return filename + "_"+str(flist[filename])
+
 def progressindicator(sign):
   '''
   rotating line, progress indicator
@@ -179,7 +195,7 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,opt_incl,opt_excl,opt_list,opt_over):
   this checks for files inside the specific folder
   of the ftp server, it also makes sure not to overwrite files
   '''
-  try:
+  try: # this triggers exception if the directory is empty
     ftplist = ftp.nlst()
   except error_perm:
     return
@@ -196,12 +212,10 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,opt_incl,opt_excl,opt_list,opt_over):
     except error_perm:
       pass
 
-    if not opt_incl == "":
-      if not re.search(opt_incl,filename):
+    if not opt_incl == "" and not re.search(opt_incl,filename):
         continue
 
-    if not opt_excl == "":
-      if re.search(opt_excl,filename):
+    if not opt_excl == "" and re.search(opt_excl,filename):
         continue
 
     if opt_list == 1:
@@ -214,21 +228,7 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,opt_incl,opt_excl,opt_list,opt_over):
     except:
       atttime = time.time()
 
-    ftpatt = str(filename)
-
-    try:
-      filelist[ftpatt] += 1
-    except KeyError:
-      filelist[ftpatt] = 0
-
-    if filelist[ftpatt] > 0:
-      name = re.search("^(.+)(\.\S{1,4})$",ftpatt)
-      if name:
-        temp = name.group(1)+"_"+str(filelist[ftpatt])+name.group(2)
-        ftpatt = temp
-      else:
-        temp = ftpatt + "_"+str(filelist[ftpatt])
-        ftpatt = temp
+    ftpatt = uniqfilename(filelist,str(filename))
 
     # do we overwrite or not?
     if opt_over == 0 and fileexists(lcasedir+os.sep+ftpatt):
@@ -236,17 +236,14 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,opt_incl,opt_excl,opt_list,opt_over):
       continue
 
     if not os.path.exists(lcasedir):
-      os.makedirs(lcasedir)
-      if os.name == "posix":
-        os.chmod(lcasedir,0755)
+      os.makedirs(lcasedir,mode=0755)
 
     txt.ok(ct.style(ct.text,"downloading ")+ct.style(ct.att,str(ftpatt))+"\r",1)
     try:
       ftpfile = open(lcasedir+os.sep+ftpatt,"wb")
       ftp.sendcmd("TYPE i")
-      fsize = ftp.size(ftpatt)
       ftpstime = time.time()
-      ftpcb = ftpcallback(ftpatt, ftpfile, fsize, ftpstime)
+      ftpcb = ftpcallback(ftpatt, ftpfile, ftp.size(ftpatt), ftpstime)
       ftp.retrbinary("RETR "+ftpatt,ftpcb.main,blocksize=32768)
       ftpfile.close()
       fcount = ftpcb.fcount
@@ -272,8 +269,7 @@ class FormParser(SGMLParser):
     self.inside_form = 0
 
   def do_input(self, attributes):
-    if self.inside_form == 1:
-      if 'hidden' in attributes[0]:
+    if self.inside_form == 1 and 'hidden' in attributes[0]:
         self.form[attributes[1][1]] = attributes[2][1]
 
   def end_form(self):
@@ -370,33 +366,30 @@ class msg:
     '''
     self.caseid = cid
 
+  def printcase(self,sign):
+    if self.caseid == "":
+      return sign
+    else:
+      return self.caseid
+
   def ok(self,mesg,force_print=0):
     '''
     normal messages
     '''
     if opt_quiet == 0 or force_print == 1:
-      if self.caseid == "":
-        print ct.style(ct.ok,"[+] ")+str(mesg),
-      else:
-        print ct.style(ct.ok,"[")+ct.style(ct.case,str(self.caseid))+ct.style(ct.ok,"] ")+str(mesg),
+      print ct.style(ct.ok,"[")+ct.style(ct.case,str(self.printcase("+")))+ct.style(ct.ok,"] ")+str(mesg),
 
   def warn(self,mesg):
     '''
     warning messages
     '''
-    if self.caseid == "":
-      print ct.style(ct.warn,"\n[-] warning: "+str(mesg)),
-    else:
-      print ct.style(ct.warn,"\n["+str(self.caseid)+"] warning: "+str(mesg)),
+    print ct.style(ct.warn,"["+str(self.printcase("-"))+"] warning: "+str(mesg))
 
   def err(self,mesg):
     '''
     error messages
     '''
-    if self.caseid == "":
-      print ct.style(ct.err,"\n[!] error: "+str(mesg))
-    else:
-      print ct.style(ct.err,"\n["+str(self.caseid)+"] error: "+str(mesg))
+    print ct.style(ct.err,"["+str(self.printcase("!"))+"] error: "+str(mesg))
 
 class cookiemonster (LWPCookieJar):
   '''
@@ -486,40 +479,26 @@ if __name__ == '__main__':
           opt_nmkd = 1
         elif arg == "-i": # include only files matching regex
           i += 1
-          if i >= imax:
-            usage()
           opt_incl = sys.argv[i]
         elif arg == "-e": # exclude only files matching regex
           i += 1
-          if i >= imax:
-            sys.exit(1)
           opt_excl = sys.argv[i]
         elif arg == "-h": # print usage/help
           sys.exit(1)
         elif arg == "-d": # write files to this directory
           i += 1
-          if i >= imax:
-            sys.exit(1)
           opt_dir = sys.argv[i]
         elif arg == "-u": # username for the case system
           i += 1
-          if i >= imax:
-            sys.exit(1)
           opt_user = sys.argv[i]
         elif arg == "-n": # download only n latest attachments
           i += 1
-          if i >= imax:
-            sys.exit(1)
           opt_news = int(sys.argv[i])
         elif arg == "-p": # password for the case system
           i += 1
-          if i >= imax:
-            sys.exit(1)
           opt_pass = sys.argv[i]
         elif arg == "-fp": # ftp password
           i += 1
-          if i >= imax:
-            sys.exit(1)
           opt_fpass = sys.argv[i]
         else:
           if re.match("^\d{4}-\d{4}-\d{4}$",arg):
@@ -693,6 +672,7 @@ if __name__ == '__main__':
 
       opt_dir = opt_dir.rstrip(os.sep)
       casedir = str(opt_dir)+os.sep+str(caseid)+os.sep
+
       if opt_temp == 1:
         casedir = str(opt_dir)+os.sep+"temp"+os.sep+str(caseid)+os.sep
 
@@ -731,62 +711,29 @@ if __name__ == '__main__':
         except:
           atttime = int(time.time())
 
+        # filtering - include
+        if not opt_incl == "" and not re.search(opt_incl,filename.group(1)):
+            continue
+
+        #filtering - exclude
+        if not opt_excl == "" and re.search(opt_excl,filename.group(1)):
+            continue
+
+        # download N newest attachments
+        if opt_news > 0 and curcmatt <= maxcmatt - opt_news:
+            curcmatt += 1
+            continue
+
         # just listing attachments
         if opt_list == 1:
-
-          # filtering - include
-          if not opt_incl == "":
-            if not re.search(opt_incl,filename.group(1)):
-              continue
-
-          #filtering - exclude
-          if not opt_excl == "":
-            if re.search(opt_excl,filename.group(1)):
-              continue
-
-          # download N newest attachments
-          if opt_news > 0:
-            if curcmatt <= maxcmatt - opt_news:
-              curcmatt += 1
-              continue
 
           #txt.ok(ct.style(ct.text,"ObjID: "+str(unquote(filename.group(2)))+"  filename: ")+ct.style(ct.att,str(filename.group(1)))+ct.style(ct.text,"  size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB  time: ")+ct.style(ct.fold,time.asctime(time.localtime(atttime)))+"\n")
           txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(filename.group(1)))+ct.style(ct.text,"  size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB  time: ")+ct.style(ct.fold,time.asctime(time.localtime(atttime)))+"\n",1)
         else:
-
           # downloading attachments
-          # filtering - include
-          if not opt_incl == "":
-            if not re.search(opt_incl,filename.group(1)):
-              continue
 
-          # filtering - exclude
-          if not opt_excl == "":
-            if re.search(opt_excl,filename.group(1)):
-              continue
-
-          # download N newest attachments
-          if opt_news > 0:
-            if curcmatt <= maxcmatt - opt_news:
-              curcmatt += 1
-              continue
-
-          # and that the names don't repeat
-          caseatt = str(filename.group(1))
-          try:
-            filelist[caseatt] += 1
-          except KeyError:
-            filelist[caseatt] = 0
-
-          # if the name repeats modify the name
-          if filelist[caseatt] > 0:
-            name = re.search("^(.+)(\.\S{1,4})$",caseatt)
-            if name: # if we have extension, then add a number before ext
-              temp = name.group(1)+"_"+str(filelist[caseatt])+name.group(2)
-              caseatt = temp
-            else: # if we don't see any extension then add the number at the end
-              temp = caseatt + "_"+str(filelist[caseatt])
-              caseatt = temp
+          # the names should not repeat
+          caseatt = uniqfilename(filelist,str(filename.group(1)))
 
           # do we overwrite or not?
           if opt_over == 0 and fileexists(casedir+os.sep+caseatt):
@@ -795,25 +742,22 @@ if __name__ == '__main__':
 
           # lets make sure that we have the destination directory
           if not os.path.exists(casedir):
-            os.makedirs(casedir)
-            if os.name == "posix":
-              os.chmod(casedir,0755)
+            os.makedirs(casedir,mode=0755)
 
           try:
             att = quote(att)
-            # this is to encode dot ".", otherwise we get HTTP error 500
-            att = re.sub("\.","%46",att)
+            att = re.sub("\.","%46",att) # this is to encode dot ".", otherwise we get HTTP error 500
             att = urllib2.urlopen(urlcm+att)
           except urllib2.HTTPError as errstr:
             if "302" in str(errstr):
-              txt.ok(ct.style(ct.att,str(caseatt))+ct.style(ct.text," - this is probably from SFTP, will try to get it later")+"\n")
+              txt.ok(ct.style(ct.att,str(caseatt))+ct.style(ct.text," - this is probably from SFTP, will get it using FTP")+"\n")
             else:
               txt.warn("HTTP error while downloading "+str(caseatt)+" ERROR:"+str(errstr).replace(os.linesep," "))
             continue
 
           csize = 0
           try:
-            save = open(casedir+os.sep+caseatt,"w")
+            save = open(casedir+os.sep+caseatt,"wb")
             progind = "|"
             stime = time.time()
             lastprint = int(time.time())
@@ -830,14 +774,14 @@ if __name__ == '__main__':
                 lastprint = int(time.time())
                 progind = progressindicator(progind)
                 if attsize == "?":
-                  txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB")+"\r",1)
+                  txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB")+(" "*20)+"\r",1)
                 else:
                   done = (float(csize)/(attsize*1000))*100
                   if done == 0:
                     eta = "?"
                   else:
                     eta = ts2time(int(((time.time()-stime)/done)*(100-done)))
-                  txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+"        \r",1)
+                  txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+(" "*10)+"\r",1)
 
             save.close()
             txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-stime),1)))+"\n",1)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20120910$
-# $Date: 2012-09-10 12:11:54$
+# $Date: 2012-09-10 15:07:24$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -19,9 +19,9 @@ from getpass import getpass
 # the default timeout for all operations
 socket.setdefaulttimeout(60.0)
 
-version = "20120904"
+version = "20120910"
 
-# TODO - make the HTTP connection use keep-alives
+# TODO - make the HTTP connection use keep-alive
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -754,7 +754,8 @@ if __name__ == '__main__':
             os.makedirs(casedir,mode=0755)
 
           try:
-            att = quote(att)
+            #att = quote(att) # this doesn't work anymore
+            att = re.sub("\ ","%32",att)
             att = re.sub("\.","%46",att) # this is to encode dot ".", otherwise we get HTTP error 500
             att = urllib2.urlopen(urlcm+att)
           except urllib2.HTTPError as errstr:

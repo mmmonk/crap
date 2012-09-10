@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120906$
-# $Date: 2012-09-06 21:10:44$
+# $Id: 20120910$
+# $Date: 2012-09-10 12:11:54$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -19,12 +19,9 @@ from getpass import getpass
 # the default timeout for all operations
 socket.setdefaulttimeout(60.0)
 
-### TODO:
-# - add check for unicode,
-# - add check if the filename is not anything funny, like for example "~/.ssh/config"
-# - and in general try to verify all the data from the server
-
 version = "20120904"
+
+# TODO - make the HTTP connection use keep-alives
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -35,126 +32,6 @@ class Unbuffered:
     self.stream.flush()
   def __getattr__(self, attr):
     return getattr(self.stream, attr)
-
-def usage():
-  '''
-  function printing usage/help information
-  '''
-  print "\nUsage: "+str(sys.argv[0])+" <options> Case-IDCa-seID Case-IDCa-seID Case-IDCa-seID\n\
-\n\
-Author: Marek Lukaszuk\n\
-Version: "+str(version)+"\n\n\
-Options:\n\
--q            be quiet, print only information when a file is downloaded,\n\
--d directory  directory where to download attachments,\n\
-              inside that directory a directory with the case number will be created,\n\
--nd           don't create the case directory just dump everything into root of the specified directory,\n\
--i regexp     (include) download or list only attachments which filenames match regexp,\n\
--e regexp     (exclude) skip attachments which filenames match regexp,\n\
--h            this help,\n\
--n value      number of newest attachments to download/list from CM, this will skip FTP and SFTP,\n\
--l            just list case attachments without downloading,\n\
--o            force overwrite of the files,\n\
--p pass       password used for the CM,\n\
--fp pass      password used for ftp (if not set this will be the same as -p),\n\
-              if value of this will be \"0\" then you will be asked for the password,\n\
--s            show case status, customer information and exit, don't download anything,\n\
--t            this will download attachments to a folder \"temp\"\n\
-              in the destination folder (for cases that you just want to look at),\n\
--u user       user name used for the CM,\n\
--dc           disable colors,\n\
--bbg          bright background (different color theme),\n\
-\n\
-You can define the user, password and the download directory in a file\n\
-"+str(os.environ['HOME'])+"/.cm.conf\n\
-which should look like this:\n\
-cmuser=YOUR_USERNAME_FOR_CM\n\
-cmpass=YOUR_PASSWORD_FOR_CM\n\
-cmdir=THE_MAIN_DIRECTORY_WHERE_TO_DOWNLOAD_ATTACHMENTS\n\n\
-By default this script will download all the attachments for a given case\n\
-from case manager and from ftp server to the case directory inside current directory.\n\
-Options -i (include) and -e (exclude) can be specified together. In that case first filenames\n\
-will be matched against the include regexp and later against the exclude regexp.\n"
-  sys.exit(1)
-
-def LoadConf(filename):
-  '''
-  This loads the configuration settings from a file
-  the syntax of the file looks like:
-  attributename = attributevalue
-  '''
-
-  confvar = {}
-  try:
-    conf = open(filename,'r')
-  except:
-    print "[!] error during conf file read: "+str(filename)
-    return
-
-  line = conf.readline()
-
-  while line:
-    try:
-      conft = line.replace(os.linesep,'').split("=")
-      confvar[conft[0]] = conft[1]
-    except:
-      pass
-    line = conf.readline()
-
-  return confvar
-
-def fileexists(filename):
-  try:
-    save = open(filename,"r")
-    save.close()
-    return 1
-  except IOError:
-    return 0
-
-def uniqfilename(flist, filename):
-  '''
-  makes sure that the filenames are unique
-  '''
-  try:
-    flist[filename] += 1
-  except KeyError:
-    flist[filename] = 0
-    return filename
-
-  name = re.search("^(.+)(\.\S{1,4})$",filename)
-  if name: # if we have extension, then add a number before ext
-    return name.group(1)+"_"+str(flist[filename])+name.group(2)
-  else: # if we don't see any extension then add the number at the end
-    return filename + "_"+str(flist[filename])
-
-def progressindicator(sign):
-  '''
-  rotating line, progress indicator
-  '''
-  if sign == "|":
-    return "/"
-  elif sign == "/":
-    return "-"
-  elif sign == "-":
-    return "\\"
-  else:
-    return "|"
-
-def ts2time(ts,withseconds=0):
-  ts = int(ts)
-
-  if ts < 60:
-    return str(ts)+"s"
-  elif ts < 3600:
-    if withseconds == 1:
-      return str(ts/60)+"m "+str(ts%60)+"s"
-    else:
-      return str(ts/60)+"m"
-  else:
-    if withseconds == 1:
-      return str(ts/3600)+"h "+str((ts%3600)/60)+"m "+str((ts%3600)%60)+"s"
-    else:
-      return str(ts/3600)+"h "+str((ts%3600)/60)+"m"
 
 class ftpcallback:
   '''
@@ -189,73 +66,6 @@ class ftpcallback:
 
       self.ftpprogind = progressindicator(self.ftpprogind)
       txt.ok(ct.style(ct.ok,"["+str(self.ftpprogind)+"]")+ct.style(ct.text," Getting ")+ct.style(ct.att,str(self.ftpatt))+" "+ct.style(ct.num,str(self.fcount/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+"        \r",1)
-
-def ftpcheck(filelist,caseid,lcasedir,ftp,opt_incl,opt_excl,opt_list,opt_over):
-  '''
-  this checks for files inside the specific folder
-  of the ftp server, it also makes sure not to overwrite files
-  '''
-  try: # this triggers exception if the directory is empty
-    ftplist = ftp.nlst()
-  except error_perm:
-    return
-
-  txt.ok(ct.style(ct.text,"found ")+ct.style(ct.num,str(len(ftplist)))+ct.style(ct.text," file(s) in ")+ct.style(ct.fold,str(ftp.pwd()))+"\n")
-
-  for filename in ftplist:
-
-    try: # this checks if we have directories, if we do we go recursive
-      ftp.cwd(filename)
-      ftpcheck(filelist,caseid,lcasedir+os.sep+filename,ftp,opt_incl,opt_excl,opt_list,opt_over)
-      ftp.cwd("..")
-      continue
-    except error_perm:
-      pass
-
-    if not opt_incl == "" and not re.search(opt_incl,filename):
-        continue
-
-    if not opt_excl == "" and re.search(opt_excl,filename):
-        continue
-
-    if opt_list == 1:
-      ftp.sendcmd("TYPE i")
-      txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(filename))+ct.style(ct.text," size: ")+ct.style(ct.num,str(int(ftp.size(str(filename)))/1024))+ct.style(ct.text," kB")+"\n",1)
-      continue
-
-    try:
-      atttime = time.mktime(time.strptime((str(ftp.sendcmd("MDTM "+filename)).split())[1],"%Y%m%d%H%M%S"))
-    except:
-      atttime = time.time()
-
-    ftpatt = uniqfilename(filelist,str(filename))
-
-    # do we overwrite or not?
-    if opt_over == 0 and fileexists(lcasedir+os.sep+ftpatt):
-      txt.ok(ct.style(ct.text,"file already exists: ")+ct.style(ct.att,str(ftpatt))+"\n")
-      continue
-
-    if not os.path.exists(lcasedir):
-      os.makedirs(lcasedir,mode=0755)
-
-    txt.ok(ct.style(ct.text,"downloading ")+ct.style(ct.att,str(ftpatt))+"\r",1)
-    try:
-      ftpfile = open(lcasedir+os.sep+ftpatt,"wb")
-      ftp.sendcmd("TYPE i")
-      ftpstime = time.time()
-      ftpcb = ftpcallback(ftpatt, ftpfile, ftp.size(ftpatt), ftpstime)
-      ftp.retrbinary("RETR "+ftpatt,ftpcb.main,blocksize=32768)
-      ftpfile.close()
-      fcount = ftpcb.fcount
-    except:
-      os.unlink(lcasedir+os.sep+ftpatt)
-      txt.warn("error while downloading file: "+ct.style(ct.att,str(ftpatt)))
-      continue
-
-    txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(ftpatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(fcount/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-ftpstime),1)))+"\n",1)
-    os.utime(lcasedir+os.sep+ftpatt,(atttime,atttime))
-    if os.name == "posix":
-      os.chmod(lcasedir+os.sep+ftpatt,0644)
 
 class FormParser(SGMLParser):
   '''
@@ -404,6 +214,194 @@ class cookiemonster (LWPCookieJar):
       except:
         pass
 
+def usage():
+  '''
+  function printing usage/help information
+  '''
+  print "\nUsage: "+str(sys.argv[0])+" <options> Case-IDCa-seID Case-IDCa-seID Case-IDCa-seID\n\
+\n\
+Author: Marek Lukaszuk\n\
+Version: "+str(version)+"\n\n\
+Options:\n\
+-q            be quiet, print only information when a file is downloaded,\n\
+-d directory  directory where to download attachments,\n\
+              inside that directory a directory with the case number will be created,\n\
+-nd           don't create the case directory just dump everything into root of the specified directory,\n\
+-i regexp     (include) download or list only attachments which filenames match regexp,\n\
+-e regexp     (exclude) skip attachments which filenames match regexp,\n\
+-h            this help,\n\
+-n value      number of newest attachments to download/list from CM, this will skip FTP and SFTP,\n\
+-l            just list case attachments without downloading,\n\
+-o            force overwrite of the files,\n\
+-p pass       password used for the CM,\n\
+-fp pass      password used for ftp (if not set this will be the same as -p),\n\
+              if value of this will be \"0\" then you will be asked for the password,\n\
+-s            show case status, customer information and exit, don't download anything,\n\
+-t            this will download attachments to a folder \"temp\"\n\
+              in the destination folder (for cases that you just want to look at),\n\
+-u user       user name used for the CM,\n\
+-dc           disable colors,\n\
+-bbg          bright background (different color theme),\n\
+\n\
+You can define the user, password and the download directory in a file\n\
+"+str(os.environ['HOME'])+"/.cm.conf\n\
+which should look like this:\n\
+cmuser=YOUR_USERNAME_FOR_CM\n\
+cmpass=YOUR_PASSWORD_FOR_CM\n\
+cmdir=THE_MAIN_DIRECTORY_WHERE_TO_DOWNLOAD_ATTACHMENTS\n\n\
+By default this script will download all the attachments for a given case\n\
+from case manager and from ftp server to the case directory inside current directory.\n\
+Options -i (include) and -e (exclude) can be specified together. In that case first filenames\n\
+will be matched against the include regexp and later against the exclude regexp.\n"
+  sys.exit(1)
+
+def LoadConf(filename):
+  '''
+  This loads the configuration settings from a file
+  the syntax of the file looks like:
+  attributename = attributevalue
+  '''
+
+  confvar = {}
+  try:
+    conf = open(filename,'r')
+  except:
+    print "[!] error during conf file read: "+str(filename)
+    return
+
+  line = conf.readline()
+
+  while line:
+    try:
+      conft = line.replace(os.linesep,'').split("=")
+      confvar[conft[0]] = conft[1]
+    except:
+      pass
+    line = conf.readline()
+
+  return confvar
+
+def fileexists(filename):
+  try:
+    save = open(filename,"r")
+    save.close()
+    return 1
+  except IOError:
+    return 0
+
+def uniqfilename(flist, filename):
+  '''
+  makes sure that the filenames are unique
+  '''
+  try:
+    flist[filename] += 1
+  except KeyError:
+    flist[filename] = 0
+    return filename
+
+  name = re.search("^(.+)(\.\S{1,4})$",filename)
+  if name: # if we have extension, then add a number before ext
+    return name.group(1)+"_"+str(flist[filename])+name.group(2)
+  else: # if we don't see any extension then add the number at the end
+    return filename + "_"+str(flist[filename])
+
+def progressindicator(sign):
+  '''
+  rotating line, progress indicator
+  '''
+  if sign == "|":
+    return "/"
+  elif sign == "/":
+    return "-"
+  elif sign == "-":
+    return "\\"
+  else:
+    return "|"
+
+def ts2time(ts,withseconds=0):
+  ts = int(ts)
+
+  if ts < 60:
+    return str(ts)+"s"
+  elif ts < 3600:
+    if withseconds == 1:
+      return str(ts/60)+"m "+str(ts%60)+"s"
+    else:
+      return str(ts/60)+"m"
+  else:
+    if withseconds == 1:
+      return str(ts/3600)+"h "+str((ts%3600)/60)+"m "+str((ts%3600)%60)+"s"
+    else:
+      return str(ts/3600)+"h "+str((ts%3600)/60)+"m"
+
+def ftpcheck(filelist,caseid,lcasedir,ftp,opt_incl,opt_excl,opt_list,opt_over):
+  '''
+  this checks for files inside the specific folder
+  of the ftp server, it also makes sure not to overwrite files
+  '''
+  try: # this triggers exception if the directory is empty
+    ftplist = ftp.nlst()
+  except error_perm:
+    return
+
+  txt.ok(ct.style(ct.text,"found ")+ct.style(ct.num,str(len(ftplist)))+ct.style(ct.text," file(s) in ")+ct.style(ct.fold,str(ftp.pwd()))+"\n")
+
+  for filename in ftplist:
+    filename = filename.replace(os.sep,"_").encode('ascii')
+
+    try: # this checks if we have directories, if we do we go recursive
+      ftp.cwd(filename)
+      ftpcheck(filelist,caseid,lcasedir+os.sep+filename,ftp,opt_incl,opt_excl,opt_list,opt_over)
+      ftp.cwd("..")
+      continue
+    except error_perm:
+      pass
+
+    if not opt_incl == "" and not re.search(opt_incl,filename):
+        continue
+
+    if not opt_excl == "" and re.search(opt_excl,filename):
+        continue
+
+    if opt_list == 1:
+      ftp.sendcmd("TYPE i")
+      txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(filename))+ct.style(ct.text," size: ")+ct.style(ct.num,str(int(ftp.size(str(filename)))/1024))+ct.style(ct.text," kB")+"\n",1)
+      continue
+
+    try:
+      atttime = time.mktime(time.strptime((str(ftp.sendcmd("MDTM "+filename)).split())[1],"%Y%m%d%H%M%S"))
+    except:
+      atttime = time.time()
+
+    ftpatt = uniqfilename(filelist,str(filename))
+
+    # do we overwrite or not?
+    if opt_over == 0 and fileexists(lcasedir+os.sep+ftpatt):
+      txt.ok(ct.style(ct.text,"file already exists: ")+ct.style(ct.att,str(ftpatt))+"\n")
+      continue
+
+    if not os.path.exists(lcasedir):
+      os.makedirs(lcasedir,mode=0755)
+
+    txt.ok(ct.style(ct.text,"downloading ")+ct.style(ct.att,str(ftpatt))+"\r",1)
+    try:
+      ftpfile = open(lcasedir+os.sep+ftpatt,"wb")
+      ftp.sendcmd("TYPE i")
+      ftpstime = time.time()
+      ftpcb = ftpcallback(ftpatt, ftpfile, ftp.size(ftpatt), ftpstime)
+      ftp.retrbinary("RETR "+ftpatt,ftpcb.main,blocksize=32768)
+      ftpfile.close()
+      fcount = ftpcb.fcount
+    except:
+      os.unlink(lcasedir+os.sep+ftpatt)
+      txt.warn("error while downloading file: "+ct.style(ct.att,str(ftpatt)))
+      continue
+
+    txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(ftpatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(fcount/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-ftpstime),1)))+"\n",1)
+    os.utime(lcasedir+os.sep+ftpatt,(atttime,atttime))
+    if os.name == "posix":
+      os.chmod(lcasedir+os.sep+ftpatt,0644)
+
 if __name__ == '__main__':
 
   sys.stdout = Unbuffered(sys.stdout)
@@ -534,6 +532,7 @@ if __name__ == '__main__':
     except IOError:
       pass
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+    opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20100101 Firefox/16.0'),('Accept-Language','en-us,en;q=0.5'),('Accept','text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8')]
     urllib2.install_opener(opener)
     try:
       dat = urllib2.urlopen(urlcm)
@@ -571,8 +570,8 @@ if __name__ == '__main__':
       txt.ok(ct.style(ct.text,"logging into the CM")+"\r")
       try:
         form = fparser.get_form(text,"Login")
-        form['USER'] = opt_user
-        form['PASSWORD'] = opt_pass
+        form['login'] = opt_user
+        form['password'] = opt_pass
         dat = urllib2.urlopen(dat.geturl(),urlencode(form))
       except urllib2.URLError as errstr:
         txt.err("can't log into CM,\nERROR:"+str(errstr))
@@ -596,6 +595,10 @@ if __name__ == '__main__':
         txt.err("can't connect to the ftp server "+str(ftpserver)+": "+str(sys.exc_info()))
         sys.exit(1)
 
+    if "form id=\"Login\" name=\"Login\" method=\"post\"" in mainpage:
+      txt.err("something went wrong we are not logged in.")
+      sys.exit(1)
+
     # the main loop over the case IDs
     for caseid in sorted(cases.keys()):
 
@@ -613,6 +616,10 @@ if __name__ == '__main__':
       txt.ok(ct.style(ct.text,"getting details")+"\r")
       try:
         text = dat.read()
+        if not caseid in text:
+          txt.warn("search returned nothing.")
+          continue
+
         if "Your search did not find any matching results." in text:
           txt.warn("this case id doesn't exists in CM.")
           continue
@@ -695,6 +702,8 @@ if __name__ == '__main__':
       # looping through the attachments
       for att in attach:
         filename = re.search("AttachDown/(.+?)\?OBJID=(.+?)\&",att)
+        attfilename = filename.group(1).replace(os.sep,"_").encode('ascii')
+
         try:
           attsize = int(attssize.pop())
         except IndexError:
@@ -712,11 +721,11 @@ if __name__ == '__main__':
           atttime = int(time.time())
 
         # filtering - include
-        if not opt_incl == "" and not re.search(opt_incl,filename.group(1)):
+        if not opt_incl == "" and not re.search(opt_incl,attfilename):
             continue
 
         #filtering - exclude
-        if not opt_excl == "" and re.search(opt_excl,filename.group(1)):
+        if not opt_excl == "" and re.search(opt_excl,attfilename):
             continue
 
         # download N newest attachments
@@ -728,12 +737,12 @@ if __name__ == '__main__':
         if opt_list == 1:
 
           #txt.ok(ct.style(ct.text,"ObjID: "+str(unquote(filename.group(2)))+"  filename: ")+ct.style(ct.att,str(filename.group(1)))+ct.style(ct.text,"  size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB  time: ")+ct.style(ct.fold,time.asctime(time.localtime(atttime)))+"\n")
-          txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(filename.group(1)))+ct.style(ct.text,"  size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB  time: ")+ct.style(ct.fold,time.asctime(time.localtime(atttime)))+"\n",1)
+          txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(attfilename))+ct.style(ct.text,"  size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB  time: ")+ct.style(ct.fold,time.asctime(time.localtime(atttime)))+"\n",1)
         else:
           # downloading attachments
 
           # the names should not repeat
-          caseatt = uniqfilename(filelist,str(filename.group(1)))
+          caseatt = uniqfilename(filelist,str(attfilename))
 
           # do we overwrite or not?
           if opt_over == 0 and fileexists(casedir+os.sep+caseatt):

@@ -1,20 +1,15 @@
 #!/usr/bin/env python
 
-# $Id: 20120910$
-# $Date: 2012-09-10 15:07:24$
+# $Id: 20120917$
+# $Date: 2012-09-17 14:20:03$
 # $Author: Marek Lukaszuk$
 
-import os
-import re
-import sys
-import time
-import socket
-import urllib2
 from sgmllib import SGMLParser
 from urllib import urlencode,unquote,quote
 from cookielib import LWPCookieJar
 from ftplib import FTP,error_perm,error_temp
 from getpass import getpass
+import os, re, sys, time, socket, urllib2
 
 # the default timeout for all operations
 socket.setdefaulttimeout(60.0)

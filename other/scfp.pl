@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id$
+# $Id: 20120910$
 
 use strict;
 use warnings;
@@ -11,7 +11,7 @@ my $port=2252;
 my $l=-1;
 my $last="";
 
-open(NGREP,"ngrep -l -I $file -q -t -x tcp and dst port $port and 'tcp[tcpflags] & (tcp-syn|tcp-fin|tcp-rst) == 0' |"); 
+open(NGREP,"ngrep -l -I $file -q -t -x tcp and dst port $port and 'tcp[tcpflags] & (tcp-syn|tcp-fin|tcp-rst) == 0' |");
 while(<NGREP>){
 	next if (/^\s*$/);
 	if (/^T /){
@@ -34,7 +34,7 @@ while(<NGREP>){
 			($o=$_)=~s/^(..:){4}((..:){2}).*/$2/;
 			$o=hex2dec($o);
 			print "Major ver: $o\n";
-			($o=$_)=~s/^(..:){6}((..:){2}).*/$2/; 
+			($o=$_)=~s/^(..:){6}((..:){2}).*/$2/;
 			$o=hex2dec($o);
 			print "Minor ver: $o\n";
 			($o=$_)=~s/^(..:){8}((..:){4}).*/$2/;
@@ -93,4 +93,4 @@ sub hex2ip{
 	my @i=reverse(split(':',$out));
 	map { $_=hex($_) } @i;
 	return join(".",@i);
-} 
+}

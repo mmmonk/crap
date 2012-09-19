@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120917$
-# $Date: 2012-09-17 14:20:03$
+# $Id: 20120919$
+# $Date: 2012-09-19 16:50:35$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -430,17 +430,17 @@ if __name__ == '__main__':
 
     try:
       opt_user = confvar['cmuser']
-    except KeyError:
+    except:
       pass
 
     try:
       opt_pass = confvar['cmpass']
-    except KeyError:
+    except:
       pass
 
     try:
       opt_dir = confvar['cmdir']
-    except KeyError:
+    except:
       pass
 
     # by default we use colors

@@ -9,15 +9,28 @@ def rol32(word,count):
   word = (word << count | word >> (32 - count)) & 0xFFFFFFFF
   return word
 
-mod32 = 0xffffffff
+def mod32(val):
+  return val % 4294967296
+
+
 h0 = 0x67452301
 h1 = 0xEFCDAB89
 h2 = 0x98BADCFE
 h3 = 0x10325476
 h4 = 0xC3D2E1F0
 
-msg = sys.argv[1]
-msglen = len(msg)
+orghash= sys.argv[1]
+hs = struct.unpack(">IIIII",orghash.decode('hex'))
+h0 = hs[0]
+h1 = hs[1]
+h2 = hs[2]
+h3 = hs[3]
+h4 = hs[4]
+
+msglen = sys.argv[2]
+orgmsg = sys.argv[3]
+pad = sys.argv[4]
+
 
 chunks = int((msglen+9)/64)
 missing_chunks = 64 - abs((chunks*64)-(msglen+9))
@@ -25,15 +38,13 @@ missing_chunks = 64 - abs((chunks*64)-(msglen+9))
 msg += "\x80"
 for i in xrange(0,missing_chunks):
   msg += "\x00"
-msg += struct.pack('Q',msglen)
+msg += struct.pack('>Q',msglen*8)
 
 nchunk = 0
 for i in xrange(0,int(len(msg)/64)):
   chunk = msg[nchunk*64:(nchunk+1)*64]
-  print str(i)+": "+str(chunk).encode('hex')+"|"
   nchunk += 1
-  w = struct.unpack('>IIIIIIIIIIIIIIII',chunk)
-  w = list(w)
+  w = list(struct.unpack('>IIIIIIIIIIIIIIII',chunk))
   for j in xrange(16,80):
     w.append(rol32(w[j-3] ^ w[j-8] ^ w[j-14] ^ w[j-16],1))
 
@@ -57,18 +68,18 @@ for i in xrange(0,int(len(msg)/64)):
       f = b ^ c ^ d
       k = 0xCA62C1D6
 
-    temp = (rol32(a,5) + f + e + k + w[j]) % mod32
+    temp = mod32(rol32(a,5) + f + e + k + w[j])
     e = d
     d = c
     c = rol32(b,30)
     b = a
     a = temp
 
-  h0 = (h0 + a) % mod32
-  h1 = (h1 + b) % mod32
-  h2 = (h2 + c) % mod32
-  h3 = (h3 + d) % mod32
-  h4 = (h4 + e) % mod32
+  h0 = mod32(h0 + a)
+  h1 = mod32(h1 + b)
+  h2 = mod32(h2 + c)
+  h3 = mod32(h3 + d)
+  h4 = mod32(h4 + e)
 
 hash = hex(h0)+hex(h1)+hex(h2)+hex(h3)+hex(h4)
 

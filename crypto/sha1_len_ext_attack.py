@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# $Id: 20120920$
+# $Date: 2012-09-20 14:23:53$
+# $Author: Marek Lukaszuk$
+
 import sys
 import struct
 
@@ -12,33 +16,35 @@ def rol32(word,count):
 def mod32(val):
   return val % 4294967296
 
+def padding(msglen):
+  chunks = int((msglen+9)/64)
+  missing_chunks = 64 - abs((chunks*64)-(msglen+9))
 
-h0 = 0x67452301
-h1 = 0xEFCDAB89
-h2 = 0x98BADCFE
-h3 = 0x10325476
-h4 = 0xC3D2E1F0
+  pad = "\x80"
+  for i in xrange(0,missing_chunks):
+    pad += "\x00"
+  pad += struct.pack('>Q',msglen*8)
 
-orghash= sys.argv[1]
+  return pad
+
+orghash = sys.argv[1]
+msglen = int(sys.argv[2])
+pad = sys.argv[3]
+
 hs = struct.unpack(">IIIII",orghash.decode('hex'))
+
 h0 = hs[0]
 h1 = hs[1]
 h2 = hs[2]
 h3 = hs[3]
 h4 = hs[4]
 
-msglen = sys.argv[2]
-orgmsg = sys.argv[3]
-pad = sys.argv[4]
+orgmsg = padding(msglen)
+orgmsg += pad
+print "msg: "+orgmsg.encode('hex')
 
-
-chunks = int((msglen+9)/64)
-missing_chunks = 64 - abs((chunks*64)-(msglen+9))
-
-msg += "\x80"
-for i in xrange(0,missing_chunks):
-  msg += "\x00"
-msg += struct.pack('>Q',msglen*8)
+msg = pad
+msg += padding(msglen+len(orgmsg))
 
 nchunk = 0
 for i in xrange(0,int(len(msg)/64)):
@@ -81,6 +87,6 @@ for i in xrange(0,int(len(msg)/64)):
   h3 = mod32(h3 + d)
   h4 = mod32(h4 + e)
 
-hash = hex(h0)+hex(h1)+hex(h2)+hex(h3)+hex(h4)
+hash = hex(h0).rjust(10,"0")+hex(h1).rjust(10,"0")+hex(h2).rjust(10,"0")+hex(h3).rjust(10,"0")+hex(h4).rjust(10,"0")
 
 print hash.replace("0x","").replace("L","")

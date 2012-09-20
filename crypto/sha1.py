@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# $Id: 20120920$
+# $Date: 2012-09-20 14:24:09$
+# $Author: Marek Lukaszuk$
+
 import sys
 import struct
 
@@ -12,6 +16,16 @@ def rol32(word,count):
 def mod32(val):
   return val % 4294967296
 
+def padding(msglen):
+  chunks = int((msglen+9)/64)
+  missing_chunks = 64 - abs((chunks*64)-(msglen+9))
+
+  pad = "\x80"
+  for i in xrange(0,missing_chunks):
+    pad += "\x00"
+  pad += struct.pack('>Q',msglen*8)
+
+  return pad
 
 h0 = 0x67452301
 h1 = 0xEFCDAB89
@@ -19,16 +33,15 @@ h2 = 0x98BADCFE
 h3 = 0x10325476
 h4 = 0xC3D2E1F0
 
-msg = sys.argv[1]
+if sys.argv[1] == '-x':
+  msg = sys.argv[2].decode('hex')
+else:
+  msg = sys.argv[1]
 msglen = len(msg)
 
-chunks = int((msglen+9)/64)
-missing_chunks = 64 - abs((chunks*64)-(msglen+9))
+print "msg: "+str(msg)
 
-msg += "\x80"
-for i in xrange(0,missing_chunks):
-  msg += "\x00"
-msg += struct.pack('>Q',msglen*8)
+msg += padding(msglen)
 
 nchunk = 0
 for i in xrange(0,int(len(msg)/64)):
@@ -71,6 +84,6 @@ for i in xrange(0,int(len(msg)/64)):
   h3 = mod32(h3 + d)
   h4 = mod32(h4 + e)
 
-hash = hex(h0)+hex(h1)+hex(h2)+hex(h3)+hex(h4)
+hash = hex(h0).rjust(10,"0")+hex(h1).rjust(10,"0")+hex(h2).rjust(10,"0")+hex(h3).rjust(10,"0")+hex(h4).rjust(10,"0")
 
 print hash.replace("0x","").replace("L","")

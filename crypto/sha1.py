@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20120920$
-# $Date: 2012-09-20 14:24:09$
+# $Date: 2012-09-20 16:10:16$
 # $Author: Marek Lukaszuk$
 
 import sys

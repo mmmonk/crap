@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
 
 # $Id: 20120921$
-# $Date: 2012-09-21 14:31:12$
+# $Date: 2012-09-21 19:49:18$
 # $Author: Marek Lukaszuk$
 
 set send_slow {10 .01}
@@ -61,7 +61,7 @@ close $fp
 set data [split $file_data "\n"]
 for { set i 0 } { $i < $count } { incr i } {
   foreach line $data {
-    expect -re ".*> " {
+    expect -re ".*(>|#|%) " {
       send -s "$line\r"
     }
     sleep 1

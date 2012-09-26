@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-# $Id: 20120722$
-# $Date: 2012-07-22 17:27:42$
+# $Id: 20120926$
+# $Date: 2012-09-26 14:14:09$
 # $Author: Marek Lukaszuk$
 
 import socket
@@ -22,6 +22,17 @@ notyet = 0 # we didn't yet received an ack from peer
 maxmiss = 4 # how many rtts we can wait till resending pkt
 paddlen = 251
 headsize = 5
+
+# simple diffie-hellman
+class DH:
+  def __init__(self,p,g):
+    self.p = p
+    self.g = g
+    self.a = randint(1,2**16)
+    self.X = (self.g**self.a)%self.p
+  def calc_s(self,B):
+    # we narrow down the output to only values between 1 and 255
+    self.s = (((B**self.a)%self.p) % 254)+1
 
 def encode_head(seq,ack,size,moredata=0):
   return struct.pack("BBHB",seq,ack,size+headsize,moredata)

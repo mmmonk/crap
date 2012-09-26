@@ -1,7 +1,8 @@
 #!/usr/bin/python -u
 
-# $Id: 20120925$
-# $Date: 2012-09-25 22:40:16$
+# $Id: 20120926$
+# $Date: 2012-09-26 10:14:35$
+# $Author: Marek Lukaszuk$
 
 import socket
 from select import select
@@ -27,22 +28,16 @@ headsize = 5 # header size
 
 buff = {}
 
-# added diffie-hellman
-class dh:
-  def init(self,p,g):
+# simple diffie-hellman
+class DH:
+  def __init__(self,p,g):
     self.p = p
     self.g = g
-    self.a = randint(0,2**32)
+    self.a = randint(1,2**16)
     self.X = (self.g**self.a)%self.p
-
-  def get_X(self):
-    return self.X
-
   def calc_s(self,B):
-    self.s = (B**self.a)%self.p
-
-  def get_s(self):
-    return self.s
+    # we narrow down the output to only values between 1 and 255
+    self.s = (((B**self.a)%self.p) % 254)+1
 
 def dtime(lt,dt):
   if time.time()-lt > dt:

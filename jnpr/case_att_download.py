@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120925$
-# $Date: 2012-09-25 15:05:07$
+# $Id: 20120926$
+# $Date: 2012-09-26 23:22:00$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -17,6 +17,9 @@ socket.setdefaulttimeout(60.0)
 version = "20120910"
 
 # TODO - make the HTTP connection use keep-alive
+#>>> import httplib
+#>>> a = httplib.HTTPConnection("wp.pl",80)
+#>>> a.connect()
 
 # class for unbuffering stdout
 class Unbuffered:

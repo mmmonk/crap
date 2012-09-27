@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120926$
-# $Date: 2012-09-26 23:22:00$
+# $Id: 20120927$
+# $Date: 2012-09-27 09:19:47$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -650,6 +650,8 @@ if __name__ == '__main__':
 
       # this is for printing the detail status of the case
       if opt_stat == 1:
+        text = text.replace("\n"," ").replace("\r"," ")
+
         contact = re.findall("onclick=\"NewWindow\('(my_contact_info\.jsp\?contact=.+?')",text)
 
         line = 0

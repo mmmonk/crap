@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20120927$
-# $Date: 2012-09-27 15:00:37$
+# $Date: 2012-09-27 19:05:59$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -14,7 +14,7 @@ import os, re, sys, time, socket, urllib2, httplib
 # the default timeout for all operations
 socket.setdefaulttimeout(20)
 
-version = "20120910"
+version = "20120910-dev"
 
 # TODO - make the HTTP connection use keep-alive
 
@@ -783,7 +783,6 @@ if __name__ == '__main__':
         # just listing attachments
         if opt_list == 1:
 
-          #txt.ok(ct.style(ct.text,"ObjID: "+str(unquote(filename.group(2)))+"  filename: ")+ct.style(ct.att,str(filename.group(1)))+ct.style(ct.text,"  size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB  time: ")+ct.style(ct.fold,time.asctime(time.localtime(atttime)))+"\n")
           txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(attfilename))+ct.style(ct.text,"  size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB  time: ")+ct.style(ct.fold,time.asctime(time.localtime(atttime)))+"\n",1)
         else:
           # downloading attachments

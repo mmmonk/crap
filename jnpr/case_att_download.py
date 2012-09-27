@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20120927$
-# $Date: 2012-09-27 09:19:47$
+# $Date: 2012-09-27 15:00:37$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -9,17 +9,14 @@ from urllib import urlencode,unquote,quote
 from cookielib import LWPCookieJar
 from ftplib import FTP,error_perm,error_temp
 from getpass import getpass
-import os, re, sys, time, socket, urllib2
+import os, re, sys, time, socket, urllib2, httplib
 
 # the default timeout for all operations
-socket.setdefaulttimeout(60.0)
+socket.setdefaulttimeout(20)
 
 version = "20120910"
 
 # TODO - make the HTTP connection use keep-alive
-#>>> import httplib
-#>>> a = httplib.HTTPConnection("wp.pl",80)
-#>>> a.connect()
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -224,6 +221,23 @@ class cookiemonster (LWPCookieJar):
       except:
         pass
 
+# http://code.activestate.com/recipes/456195/
+class MyHTTPConnection(httplib.HTTPConnection):
+  def __init__(self, host, port = None):
+    print str(host)+" "+str(port)
+    urllib2.HTTPConnection.__init__(self, host, port)
+
+  def send(self, s):
+    print str(s)
+    httplib.HTTPConnection.send(self, s)
+
+  def close(self):
+    pass
+
+class MyHTTPHandler(urllib2.HTTPHandler):
+  def http_open(self, req):
+    return self.do_open(MyHTTPConnection, req)
+
 def usage():
   '''
   function printing usage/help information
@@ -395,11 +409,11 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,opt_incl,opt_excl,opt_list,opt_over):
 
     txt.ok(ct.style(ct.text,"downloading ")+ct.style(ct.att,str(ftpatt))+"\r",1)
     try:
-      ftpfile = open(lcasedir+os.sep+ftpatt,"wb")
+      ftpfile = open(lcasedir+os.sep+str(ftpatt),"wb")
       ftp.sendcmd("TYPE i")
       ftpstime = time.time()
-      ftpcb = ftpcallback(ftpatt, ftpfile, ftp.size(ftpatt), ftpstime)
-      ftp.retrbinary("RETR "+ftpatt,ftpcb.main,blocksize=32768)
+      ftpcb = ftpcallback(ftpatt, ftpfile, ftp.size(filename), ftpstime)
+      ftp.retrbinary("RETR "+filename,ftpcb.main,blocksize=32768)
       ftpfile.close()
       fcount = ftpcb.fcount
     except:
@@ -544,7 +558,8 @@ if __name__ == '__main__':
       cj.load(ignore_discard=True, ignore_expires=True)
     except IOError:
       pass
-    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj),urllib2.AbstractHTTPHandler(debuglevel=3))
+
+    opener = urllib2.build_opener(MyHTTPHandler,urllib2.HTTPCookieProcessor(cj))
     opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20100101 Firefox/16.0'),('Accept-Language','en-us,en;q=0.5'),('Accept','text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'),('Connection','Keep-Alive')]
     urllib2.install_opener(opener)
     try:

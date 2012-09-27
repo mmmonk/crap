@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20120919$
-# $Date: 2012-09-19 16:50:35$
+# $Id: 20120926$
+# $Date: 2012-09-26 23:22:00$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -17,6 +17,9 @@ socket.setdefaulttimeout(60.0)
 version = "20120910"
 
 # TODO - make the HTTP connection use keep-alive
+#>>> import httplib
+#>>> a = httplib.HTTPConnection("wp.pl",80)
+#>>> a.connect()
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -90,6 +93,18 @@ class FormParser(SGMLParser):
   def start_form(self, attributes):
     for name, value in attributes:
       if name == "name" and value == self.this_form:
+        self.inside_form = 1
+        break
+
+class FormUpload(FormParser):
+
+  def do_input(self, attributes):
+    if self.inside_form == 1:
+        self.form[attributes[1][1]] = attributes[2][1]
+
+  def start_form(self, attributes):
+    for name, value in attributes:
+      if name == "action" and value == self.this_form:
         self.inside_form = 1
         break
 
@@ -424,6 +439,7 @@ if __name__ == '__main__':
   opt_temp = 0
   opt_ucwd = 0
   opt_user = ""
+  opt_attach = 0
 
   try:
     confvar = LoadConf(conffile)
@@ -456,6 +472,8 @@ if __name__ == '__main__':
         arg = sys.argv[i]
         if arg == "-t": # temporary folder usage
           opt_temp = 1
+        elif arg == "-a": # upload files
+          opt_attach = 1
         elif arg == "-l": # just list the attachments
           opt_list = 1
         elif arg == "-o": # overwrite the files
@@ -526,8 +544,8 @@ if __name__ == '__main__':
       cj.load(ignore_discard=True, ignore_expires=True)
     except IOError:
       pass
-    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-    opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20100101 Firefox/16.0'),('Accept-Language','en-us,en;q=0.5'),('Accept','text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8')]
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj),urllib2.AbstractHTTPHandler(debuglevel=3))
+    opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20100101 Firefox/16.0'),('Accept-Language','en-us,en;q=0.5'),('Accept','text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'),('Connection','Keep-Alive')]
     urllib2.install_opener(opener)
     try:
       dat = urllib2.urlopen(urlcm)
@@ -580,7 +598,7 @@ if __name__ == '__main__':
       txt.err("wrong credentials for CM.")
       sys.exit(1)
 
-    if opt_news == 0 and opt_stat == 0:
+    if opt_news == 0 and opt_stat == 0 and opt_attach == 0:
       txt.ok(ct.style(ct.text,"logging into ftp server")+"\r")
       # trying to login to the ftp server
       try:
@@ -627,9 +645,11 @@ if __name__ == '__main__':
         continue
 
       cj.store()
+
+      text = dat.read()
+
       # this is for printing the detail status of the case
       if opt_stat == 1:
-        text = re.sub("\s+"," ",dat.read())
         contact = re.findall("onclick=\"NewWindow\('(my_contact_info\.jsp\?contact=.+?')",text)
 
         line = 0
@@ -657,9 +677,24 @@ if __name__ == '__main__':
           line += 1
         continue # we drop out of the loop here
 
+      # this is for uploading files
+      if opt_attach == 1:
+        try:
+          form = fparser.get_form(text,"case_detail")
+          dat = urllib2.urlopen(urlcm+"case_attachments.jsp?cid="+form['cid']+"&cobj="+form['cobj']+"&caseOwnerEmail="+form['caseOwnerEmail'])
+        except urllib2.URLError as errstr:
+          txt.err("while loading the upload form\nERROR: "+str(errstr))
+          continue
+
+        text = dat.read()
+        fattachparser = FormUpload()
+        form = fattachparser.get_form(text,"uploadStatus.jsp")
+        print str(form)
+        continue # upload has finished
+
       txt.ok(ct.style(ct.text,"searching for files")+"\r")
       try:
-        form = fparser.get_form(dat.read(),"case_detail")
+        form = fparser.get_form(text,"case_detail")
         dat = urllib2.urlopen(urlcm+"case_attachments.jsp",urlencode(form))
       except urllib2.URLError:
         txt.err("while searching for case attachments.")
@@ -820,7 +855,7 @@ if __name__ == '__main__':
         except error_perm:
           pass
 
-    if opt_news == 0 and opt_stat == 0:
+    if opt_news == 0 and opt_stat == 0 and opt_attach == 0:
       ftp.quit()
 
     cj.store()

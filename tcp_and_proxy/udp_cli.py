@@ -1,7 +1,8 @@
 #!/usr/bin/python -u
 
-# $Id: 20120722$
-# $Date: 2012-07-22 08:47:17$
+# $Id: 20120926$
+# $Date: 2012-09-26 10:14:35$
+# $Author: Marek Lukaszuk$
 
 import socket
 from select import select
@@ -26,6 +27,17 @@ paddlen = 251 # 256 - header size
 headsize = 5 # header size
 
 buff = {}
+
+# simple diffie-hellman
+class DH:
+  def __init__(self,p,g):
+    self.p = p
+    self.g = g
+    self.a = randint(1,2**16)
+    self.X = (self.g**self.a)%self.p
+  def calc_s(self,B):
+    # we narrow down the output to only values between 1 and 255
+    self.s = (((B**self.a)%self.p) % 254)+1
 
 def dtime(lt,dt):
   if time.time()-lt > dt:

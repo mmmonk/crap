@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20120927$
-# $Date: 2012-09-27 15:00:37$
+# $Date: 2012-09-27 20:45:07$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -9,12 +9,12 @@ from urllib import urlencode,unquote,quote
 from cookielib import LWPCookieJar
 from ftplib import FTP,error_perm,error_temp
 from getpass import getpass
-import os, re, sys, time, socket, urllib2, httplib
+import os, re, sys, time, socket, urllib2, httplib, urlparse
 
 # the default timeout for all operations
 socket.setdefaulttimeout(20)
 
-version = "20120910"
+version = "20120910-dev"
 
 # TODO - make the HTTP connection use keep-alive
 
@@ -234,8 +234,15 @@ class MyHTTPConnection(httplib.HTTPConnection):
   def close(self):
     pass
 
+  def connect(self):
+    print "== connecting =="
+    urllib2.HTTPConnection.connect(self)
+
 class MyHTTPHandler(urllib2.HTTPHandler):
+
   def http_open(self, req):
+    pass
+    urllib2.HTTPHandler.set_http_debuglevel(self, 255)
     return self.do_open(MyHTTPConnection, req)
 
 def usage():
@@ -257,6 +264,7 @@ Options:\n\
 -n value      number of newest attachments to download/list from CM, this will skip FTP and SFTP,\n\
 -l            just list case attachments without downloading,\n\
 -o            force overwrite of the files,\n\
+-a filename   attach file to the case,\n\
 -p pass       password used for the CM,\n\
 -fp pass      password used for ftp (if not set this will be the same as -p),\n\
               if value of this will be \"0\" then you will be asked for the password,\n\
@@ -453,7 +461,7 @@ if __name__ == '__main__':
   opt_temp = 0
   opt_ucwd = 0
   opt_user = ""
-  opt_attach = 0
+  opt_attach = {}
 
   try:
     confvar = LoadConf(conffile)
@@ -486,8 +494,6 @@ if __name__ == '__main__':
         arg = sys.argv[i]
         if arg == "-t": # temporary folder usage
           opt_temp = 1
-        elif arg == "-a": # upload files
-          opt_attach = 1
         elif arg == "-l": # just list the attachments
           opt_list = 1
         elif arg == "-o": # overwrite the files
@@ -502,14 +508,17 @@ if __name__ == '__main__':
           ct = bbg_theme()
         elif arg == "-nd": # don't create the case dir
           opt_nmkd = 1
+        elif arg == "-h": # print usage/help
+          sys.exit(1)
         elif arg == "-i": # include only files matching regex
           i += 1
           opt_incl = sys.argv[i]
         elif arg == "-e": # exclude only files matching regex
           i += 1
           opt_excl = sys.argv[i]
-        elif arg == "-h": # print usage/help
-          sys.exit(1)
+        elif arg == "-a": # upload files
+          i += 1
+          opt_attach[sys.argv[i]] = 1
         elif arg == "-d": # write files to this directory
           i += 1
           opt_dir = sys.argv[i]
@@ -559,7 +568,11 @@ if __name__ == '__main__':
     except IOError:
       pass
 
-    opener = urllib2.build_opener(MyHTTPHandler,urllib2.HTTPCookieProcessor(cj))
+#    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#    url = urlparse.urlparse(urlcm)
+#    sock.connect((socket.gethostbyname(url[1]),int(socket.getservbyname(url[0]))))
+
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
     opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20100101 Firefox/16.0'),('Accept-Language','en-us,en;q=0.5'),('Accept','text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'),('Connection','Keep-Alive')]
     urllib2.install_opener(opener)
     try:
@@ -613,7 +626,7 @@ if __name__ == '__main__':
       txt.err("wrong credentials for CM.")
       sys.exit(1)
 
-    if opt_news == 0 and opt_stat == 0 and opt_attach == 0:
+    if opt_news == 0 and opt_stat == 0 and len(opt_attach) == 0:
       txt.ok(ct.style(ct.text,"logging into ftp server")+"\r")
       # trying to login to the ftp server
       try:
@@ -695,7 +708,7 @@ if __name__ == '__main__':
         continue # we drop out of the loop here
 
       # this is for uploading files
-      if opt_attach == 1:
+      if not len(opt_attach) == 0:
         try:
           form = fparser.get_form(text,"case_detail")
           dat = urllib2.urlopen(urlcm+"case_attachments.jsp?cid="+form['cid']+"&cobj="+form['cobj']+"&caseOwnerEmail="+form['caseOwnerEmail'])
@@ -783,7 +796,6 @@ if __name__ == '__main__':
         # just listing attachments
         if opt_list == 1:
 
-          #txt.ok(ct.style(ct.text,"ObjID: "+str(unquote(filename.group(2)))+"  filename: ")+ct.style(ct.att,str(filename.group(1)))+ct.style(ct.text,"  size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB  time: ")+ct.style(ct.fold,time.asctime(time.localtime(atttime)))+"\n")
           txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(attfilename))+ct.style(ct.text,"  size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB  time: ")+ct.style(ct.fold,time.asctime(time.localtime(atttime)))+"\n",1)
         else:
           # downloading attachments
@@ -872,7 +884,7 @@ if __name__ == '__main__':
         except error_perm:
           pass
 
-    if opt_news == 0 and opt_stat == 0 and opt_attach == 0:
+    if opt_news == 0 and opt_stat == 0 and len(opt_attach) == 0:
       ftp.quit()
 
     cj.store()

@@ -1,6 +1,6 @@
 " ~/.vimrc file
-" $Id: 20120812$
-" $Date: 2012-08-12 07:31:08$
+" $Id: 20120819$
+" $Date: 2012-08-19 23:36:33$
 " $Author: Marek Lukaszuk$
 "
 " ideas http://amix.dk/vim/vimrc.html
@@ -30,6 +30,7 @@ set modeline
 set modelines=1
 set mouse=a
 set nobackup      " no backups
+set noswapfile
 set nowritebackup
 set nocompatible
 set noerrorbells
@@ -253,6 +254,13 @@ if has('autocmd')
     au BufWrite *.enc :% ! openssl enc -a -aes-256-cbc
   augroup END
 
+  augroup Openssl-enc-bzip2
+    au!
+    au BufNewFile,BufReadPre *.bz2enc :set secure viminfo= noswapfile nobackup nowritebackup history=0
+    au BufRead *.bz2enc :% ! openssl enc -a -d -aes-256-cbc | bzip2 -d -c
+    au BufWrite *.bz2enc :% ! bzip2 -c | openssl enc -a -aes-256-cbc
+  augroup END
+
   augroup Makefile
     au!
     au BufRead Makefile :set noexpandtab
@@ -290,6 +298,7 @@ function! AddStdHeader()
   unlet s:line
 endfunction
 
+abbre cd call append(".",strftime("%F %T"))
 abbre fc call FileCleanUpCases()
 abbre ah call AddStdHeader()
 abbre sws call StripTrailingWhitespace()

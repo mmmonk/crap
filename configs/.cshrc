@@ -1,10 +1,12 @@
-# $Id: 20120722$
-# $Date: 2012-07-22 09:48:23$
+# $Id: 20120911$
+# $Date: 2012-09-11 09:07:33$
 
 # A righteous umask
 if ($uid == 0) then
 	umask 022
-  cp -u /home/case/{.cshrc,.vimrc,.aliases,.tmux.conf,.screenrc} ~/
+  if ( -d /home/case ) then
+    cp -u /home/case/{.cshrc,.vimrc,.aliases,.tmux.conf,.screenrc} ~/
+  endif
 else
 	umask 77
 endif
@@ -177,6 +179,7 @@ if ($?prompt) then
   complete telnet 'p@*@`awk \{print\ \$2\} /etc/hosts`@'
 
   ## some docs handling
+  complete zathura 'p/1/f:*.{pdf,PDF}/'
   complete epdfview 'p/1/f:*.{pdf,PDF}/'
   complete xchm 'p/1/f:*.{chm,CHM}/'
   complete geeqie 'p/1/f:*.{jpg,JPG,png,PNG}/'

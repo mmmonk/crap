@@ -1,6 +1,7 @@
 [user]
   name = Marek Lukaszuk
   email = m.lukaszuk@gmail.com
+	signingkey = 96ADCC4C
 
 [color]
   diff = auto

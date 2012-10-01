@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20121001$
-# $Date: 2012-10-01 16:16:02$
+# $Date: 2012-10-01 16:17:10$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -193,7 +193,7 @@ class msg:
     '''
     normal messages
     '''
-    if arg.quiet == 0 or force_print == 1:
+    if arg.quiet == False or force_print == 1:
       print ct.style(ct.ok,"[")+ct.style(ct.case,str(self.printcase("+")))+ct.style(ct.ok,"] ")+str(mesg),
 
   def warn(self,mesg):

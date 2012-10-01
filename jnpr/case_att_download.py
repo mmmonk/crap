@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20121001$
-# $Date: 2012-10-01 12:21:19$
+# $Date: 2012-10-01 16:16:02$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -14,7 +14,7 @@ import argparse, os, re, sys, time, socket, urllib2, httplib, urlparse
 # the default timeout for all operations
 socket.setdefaulttimeout(20)
 
-version = "20120910-dev"
+version = "20121001-dev"
 
 # TODO - make the HTTP connection use keep-alive
 
@@ -436,37 +436,47 @@ if __name__ == '__main__':
   cmuser=YOUR_USERNAME_FOR_CM\n\
   cmpass=YOUR_PASSWORD_FOR_CM\n\
   cmdir=THE_MAIN_DIRECTORY_WHERE_TO_DOWNLOAD_ATTACHMENTS\n\n\
-  By default this script will download all the attachments for a given case\n\
-  from case manager and from ftp server to the case directory inside current directory.\n\
-  Options -i (include) and -e (exclude) can be specified together. In that case first filenames\n\
-  will be matched against the include regexp and later against the exclude regexp.\n")
+  By default this script will download all the attachments for a given case from case manager and from ftp server to the case directory inside current directory.\n\
+  Options -i (include) and -e (exclude) can be specified together. In that case first filenames will be matched against the include regexp and later against the exclude regexp.\n")
 
-    parser.add_argument('-a','--attach',default={},action='append',help='attach file to the case')
-    parser.add_argument('-bbg','--bright-background-color',action='store_true',default=False,help='bright background (different color theme)')
-    parser.add_argument('-d','--directory',default=opt_dir,help='directory where to download attachments,inside that directory a directory with the case number will be created')
-    parser.add_argument('-dc','--disable-colors',action='store_true',default=False,help='disable colors')
-    parser.add_argument('-e','--exclude',default="",help='(exclude) skip attachments which filenames match regexp')
-    parser.add_argument('-fp','--ftp-passwd',default=opt_pass,help='password used for ftp (if not set this will be the same as -p),if value of this will be \"0\" then you will be asked for the password')
-    parser.add_argument('-i','--include',default="",help='(include) download or list only attachments which filenames match regexp')
-    parser.add_argument('-l','--list',action='store_true',default=False,help='just list case attachments without downloading,')
-    parser.add_argument('-n','--newest',type=int,default=0,help='number of newest attachments to download/list from CM, this will skip FTP and SFTP')
-    parser.add_argument('-nd','--no-dir',action='store_true',default=False,help='don\'t create the case directory just dump everything into root of the specified directory')
-    parser.add_argument('-o','--overwrite',action='store_true',default=False,help='force overwrite of the files')
-    parser.add_argument('-p','--passwd',default=opt_pass,help='password used for the CM')
-    parser.add_argument('-q','--quiet',action='store_true',default=False,help='be quiet, print only information when a file is downloaded')
-    parser.add_argument('-s','--status',action='store_true',default=False,help='show case status, customer information and exit, don\'t download anything')
-    parser.add_argument('-t','--temp-folder',help='this will download attachments to a folder "temp" in the destination folder (for cases that you just want to look at)')
-    parser.add_argument('-u','--user',default=opt_user,help='user name used for the CM')
+    group_attach = parser.add_argument_group('Attachments')
+    group_attach.add_argument('-a','--attach',default=[],action='append',help='attach file to the case')
+    group_attach.add_argument('-d','--directory',default=opt_dir,help='directory where to download attachments,inside that directory a directory with the case number will be created')
+    group_attach.add_argument('-e','--exclude',default="",help='(exclude) skip attachments which filenames match regexp')
+    group_attach.add_argument('-i','--include',default="",help='(include) download or list only attachments which filenames match regexp')
+    group_attach.add_argument('-l','--list',action='store_true',help='just list case attachments without downloading,')
+    group_attach.add_argument('-n','--newest',type=int,default=0,help='number of newest attachments to download/list from CM, this will skip FTP and SFTP')
+    group_attach.add_argument('-nd','--no-dir',action='store_true',help='don\'t create the case directory just dump everything into root of the specified directory')
+    group_attach.add_argument('-o','--overwrite',action='store_true',help='force overwrite of the files')
+    group_attach.add_argument('-t','--temp-folder',action='store_true',help='this will download attachments to a folder "temp" in the destination folder (for cases that you just want to look at)')
+    group_case = parser.add_argument_group('Case info')
+    group_case.add_argument('-s','--status',action='store_true',help='show case status, customer information and exit, don\'t download anything')
+    group_auth = parser.add_argument_group('Authentication')
+    group_auth.add_argument('-u','--user',default=opt_user,help='user name used for the CM')
+    group_auth.add_argument('-p','--passwd',default=opt_pass,help='password used for the CM')
+    group_auth.add_argument('-fp','--ftp-passwd',default=opt_pass,help='password used for ftp (if not set this will be the same as -p),if value of this will be \"0\" then you will be asked for the password')
+    group_color = parser.add_argument_group('Colors')
+    group_color.add_argument('-bbg','--bright-background-color',action='store_true',help='bright background (different color theme)')
+    group_color.add_argument('-dc','--disable-colors',action='store_true',help='disable colors')
+    parser.add_argument('-q','--quiet',action='store_true',help='be quiet, print only information when a file is downloaded')
     parser.add_argument('-v','--version',action='version', version="%(prog)s "+str(version))
-    parser.add_argument('caseid',nargs='*',help='case id');
+    parser.add_argument('caseid',nargs='+',default=[],help="Case ID");
 
-    opt_ucwd = False
+    (arg,rest_argv) = parser.parse_known_args(sys.argv)
 
-    #parser.print_help()
-    arg = parser.parse_args(sys.argv)
+    # setting colors
+    if arg.bright_background_color == True:
+      ct = bbg_theme()
 
-    cases = dict()
+    if arg.disable_colors == True:
+      ct = nocolor_theme()
+
+    cases = {}
     for cid in arg.caseid:
+      if re.match("^\d{4}-\d{4}-\d{4}$",cid):
+        cases[cid] = 1
+
+    for cid in rest_argv:
       if re.match("^\d{4}-\d{4}-\d{4}$",cid):
         cases[cid] = 1
 
@@ -476,6 +486,7 @@ if __name__ == '__main__':
       ct = nocolor_theme()
       arg.quiet = True
 
+    opt_ucwd = False
     if len(cases) == 0:
       m = re.match("^\d{4}-\d{4}-\d{4}",os.path.basename(os.getcwd()))
       if m != None:

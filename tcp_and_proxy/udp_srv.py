@@ -1,14 +1,11 @@
 #!/usr/bin/python
 
-# $Id: 20120926$
-# $Date: 2012-09-26 14:14:09$
+# $Id: 20121002$
+# $Date: 2012-10-02 20:00:47$
 # $Author: Marek Lukaszuk$
 
-import socket
-import time
+import socket,time,sys,struct
 from select import select
-import sys
-import struct
 
 IP = "0.0.0.0"
 PORT = 5005
@@ -32,7 +29,7 @@ class DH:
     self.X = (self.g**self.a)%self.p
   def calc_s(self,B):
     # we narrow down the output to only values between 1 and 255
-    self.s = (((B**self.a)%self.p) % 254)+1
+    self.s = (((B**self.a)%self.p) % 255)+1
 
 def encode_head(seq,ack,size,moredata=0):
   return struct.pack("BBHB",seq,ack,size+headsize,moredata)
@@ -41,16 +38,13 @@ def decode_head(dat):
   return struct.unpack("BBHB",dat)
 
 def incseq(seq):
-  seq += 1
-  if seq > 255:
-    return 1
-  return seq
+  return ((seq + 1) % 255) + 1
 
 def calcrtt(snt):
   rtt = round(time.time() - snt,3)
   if rtt < 0.2:
     return 0.2
-  if rtt > 1:
+  )if rtt > 1:
     return 1
   return rtt
 

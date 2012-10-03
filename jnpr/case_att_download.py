@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121001$
-# $Date: 2012-10-01 16:17:10$
+# $Id: 20121003$
+# $Date: 2012-10-03 13:29:52$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -60,7 +60,7 @@ class ftpcallback:
         eta = ts2time(int(((time.time()-self.ftpstime)/done)*(100-done)))
 
       self.ftpprogind = progressindicator(self.ftpprogind)
-      txt.ok(ct.style(ct.ok,"["+str(self.ftpprogind)+"]")+ct.style(ct.text," Getting ")+ct.style(ct.att,str(self.ftpatt))+" "+ct.style(ct.num,str(self.fcount/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+"        \r",1)
+      txt.ok(ct.style(ct.ok,"["+str(self.ftpprogind)+"]")+ct.style(ct.text," Getting ")+ct.style(ct.att,str(self.ftpatt))+" "+ct.style(ct.num,str(self.fcount/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+"        \r",True)
 
 class FormParser(SGMLParser):
   '''
@@ -189,11 +189,11 @@ class msg:
     else:
       return self.caseid
 
-  def ok(self,mesg,force_print=0):
+  def ok(self,mesg,force_print=False):
     '''
     normal messages
     '''
-    if arg.quiet == False or force_print == 1:
+    if arg.quiet == False or force_print == True:
       print ct.style(ct.ok,"[")+ct.style(ct.case,str(self.printcase("+")))+ct.style(ct.ok,"] ")+str(mesg),
 
   def warn(self,mesg):
@@ -210,7 +210,7 @@ class msg:
 
 class cookiemonster (LWPCookieJar):
   '''
-  extension of cookie class for reusing cookies between sessions
+  extension of cookie jar class for reusing cookies between sessions
   '''
   def store(self):
     if not self.filename == "":
@@ -308,18 +308,18 @@ def progressindicator(sign):
   else:
     return "|"
 
-def ts2time(ts,withseconds=0):
+def ts2time(ts,withseconds=False):
   ts = int(ts)
 
   if ts < 60:
     return str(ts)+"s"
   elif ts < 3600:
-    if withseconds == 1:
+    if withseconds == True:
       return str(ts/60)+"m "+str(ts%60)+"s"
     else:
       return str(ts/60)+"m"
   else:
-    if withseconds == 1:
+    if withseconds == True:
       return str(ts/3600)+"h "+str((ts%3600)/60)+"m "+str((ts%3600)%60)+"s"
     else:
       return str(ts/3600)+"h "+str((ts%3600)/60)+"m"
@@ -355,7 +355,7 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
 
     if list == True:
       ftp.sendcmd("TYPE i")
-      txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(filename))+ct.style(ct.text," size: ")+ct.style(ct.num,str(int(ftp.size(str(filename)))/1024))+ct.style(ct.text," kB")+"\n",1)
+      txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(filename))+ct.style(ct.text," size: ")+ct.style(ct.num,str(int(ftp.size(str(filename)))/1024))+ct.style(ct.text," kB")+"\n",True)
       continue
 
     try:
@@ -373,7 +373,7 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
     if not os.path.exists(lcasedir):
       os.makedirs(lcasedir,mode=0755)
 
-    txt.ok(ct.style(ct.text,"downloading ")+ct.style(ct.att,str(ftpatt))+"\r",1)
+    txt.ok(ct.style(ct.text,"downloading ")+ct.style(ct.att,str(ftpatt))+"\r",True)
     try:
       ftpfile = open(lcasedir+os.sep+str(ftpatt),"wb")
       ftp.sendcmd("TYPE i")
@@ -387,7 +387,7 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
       txt.warn("error while downloading file: "+ct.style(ct.att,str(ftpatt)))
       continue
 
-    txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(ftpatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(fcount/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-ftpstime),1)))+"\n",1)
+    txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(ftpatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(fcount/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-ftpstime),1)))+"\n",True)
     os.utime(lcasedir+os.sep+ftpatt,(atttime,atttime))
     if os.name == "posix":
       os.chmod(lcasedir+os.sep+ftpatt,0644)
@@ -641,7 +641,7 @@ if __name__ == '__main__':
             rowcol = ct.row1
           else:
             rowcol = ct.row2
-          txt.ok(ct.style(rowcol,str(desc)+": "+str(value).replace("&nbsp;"," ").strip())+"\n",1)
+          txt.ok(ct.style(rowcol,str(desc)+": "+str(value).replace("&nbsp;"," ").strip())+"\n",True)
           line += 1
         continue # we drop out of the loop here
 
@@ -734,7 +734,7 @@ if __name__ == '__main__':
         # just listing attachments
         if arg.list == True:
 
-          txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(attfilename))+ct.style(ct.text,"  size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB  time: ")+ct.style(ct.fold,time.asctime(time.localtime(atttime)))+"\n",1)
+          txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(attfilename))+ct.style(ct.text,"  size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB  time: ")+ct.style(ct.fold,time.asctime(time.localtime(atttime)))+"\n",True)
         else:
           # downloading attachments
 
@@ -781,17 +781,17 @@ if __name__ == '__main__':
                 lastprint = int(time.time())
                 progind = progressindicator(progind)
                 if attsize == "?":
-                  txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB")+(" "*20)+"\r",1)
+                  txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB")+(" "*20)+"\r",True)
                 else:
                   done = (float(csize)/(attsize*1000))*100
                   if done == 0:
                     eta = "?"
                   else:
                     eta = ts2time(int(((time.time()-stime)/done)*(100-done)))
-                  txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+(" "*10)+"\r",1)
+                  txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+(" "*10)+"\r",True)
 
             save.close()
-            txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-stime),1)))+"\n",1)
+            txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-stime),1)))+"\n",True)
             os.utime(casedir+os.sep+caseatt,(atttime,atttime))
             if os.name == "posix":
               os.chmod(casedir+os.sep+caseatt,0644)

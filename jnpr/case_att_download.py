@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121001$
-# $Date: 2012-10-01 16:17:10$
+# $Id: 20120927$
+# $Date: 2012-09-27 20:45:07$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -9,12 +9,12 @@ from urllib import urlencode,unquote,quote
 from cookielib import LWPCookieJar
 from ftplib import FTP,error_perm,error_temp
 from getpass import getpass
-import argparse, os, re, sys, time, socket, urllib2, httplib, urlparse
+import os, re, sys, time, socket, urllib2, httplib, urlparse
 
 # the default timeout for all operations
 socket.setdefaulttimeout(20)
 
-version = "20121001-dev"
+version = "20120910-dev"
 
 # TODO - make the HTTP connection use keep-alive
 
@@ -193,7 +193,7 @@ class msg:
     '''
     normal messages
     '''
-    if arg.quiet == False or force_print == 1:
+    if opt_quiet == 0 or force_print == 1:
       print ct.style(ct.ok,"[")+ct.style(ct.case,str(self.printcase("+")))+ct.style(ct.ok,"] ")+str(mesg),
 
   def warn(self,mesg):
@@ -244,6 +244,48 @@ class MyHTTPHandler(urllib2.HTTPHandler):
     pass
     urllib2.HTTPHandler.set_http_debuglevel(self, 255)
     return self.do_open(MyHTTPConnection, req)
+
+def usage():
+  '''
+  function printing usage/help information
+  '''
+  print "\nUsage: "+str(sys.argv[0])+" <options> Case-IDCa-seID Case-IDCa-seID Case-IDCa-seID\n\
+\n\
+Author: Marek Lukaszuk\n\
+Version: "+str(version)+"\n\n\
+Options:\n\
+-q            be quiet, print only information when a file is downloaded,\n\
+-d directory  directory where to download attachments,\n\
+              inside that directory a directory with the case number will be created,\n\
+-nd           don't create the case directory just dump everything into root of the specified directory,\n\
+-i regexp     (include) download or list only attachments which filenames match regexp,\n\
+-e regexp     (exclude) skip attachments which filenames match regexp,\n\
+-h            this help,\n\
+-n value      number of newest attachments to download/list from CM, this will skip FTP and SFTP,\n\
+-l            just list case attachments without downloading,\n\
+-o            force overwrite of the files,\n\
+-a filename   attach file to the case,\n\
+-p pass       password used for the CM,\n\
+-fp pass      password used for ftp (if not set this will be the same as -p),\n\
+              if value of this will be \"0\" then you will be asked for the password,\n\
+-s            show case status, customer information and exit, don't download anything,\n\
+-t            this will download attachments to a folder \"temp\"\n\
+              in the destination folder (for cases that you just want to look at),\n\
+-u user       user name used for the CM,\n\
+-dc           disable colors,\n\
+-bbg          bright background (different color theme),\n\
+\n\
+You can define the user, password and the download directory in a file\n\
+"+str(os.environ['HOME'])+"/.cm.conf\n\
+which should look like this:\n\
+cmuser=YOUR_USERNAME_FOR_CM\n\
+cmpass=YOUR_PASSWORD_FOR_CM\n\
+cmdir=THE_MAIN_DIRECTORY_WHERE_TO_DOWNLOAD_ATTACHMENTS\n\n\
+By default this script will download all the attachments for a given case\n\
+from case manager and from ftp server to the case directory inside current directory.\n\
+Options -i (include) and -e (exclude) can be specified together. In that case first filenames\n\
+will be matched against the include regexp and later against the exclude regexp.\n"
+  sys.exit(1)
 
 def LoadConf(filename):
   '''
@@ -324,7 +366,7 @@ def ts2time(ts,withseconds=0):
     else:
       return str(ts/3600)+"h "+str((ts%3600)/60)+"m"
 
-def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
+def ftpcheck(filelist,caseid,lcasedir,ftp,opt_incl,opt_excl,opt_list,opt_over):
   '''
   this checks for files inside the specific folder
   of the ftp server, it also makes sure not to overwrite files
@@ -341,19 +383,19 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
 
     try: # this checks if we have directories, if we do we go recursive
       ftp.cwd(filename)
-      ftpcheck(filelist,caseid,lcasedir+os.sep+filename,ftp,include,exclude,list,over)
+      ftpcheck(filelist,caseid,lcasedir+os.sep+filename,ftp,opt_incl,opt_excl,opt_list,opt_over)
       ftp.cwd("..")
       continue
     except error_perm:
       pass
 
-    if not include == "" and not re.search(include,filename):
+    if not opt_incl == "" and not re.search(opt_incl,filename):
         continue
 
-    if not exclude == "" and re.search(exclude,filename):
+    if not opt_excl == "" and re.search(opt_excl,filename):
         continue
 
-    if list == True:
+    if opt_list == 1:
       ftp.sendcmd("TYPE i")
       txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(filename))+ct.style(ct.text," size: ")+ct.style(ct.num,str(int(ftp.size(str(filename)))/1024))+ct.style(ct.text," kB")+"\n",1)
       continue
@@ -366,7 +408,7 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
     ftpatt = uniqfilename(filelist,str(filename))
 
     # do we overwrite or not?
-    if over == False and fileexists(lcasedir+os.sep+ftpatt):
+    if opt_over == 0 and fileexists(lcasedir+os.sep+ftpatt):
       txt.ok(ct.style(ct.text,"file already exists: ")+ct.style(ct.att,str(ftpatt))+"\n")
       continue
 
@@ -404,6 +446,23 @@ if __name__ == '__main__':
   urlcm = "https://tools.online.juniper.net/cm/"
   ftpserver = "svl-jtac-tool02.juniper.net"
 
+  cases = dict()
+  opt_dir = os.curdir
+  opt_excl = ""
+  opt_fpass = ""
+  opt_incl = ""
+  opt_list = 0
+  opt_news = 0
+  opt_nmkd = 0
+  opt_over = 0
+  opt_pass = ""
+  opt_quiet = 0
+  opt_stat = 0
+  opt_temp = 0
+  opt_ucwd = 0
+  opt_user = ""
+  opt_attach = {}
+
   try:
     confvar = LoadConf(conffile)
 
@@ -420,82 +479,85 @@ if __name__ == '__main__':
     try:
       opt_dir = confvar['cmdir']
     except:
-      opt_dir = os.curdir
       pass
 
     # by default we use colors
     ct = color_theme()
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
-        description="\
-  Author: Marek Lukaszuk\n\
-  Version: "+str(version)+"\n",epilog="\
-  You can define the user, password and the download directory in a file\n\
-  "+str(os.environ['HOME'])+"/.cm.conf\n\
-  which should look like this:\n\
-  cmuser=YOUR_USERNAME_FOR_CM\n\
-  cmpass=YOUR_PASSWORD_FOR_CM\n\
-  cmdir=THE_MAIN_DIRECTORY_WHERE_TO_DOWNLOAD_ATTACHMENTS\n\n\
-  By default this script will download all the attachments for a given case from case manager and from ftp server to the case directory inside current directory.\n\
-  Options -i (include) and -e (exclude) can be specified together. In that case first filenames will be matched against the include regexp and later against the exclude regexp.\n")
-
-    group_attach = parser.add_argument_group('Attachments')
-    group_attach.add_argument('-a','--attach',default=[],action='append',help='attach file to the case')
-    group_attach.add_argument('-d','--directory',default=opt_dir,help='directory where to download attachments,inside that directory a directory with the case number will be created')
-    group_attach.add_argument('-e','--exclude',default="",help='(exclude) skip attachments which filenames match regexp')
-    group_attach.add_argument('-i','--include',default="",help='(include) download or list only attachments which filenames match regexp')
-    group_attach.add_argument('-l','--list',action='store_true',help='just list case attachments without downloading,')
-    group_attach.add_argument('-n','--newest',type=int,default=0,help='number of newest attachments to download/list from CM, this will skip FTP and SFTP')
-    group_attach.add_argument('-nd','--no-dir',action='store_true',help='don\'t create the case directory just dump everything into root of the specified directory')
-    group_attach.add_argument('-o','--overwrite',action='store_true',help='force overwrite of the files')
-    group_attach.add_argument('-t','--temp-folder',action='store_true',help='this will download attachments to a folder "temp" in the destination folder (for cases that you just want to look at)')
-    group_case = parser.add_argument_group('Case info')
-    group_case.add_argument('-s','--status',action='store_true',help='show case status, customer information and exit, don\'t download anything')
-    group_auth = parser.add_argument_group('Authentication')
-    group_auth.add_argument('-u','--user',default=opt_user,help='user name used for the CM')
-    group_auth.add_argument('-p','--passwd',default=opt_pass,help='password used for the CM')
-    group_auth.add_argument('-fp','--ftp-passwd',default=opt_pass,help='password used for ftp (if not set this will be the same as -p),if value of this will be \"0\" then you will be asked for the password')
-    group_color = parser.add_argument_group('Colors')
-    group_color.add_argument('-bbg','--bright-background-color',action='store_true',help='bright background (different color theme)')
-    group_color.add_argument('-dc','--disable-colors',action='store_true',help='disable colors')
-    parser.add_argument('-q','--quiet',action='store_true',help='be quiet, print only information when a file is downloaded')
-    parser.add_argument('-v','--version',action='version', version="%(prog)s "+str(version))
-    parser.add_argument('caseid',nargs='+',default=[],help="Case ID");
-
-    (arg,rest_argv) = parser.parse_known_args(sys.argv)
-
-    # setting colors
-    if arg.bright_background_color == True:
-      ct = bbg_theme()
-
-    if arg.disable_colors == True:
-      ct = nocolor_theme()
-
-    cases = {}
-    for cid in arg.caseid:
-      if re.match("^\d{4}-\d{4}-\d{4}$",cid):
-        cases[cid] = 1
-
-    for cid in rest_argv:
-      if re.match("^\d{4}-\d{4}-\d{4}$",cid):
-        cases[cid] = 1
+    # options parsing
+    i = 1
+    imax = len(sys.argv)
+    try:
+      while 1:
+        if i >= imax:
+          break
+        arg = sys.argv[i]
+        if arg == "-t": # temporary folder usage
+          opt_temp = 1
+        elif arg == "-l": # just list the attachments
+          opt_list = 1
+        elif arg == "-o": # overwrite the files
+          opt_over = 1
+        elif arg == "-s": # print the case data
+          opt_stat = 1
+        elif arg == "-q": # print only important messages
+          opt_quiet = 1
+        elif arg == "-dc": # color support disabled
+          ct = nocolor_theme()
+        elif arg == "-bbg": # bright background theme
+          ct = bbg_theme()
+        elif arg == "-nd": # don't create the case dir
+          opt_nmkd = 1
+        elif arg == "-h": # print usage/help
+          sys.exit(1)
+        elif arg == "-i": # include only files matching regex
+          i += 1
+          opt_incl = sys.argv[i]
+        elif arg == "-e": # exclude only files matching regex
+          i += 1
+          opt_excl = sys.argv[i]
+        elif arg == "-a": # upload files
+          i += 1
+          opt_attach[sys.argv[i]] = 1
+        elif arg == "-d": # write files to this directory
+          i += 1
+          opt_dir = sys.argv[i]
+        elif arg == "-u": # username for the case system
+          i += 1
+          opt_user = sys.argv[i]
+        elif arg == "-n": # download only n latest attachments
+          i += 1
+          opt_news = int(sys.argv[i])
+        elif arg == "-p": # password for the case system
+          i += 1
+          opt_pass = sys.argv[i]
+        elif arg == "-fp": # ftp password
+          i += 1
+          opt_fpass = sys.argv[i]
+        else:
+          if re.match("^\d{4}-\d{4}-\d{4}$",arg):
+            cases[arg] = 1
+          else:
+            sys.exit(1)
+        i += 1
+    except:
+      usage()
 
     txt = msg()
 
     if not sys.stdout.isatty():
       ct = nocolor_theme()
-      arg.quiet = True
+      opt_quiet = 1
 
-    opt_ucwd = False
     if len(cases) == 0:
       m = re.match("^\d{4}-\d{4}-\d{4}",os.path.basename(os.getcwd()))
       if m != None:
         cases[m.group(0)] = 1
-        arg.directory = ""
-        opt_ucwd = True
+        opt_dir = ""
+        opt_ucwd = 1
 
     # just to check we have enough information to go further
-    if len(cases) == 0 or arg.user == "":
+    if len(cases) == 0 or opt_user == "":
       txt.err("either case id or user name was not defined")
       sys.exit(1)
 
@@ -525,32 +587,32 @@ if __name__ == '__main__':
 
     if not "Case Management Home" in text:
       # normal password
-      if arg.passwd == "":
+      if opt_pass == "":
         try:
-          arg.passwd = getpass("Please enter password: ").strip()
+          opt_pass = getpass("Please enter password: ").strip()
         except:
           usage()
 
-      if arg.passwd == "":
+      if opt_pass == "":
         txt.err("password can not be empty")
         sys.exit(1)
 
     # ftp password
-    if arg.ftp_passwd == "0":
+    if opt_fpass == "0":
       try:
-        arg.ftp_passwd = getpass("Please enter FTP password: ").strip()
+        opt_fpass = getpass("Please enter FTP password: ").strip()
       except:
         usage()
 
-    if arg.ftp_passwd == "":
-      arg.ftp_passwd = arg.passwd
+    if opt_fpass == "":
+      opt_fpass = opt_pass
 
     if not "Case Management Home" in text:
       txt.ok(ct.style(ct.text,"logging into the CM")+"\r")
       try:
         form = fparser.get_form(text,"Login")
-        form['login'] = arg.user
-        form['password'] = arg.passwd
+        form['login'] = opt_user
+        form['password'] = opt_pass
         dat = urllib2.urlopen(dat.geturl(),urlencode(form))
       except urllib2.URLError as errstr:
         txt.err("can't log into CM,\nERROR:"+str(errstr))
@@ -564,12 +626,12 @@ if __name__ == '__main__':
       txt.err("wrong credentials for CM.")
       sys.exit(1)
 
-    if arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
+    if opt_news == 0 and opt_stat == 0 and len(opt_attach) == 0:
       txt.ok(ct.style(ct.text,"logging into ftp server")+"\r")
       # trying to login to the ftp server
       try:
         ftp = FTP(ftpserver)
-        ftp.login(arg.user,arg.ftp_passwd)
+        ftp.login(opt_user,opt_fpass)
       except:
         txt.err("can't connect to the ftp server "+str(ftpserver)+": "+str(sys.exc_info()))
         sys.exit(1)
@@ -615,7 +677,7 @@ if __name__ == '__main__':
       text = dat.read()
 
       # this is for printing the detail status of the case
-      if arg.status == True:
+      if opt_stat == 1:
         text = text.replace("\n"," ").replace("\r"," ")
 
         contact = re.findall("onclick=\"NewWindow\('(my_contact_info\.jsp\?contact=.+?')",text)
@@ -646,7 +708,7 @@ if __name__ == '__main__':
         continue # we drop out of the loop here
 
       # this is for uploading files
-      if not len(arg.attach) == 0:
+      if not len(opt_attach) == 0:
         try:
           form = fparser.get_form(text,"case_detail")
           dat = urllib2.urlopen(urlcm+"case_attachments.jsp?cid="+form['cid']+"&cobj="+form['cobj']+"&caseOwnerEmail="+form['caseOwnerEmail'])
@@ -675,20 +737,20 @@ if __name__ == '__main__':
       attmtime = re.findall("<td class=\"tbc\" width=\"\d+%\">\s*(\d+-\d+-\d+ \d+:\d+:\d+)\.0\s*<\/td>",text)
       attmtime.reverse()
 
-      arg.directory = arg.directory.rstrip(os.sep)
-      casedir = str(arg.directory)+os.sep+str(caseid)+os.sep
+      opt_dir = opt_dir.rstrip(os.sep)
+      casedir = str(opt_dir)+os.sep+str(caseid)+os.sep
 
-      if arg.temp_folder == True:
-        casedir = str(arg.directory)+os.sep+"temp"+os.sep+str(caseid)+os.sep
+      if opt_temp == 1:
+        casedir = str(opt_dir)+os.sep+"temp"+os.sep+str(caseid)+os.sep
 
-      if opt_ucwd == True:
+      if opt_ucwd == 1:
         casedir = os.curdir+os.sep
 
-      if arg.no_dir == True:
-        casedir = str(arg.directory)+os.sep
+      if opt_nmkd == 1:
+        casedir = str(opt_dir)+os.sep
 
       casedir = os.path.normpath(casedir)
-      if arg.list == False:
+      if opt_list == 0:
         txt.ok(ct.style(ct.text,"will download to ")+ct.style(ct.fold,str(casedir)+"         ")+"\n")
 
       maxcmatt = len(attach)
@@ -719,20 +781,20 @@ if __name__ == '__main__':
           atttime = int(time.time())
 
         # filtering - include
-        if not arg.include == "" and not re.search(arg.include,attfilename):
+        if not opt_incl == "" and not re.search(opt_incl,attfilename):
             continue
 
         #filtering - exclude
-        if not arg.exclude == "" and re.search(arg.exclude,attfilename):
+        if not opt_excl == "" and re.search(opt_excl,attfilename):
             continue
 
         # download N newest attachments
-        if arg.newest > 0 and curcmatt <= maxcmatt - arg.newest:
+        if opt_news > 0 and curcmatt <= maxcmatt - opt_news:
             curcmatt += 1
             continue
 
         # just listing attachments
-        if arg.list == True:
+        if opt_list == 1:
 
           txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(attfilename))+ct.style(ct.text,"  size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB  time: ")+ct.style(ct.fold,time.asctime(time.localtime(atttime)))+"\n",1)
         else:
@@ -742,7 +804,7 @@ if __name__ == '__main__':
           caseatt = uniqfilename(filelist,str(attfilename))
 
           # do we overwrite or not?
-          if arg.overwrite == 0 and fileexists(casedir+os.sep+caseatt):
+          if opt_over == 0 and fileexists(casedir+os.sep+caseatt):
             txt.ok(ct.style(ct.text,"file already exists: ")+ct.style(ct.att,str(caseatt))+"\n")
             continue
 
@@ -800,7 +862,7 @@ if __name__ == '__main__':
             txt.warn("while downloading file: "+ct.style(ct.att,str(caseatt))+" ERROR:"+str(errstr))
 
       ### FTP SERVER
-      if arg.newest == 0:
+      if opt_news == 0:
 
         ### checking ftp upload directory
         try:
@@ -808,21 +870,21 @@ if __name__ == '__main__':
             ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
           except error_temp: # this is to do a relogin if downloading the files from CM takes too long
             ftp = FTP(ftpserver)
-            ftp.login(arg.user,arg.ftp_passwd)
+            ftp.login(opt_user,opt_fpass)
             ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
 
-          ftpcheck(filelist,caseid,casedir,ftp,arg.include,arg.exclude,arg.list,arg.overwrite)
+          ftpcheck(filelist,caseid,casedir,ftp,opt_incl,opt_excl,opt_list,opt_over)
         except error_perm:
           pass
 
         ### checking sftp upload directory
         try:
           ftp.cwd("/volume/sftp/pub/incoming/"+caseid)
-          ftpcheck(filelist,caseid,casedir,ftp,arg.include,arg.exclude,arg.list,arg.overwrite)
+          ftpcheck(filelist,caseid,casedir,ftp,opt_incl,opt_excl,opt_list,opt_over)
         except error_perm:
           pass
 
-    if arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
+    if opt_news == 0 and opt_stat == 0 and len(opt_attach) == 0:
       ftp.quit()
 
     cj.store()

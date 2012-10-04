@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
 # $Id: 20121004$
-# $Date: 2012-10-04 11:32:52$
+# $Date: 2012-10-04 14:15:03$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
-from urllib import urlencode,unquote,quote
+from urllib import urlencode,quote
 from cookielib import LWPCookieJar
 from ftplib import FTP,error_perm,error_temp
 from getpass import getpass
-import argparse, os, re, sys, time, socket, urllib2, httplib, urlparse
+import argparse, os, re, sys, time, socket, urllib2, httplib, urlparse, HTMLParser
 
 # the default timeout for all operations
 socket.setdefaulttimeout(20)
@@ -186,8 +186,7 @@ class msg:
   def printcase(self,sign):
     if self.caseid == "":
       return sign
-    else:
-      return self.caseid
+    return self.caseid
 
   def ok(self,mesg,force_print=False):
     '''
@@ -281,8 +280,9 @@ def fileexists(filename):
 
 def uniqfilename(flist, filename):
   '''
-  makes sure that the filenames are unique
+  makes sure that the filenames are unique and encoded correctly
   '''
+  filename = filename.decode('ascii','ignore').encode('ascii').replace(os.sep,"_")
   try:
     flist[filename] += 1
   except KeyError:
@@ -292,8 +292,7 @@ def uniqfilename(flist, filename):
   name = re.search("^(.+)(\.\S{1,4})$",filename)
   if name: # if we have extension, then add a number before ext
     return name.group(1)+"_"+str(flist[filename])+name.group(2)
-  else: # if we don't see any extension then add the number at the end
-    return filename + "_"+str(flist[filename])
+  return filename + "_"+str(flist[filename]) # if we don't see any extension then add the number at the end
 
 def progressindicator(sign):
   '''
@@ -305,24 +304,21 @@ def progressindicator(sign):
     return "-"
   elif sign == "-":
     return "\\"
-  else:
-    return "|"
+  return "|"
 
 def ts2time(ts,withseconds=False):
   ts = int(ts)
 
-  if ts < 60:
-    return str(ts)+"s"
-  elif ts < 3600:
-    if withseconds == True:
-      return str(ts/60)+"m "+str(ts%60)+"s"
-    else:
-      return str(ts/60)+"m"
-  else:
-    if withseconds == True:
-      return str(ts/3600)+"h "+str((ts%3600)/60)+"m "+str((ts%3600)%60)+"s"
-    else:
-      return str(ts/3600)+"h "+str((ts%3600)/60)+"m"
+  asctime = ""
+  if ts > 3600:
+    asctime = str(ts/3600)+"h "
+    ts = ts % 3600
+  if ts > 60:
+    asctime += str(ts/60)+"m "
+    ts = ts % 60
+  if withseconds == True or asctime == "":
+    return asctime+str(ts)+"s"
+  return asctime
 
 def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
   '''
@@ -337,7 +333,6 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
   txt.ok(ct.style(ct.text,"found ")+ct.style(ct.num,str(len(ftplist)))+ct.style(ct.text," file(s) in ")+ct.style(ct.fold,str(ftp.pwd()))+"\n")
 
   for filename in ftplist:
-    filename = filename.replace(os.sep,"_").encode('ascii')
 
     try: # this checks if we have directories, if we do we go recursive
       ftp.cwd(filename)
@@ -348,10 +343,10 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
       pass
 
     if not include == "" and not re.search(include,filename):
-        continue
+      continue
 
     if not exclude == "" and re.search(exclude,filename):
-        continue
+      continue
 
     if list == True:
       ftp.sendcmd("TYPE i")
@@ -470,20 +465,16 @@ if __name__ == '__main__':
     if arg.disable_colors == True:
       ct = nocolor_theme()
 
-    cases = {}
-    for cid in arg.caseid:
-      if re.match("^\d{4}-\d{4}-\d{4}$",cid):
-        cases[cid] = 1
-
-    for cid in rest_argv:
-      if re.match("^\d{4}-\d{4}-\d{4}$",cid):
-        cases[cid] = 1
-
-    txt = msg()
-
     if not sys.stdout.isatty():
       ct = nocolor_theme()
       arg.quiet = True
+
+    cases = {}
+    for cid in arg.caseid+rest_argv:
+      if re.match("^\d{4}-\d{4}-\d{4}$",cid):
+        cases[cid] = 1
+
+    txt = msg() # class object for the messages printing
 
     opt_ucwd = False
     if len(cases) == 0:
@@ -554,8 +545,8 @@ if __name__ == '__main__':
       except urllib2.URLError as errstr:
         txt.err("can't log into CM,\nERROR:"+str(errstr))
         sys.exit(1)
-    else:
-      txt.ok(ct.style(ct.text,"in the CM")+"\r")
+
+    txt.ok(ct.style(ct.text,"in the CM")+"\r")
 
     mainpage = dat.read()
 
@@ -625,26 +616,24 @@ if __name__ == '__main__':
           contact = re.sub("\s+"," ",dat.read().replace("\n"," ").replace("\r"," "))
           contact = re.sub("</?a(>| href=.+?>)","",contact)
           for desc,value in re.findall("<td class=\"tbcbold\">(.+?):</td>.*?<td class=\"tbc\">(.+?)</td>",contact):
+            rowcol = ct.row1
             if line % 2 == 0:
-              rowcol = ct.row1
-            else:
               rowcol = ct.row2
-            txt.ok(ct.style(rowcol,"Contact details - "+str(desc)+": "+str(value).replace("&nbsp;","").strip())+"\n",1)
+            txt.ok(ct.style(rowcol,"Contact details - "+str(desc)+": "+str(value).replace("&nbsp;","").strip())+"\n",True)
             line += 1
 
-        for desc,value in re.findall("<b>((?:\w|\s)+?):&nbsp;&nbsp;<\/b>(.+?)</t",text,re.M):
+        for desc,value in re.findall("<b>((?:\w|\s)+?):&nbsp;&nbsp;<\/b>(.+?)</t",text,flags=re.M):
           value = re.sub("<a.+?>.+?</a>"," ",value)
           value = re.sub("<(br|BR)/?>","\n",value,0)
           value = re.sub("<.+?>"," ",value,count=0)
+          rowcol = ct.row1
           if line % 2 == 0:
-            rowcol = ct.row1
-          else:
             rowcol = ct.row2
           txt.ok(ct.style(rowcol,str(desc)+": "+str(value).replace("&nbsp;"," ").strip())+"\n",True)
           line += 1
         continue # we drop out of the loop here
 
-      # printing case notes
+      # printing detail case notes
       if arg.case_notes == True:
         try:
           form = fparser.get_form(text,"case_detail")
@@ -653,23 +642,22 @@ if __name__ == '__main__':
           txt.err("while loading the case notes\nERROR: "+str(errstr))
           continue
 
+        h = HTMLParser.HTMLParser()
         text = re.sub("[ \t\n\r\f\v]+"," ",dat.read(),flags=re.M)
         text = re.sub("(</?br>)+","<br>",text,flags=re.I)
-        #text = re.sub(" +"," ",text,flags=re.M)
         notes = re.findall("<tr valign=\"top\">(.+?)</tr>",text)
         line = 0
         for note in notes:
           note = re.sub("</?br>","\n",note,flags=re.I+re.M)
           note = re.sub("<.+?>","",note)
+          rowcol = ct.row1
           if line % 2 == 0:
-            rowcol = ct.row1
-          else:
             rowcol = ct.row2
-          print ct.style(rowcol,str(unquote(note)))+"\n-----------------------------------------"
+          print ct.style(rowcol,str(h.unescape(note.decode('ascii','ignore'))))+"\n\n"+"#%"*37+"\n\n"
           line += 1
         continue # we drop out of the loop here
 
-      # this is for uploading files
+      # uploading files
       if len(arg.attach) > 0:
         try:
           form = fparser.get_form(text,"case_detail")
@@ -724,36 +712,34 @@ if __name__ == '__main__':
       # looping through the attachments
       for att in attach:
         filename = re.search("AttachDown/(.+?)\?OBJID=(.+?)\&",att)
-        attfilename = filename.group(1).replace(os.sep,"_").encode('ascii')
+        attfilename = filename.group(1)
 
         try:
           attsize = int(attssize.pop())
         except IndexError:
           attsize = "?"
 
-        try:
-          # attachments upload time is in PST/PDT we need to convert it to local time
+        try: # attachments upload time is in PST/PDT we need to convert it to local time
           os.environ['TZ'] = "America/Los_Angeles"
           time.tzset()
           atttime = int(time.mktime(time.strptime(attmtime.pop(),"%Y-%m-%d %H:%M:%S")))
           os.environ.pop('TZ')
           time.tzset()
-
         except:
           atttime = int(time.time())
 
         # filtering - include
         if not arg.include == "" and not re.search(arg.include,attfilename):
-            continue
+          continue
 
-        #filtering - exclude
+        # filtering - exclude
         if not arg.exclude == "" and re.search(arg.exclude,attfilename):
-            continue
+          continue
 
         # download N newest attachments
         if arg.newest > 0 and curcmatt <= maxcmatt - arg.newest:
-            curcmatt += 1
-            continue
+          curcmatt += 1
+          continue
 
         # just listing attachments
         if arg.list == True:

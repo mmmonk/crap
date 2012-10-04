@@ -1,7 +1,7 @@
 #!/usr/bin/python -u
 
-# $Id: 20121002$
-# $Date: 2012-10-02 20:00:40$
+# $Id: 20121004$
+# $Date: 2012-10-04 16:35:12$
 # $Author: Marek Lukaszuk$
 
 import socket,sys,time,struct
@@ -48,9 +48,10 @@ def decode_head(dat):
   return struct.unpack("BBHB",dat)
 
 def incseq(seq):
-  return ((seq + 1) % 255) + 1
+  return ((seq + 7) % 255) + 1
 
 def calcrtt(snt):
+  return 0.2
   rtt = round(time.time() - snt,3)
   if rtt < 0.2:
     return 0.2
@@ -100,14 +101,14 @@ while True:
       data, addr = sock.recvfrom (maxlen+headsize)
     except socket.error:
       # there was nothing to read from the socket
-      if notyet > 0 and dtime(snt,rtt):
+      if notyet < maxmiss and dtime(snt,rtt):
         # we didn't yet got any response
         notyet += 1
-      if notyet == maxmiss:
+      elif notyet == maxmiss:
         # our packet was probably lost, resend
         snt = sending(padding,sock,dstaddr,seq,ack,clidata,paddlen)
         notyet += 1
-      if notyet > maxmiss*3:
+      elif notyet > maxmiss*3:
         # we give up
         sys.stderr.write("[!] packet lost, exiting\n")
         sys.exit(1)
@@ -143,13 +144,14 @@ while True:
       snt = sending(padding,sock,dstaddr,seq,ack,clidata,paddlen)
       notyet = 1 # we need to wait
 
-
   # send a packet either to get more data or
   # to check if the server has anything to send
-  if (getmore == 1 or dtime(snt,rtt)) and notyet == 0:
+  if (getmore == 1 or dtime(snt,rtt) and notyet == 0):
     snt = sending(padding,sock,dstaddr,seq,ack,"",paddlen)
     getmore = 0 # lets reset this
     notyet = 1 # we need to wait
 
   if getmore == 0 and notyet == 1:
+    if seq == 240: # refresh padding
+      padding = open("/dev/urandom").read(paddlen)
     select([],[],[],rtt)

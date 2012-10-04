@@ -1,16 +1,13 @@
 #!/usr/bin/python -u
 
-# $Id: 20120926$
-# $Date: 2012-09-26 10:14:35$
+# $Id: 20121002$
+# $Date: 2012-10-02 20:00:40$
 # $Author: Marek Lukaszuk$
 
-import socket
+import socket,sys,time,struct
 from select import select
-import sys
 from fcntl import fcntl, F_SETFL
 from os import O_NONBLOCK
-import time
-import struct
 from random import randint
 
 IP = sys.argv[1]
@@ -37,7 +34,7 @@ class DH:
     self.X = (self.g**self.a)%self.p
   def calc_s(self,B):
     # we narrow down the output to only values between 1 and 255
-    self.s = (((B**self.a)%self.p) % 254)+1
+    self.s = (((B**self.a)%self.p) % 255)+1
 
 def dtime(lt,dt):
   if time.time()-lt > dt:
@@ -51,10 +48,7 @@ def decode_head(dat):
   return struct.unpack("BBHB",dat)
 
 def incseq(seq):
-  seq += 1
-  if seq > 255:
-    return 1
-  return seq
+  return ((seq + 1) % 255) + 1
 
 def calcrtt(snt):
   rtt = round(time.time() - snt,3)

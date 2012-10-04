@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20121004$
-# $Date: 2012-10-04 14:15:03$
+# $Date: 2012-10-04 14:45:54$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -14,7 +14,7 @@ import argparse, os, re, sys, time, socket, urllib2, httplib, urlparse, HTMLPars
 # the default timeout for all operations
 socket.setdefaulttimeout(20)
 
-version = "20121001-dev"
+version = "20121004-dev"
 
 # TODO - make the HTTP connection use keep-alive
 

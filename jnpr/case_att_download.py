@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121003$
-# $Date: 2012-10-03 13:29:52$
+# $Id: 20121004$
+# $Date: 2012-10-04 11:32:52$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -435,15 +435,13 @@ if __name__ == '__main__':
   which should look like this:\n\
   cmuser=YOUR_USERNAME_FOR_CM\n\
   cmpass=YOUR_PASSWORD_FOR_CM\n\
-  cmdir=THE_MAIN_DIRECTORY_WHERE_TO_DOWNLOAD_ATTACHMENTS\n\n\
-  By default this script will download all the attachments for a given case from case manager and from ftp server to the case directory inside current directory.\n\
-  Options -i (include) and -e (exclude) can be specified together. In that case first filenames will be matched against the include regexp and later against the exclude regexp.\n")
+  cmdir=THE_MAIN_DIRECTORY_WHERE_TO_DOWNLOAD_ATTACHMENTS")
 
     group_attach = parser.add_argument_group('Attachments')
     group_attach.add_argument('-a','--attach',default=[],action='append',help='attach file to the case')
-    group_attach.add_argument('-d','--directory',default=opt_dir,help='directory where to download attachments,inside that directory a directory with the case number will be created')
-    group_attach.add_argument('-e','--exclude',default="",help='(exclude) skip attachments which filenames match regexp')
-    group_attach.add_argument('-i','--include',default="",help='(include) download or list only attachments which filenames match regexp')
+    group_attach.add_argument('-d','--directory',default=opt_dir,help='directory where to download attachments,inside that directory a directory with the case number will be created. If not provided the value from the config file will be used, if the config file is not there the current directory will be used')
+    group_attach.add_argument('-e','--exclude',default="",help='(exclude) skip downloading or listing attachments which filenames match regexp')
+    group_attach.add_argument('-i','--include',default="",help='(include) download or list only attachments which filenames match regexp. If specified together with --exclude the --include regexp is matched first')
     group_attach.add_argument('-l','--list',action='store_true',help='just list case attachments without downloading,')
     group_attach.add_argument('-n','--newest',type=int,default=0,help='number of newest attachments to download/list from CM, this will skip FTP and SFTP')
     group_attach.add_argument('-nd','--no-dir',action='store_true',help='don\'t create the case directory just dump everything into root of the specified directory')
@@ -451,6 +449,7 @@ if __name__ == '__main__':
     group_attach.add_argument('-t','--temp-folder',action='store_true',help='this will download attachments to a folder "temp" in the destination folder (for cases that you just want to look at)')
     group_case = parser.add_argument_group('Case info')
     group_case.add_argument('-s','--status',action='store_true',help='show case status, customer information and exit, don\'t download anything')
+    group_case.add_argument('-cn','--case-notes',action='store_true',help='show case notes and exit, don\'t download anything')
     group_auth = parser.add_argument_group('Authentication')
     group_auth.add_argument('-u','--user',default=opt_user,help='user name used for the CM')
     group_auth.add_argument('-p','--passwd',default=opt_pass,help='password used for the CM')
@@ -460,7 +459,7 @@ if __name__ == '__main__':
     group_color.add_argument('-dc','--disable-colors',action='store_true',help='disable colors')
     parser.add_argument('-q','--quiet',action='store_true',help='be quiet, print only information when a file is downloaded')
     parser.add_argument('-v','--version',action='version', version="%(prog)s "+str(version))
-    parser.add_argument('caseid',nargs='+',default=[],help="Case ID");
+    parser.add_argument('caseid',nargs='+',default=[],help="Case ID - if not provided script will check if the current folder name starts with something that looks like a case id, if yes then it will be used");
 
     (arg,rest_argv) = parser.parse_known_args(sys.argv)
 
@@ -564,7 +563,7 @@ if __name__ == '__main__':
       txt.err("wrong credentials for CM.")
       sys.exit(1)
 
-    if arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
+    if arg.case_notes == False and arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
       txt.ok(ct.style(ct.text,"logging into ftp server")+"\r")
       # trying to login to the ftp server
       try:
@@ -645,8 +644,33 @@ if __name__ == '__main__':
           line += 1
         continue # we drop out of the loop here
 
+      # printing case notes
+      if arg.case_notes == True:
+        try:
+          form = fparser.get_form(text,"case_detail")
+          dat = urllib2.urlopen(urlcm+"case_all_note_details.jsp?cid="+quote(form['cid'])+"&cobj="+quote(form['cobj'])+"&caseOwnerEmail="+quote(form['caseOwnerEmail']))
+        except urllib2.URLError as errstr:
+          txt.err("while loading the case notes\nERROR: "+str(errstr))
+          continue
+
+        text = re.sub("[ \t\n\r\f\v]+"," ",dat.read(),flags=re.M)
+        text = re.sub("(</?br>)+","<br>",text,flags=re.I)
+        #text = re.sub(" +"," ",text,flags=re.M)
+        notes = re.findall("<tr valign=\"top\">(.+?)</tr>",text)
+        line = 0
+        for note in notes:
+          note = re.sub("</?br>","\n",note,flags=re.I+re.M)
+          note = re.sub("<.+?>","",note)
+          if line % 2 == 0:
+            rowcol = ct.row1
+          else:
+            rowcol = ct.row2
+          print ct.style(rowcol,str(unquote(note)))+"\n-----------------------------------------"
+          line += 1
+        continue # we drop out of the loop here
+
       # this is for uploading files
-      if not len(arg.attach) == 0:
+      if len(arg.attach) > 0:
         try:
           form = fparser.get_form(text,"case_detail")
           dat = urllib2.urlopen(urlcm+"case_attachments.jsp?cid="+form['cid']+"&cobj="+form['cobj']+"&caseOwnerEmail="+form['caseOwnerEmail'])
@@ -822,7 +846,7 @@ if __name__ == '__main__':
         except error_perm:
           pass
 
-    if arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
+    if arg.case_notes == False and arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
       ftp.quit()
 
     cj.store()

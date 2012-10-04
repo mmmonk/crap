@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # $Id: 20121004$
-# $Date: 2012-10-04 16:33:27$
+# $Date: 2012-10-04 21:48:47$
 # $Author: Marek Lukaszuk$
 
 import socket,time,sys,struct
@@ -98,8 +98,8 @@ while True:
       except socket.error:
         pass
   else:
-    # server sent something
-    # is this the same server we supposed to talk to
+    # client sent something
+    # is this the same client we supposed to talk to
     if not addr == caddr:
       # this is new client connection
       # we need to close the old connection to the server

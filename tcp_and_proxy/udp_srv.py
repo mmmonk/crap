@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-# $Id: 20121002$
-# $Date: 2012-10-02 20:00:47$
+# $Id: 20121004$
+# $Date: 2012-10-04 16:33:27$
 # $Author: Marek Lukaszuk$
 
 import socket,time,sys,struct
@@ -13,8 +13,6 @@ PORT = 5005
 maxlen = 1020 # data size + 2 bytes for header
 seq = 1 # our sequence number
 ack = 1 # seq number of the peer
-rtt = 0.1 # round trip time of the pkt
-snt = time.time() # last time a pkt was send
 notyet = 0 # we didn't yet received an ack from peer
 maxmiss = 4 # how many rtts we can wait till resending pkt
 paddlen = 251
@@ -38,15 +36,7 @@ def decode_head(dat):
   return struct.unpack("BBHB",dat)
 
 def incseq(seq):
-  return ((seq + 1) % 255) + 1
-
-def calcrtt(snt):
-  rtt = round(time.time() - snt,3)
-  if rtt < 0.2:
-    return 0.2
-  )if rtt > 1:
-    return 1
-  return rtt
+  return ((seq + 7) % 255) + 1
 
 def xored(x,msg):
   return "".join([ chr(ord(c)^x) for c in msg ])
@@ -58,11 +48,6 @@ def checkformoredata(sock):
   if sock in (select([sock],[],[],0.1))[0]:
     return 1
   return 0
-
-def dtime(lt,dt):
-  if time.time()-lt > dt:
-    return True
-  return False
 
 def sending(pad,sock,dstaddr,seq,ack,data,paddlen,moredata=0):
   size = len(data)
@@ -91,15 +76,15 @@ while True:
     data, addr = sock.recvfrom(maxlen+headsize)
   except socket.error :
     # there was nothing to read from the socket
-    if notyet > 0 and not caddr == ("",0):
+    if notyet < maxmiss and not caddr == ("",0):
       # we didn't yet got any response
       notyet += 1
-    if notyet == maxmiss:
+    elif notyet == maxmiss:
       # our packet was probably lost, resend
       sys.stderr.write("[!] packet lost, resending\n")
-      snt = sending(padding,sock,caddr,seq,ack,srvdata,paddlen,checkformoredata(serv))
+      sending(padding,sock,caddr,seq,ack,srvdata,paddlen,checkformoredata(serv))
       notyet += 1
-    if notyet > maxmiss*3:
+    elif notyet > maxmiss*3:
       # we give up
       sys.stderr.write("[!] packet lost, reseting\n")
       # we need to reset some value
@@ -126,8 +111,6 @@ while True:
         pass
       # and start a new one
       serv = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
-      rtt = 0.1
-      snt = time.time() - rtt
       serv.connect( ("127.0.0.1",22))
       # new padding
       padding = open("/dev/urandom").read(paddlen)
@@ -139,8 +122,8 @@ while True:
     # decoding header
     head = decode_head(xored(seq,data[:headsize]))
     if seq == head[1]:
+
       ack = head[0]
-      rtt = calcrtt(snt)
       toread,towrite,[] = select([serv],[serv],[],10)
       # server allows us to write
       if serv in towrite \
@@ -157,11 +140,13 @@ while True:
           sys.exit()
         else:
           # sending from server
-          snt = sending(padding,sock,caddr,seq,ack,srvdata,paddlen,checkformoredata(serv))
+          sending(padding,sock,caddr,seq,ack,srvdata,paddlen,checkformoredata(serv))
           notyet = 1
       else:
         # if server has nothing to send we need to send a ack
-        snt = sending(padding,sock,caddr,seq,ack,"",paddlen)
+        if seq == 240: # refresh padding
+          padding = open("/dev/urandom").read(paddlen)
+        sending(padding,sock,caddr,seq,ack,"",paddlen)
         notyet = 1
 
     else:

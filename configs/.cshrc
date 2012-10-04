@@ -1,5 +1,5 @@
-# $Id: 20120911$
-# $Date: 2012-09-11 09:07:33$
+# $Id: 20121004$
+# $Date: 2012-10-04 15:31:39$
 
 # A righteous umask
 if ($uid == 0) then
@@ -178,6 +178,8 @@ if ($?prompt) then
   complete ssh 'c/*@/$sshhosts/' 'p/*/$sshhostsandusers//'
   complete telnet 'p@*@`awk \{print\ \$2\} /etc/hosts`@'
 
+  complete git 'p/1/(branch checkout diff commit pull push status merge)/' 'n/checkout/`git branch | tr -d "*"`/'
+
   ## some docs handling
   complete zathura 'p/1/f:*.{pdf,PDF}/'
   complete epdfview 'p/1/f:*.{pdf,PDF}/'
@@ -201,5 +203,5 @@ if ($?prompt) then
     complete killall 'c/-/(s)/' 'n/-s/S/' 'p/*/`ps chx | awk \{print\ \$5\}`/'
   endif
 
-  stty -ixon
+  stty -ixon # disable ctrl+s
 endif

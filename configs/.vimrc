@@ -1,10 +1,10 @@
 " ~/.vimrc file
-" $Id: 20120819$
-" $Date: 2012-08-19 23:36:33$
+" $Id: 20121003$
+" $Date: 2012-10-03 11:33:42$
 " $Author: Marek Lukaszuk$
 "
 " ideas http://amix.dk/vim/vimrc.html
-" vim --servername GVIM --remote-tab-silent
+" vim --servername "$HOST-GVIM" --remote-tab-silent
 
 if $HOSTNAME=~"solix"
   let weAreOnSolix=1
@@ -118,10 +118,10 @@ if !exists('weAreOnSolix')
     "   t: enable tearoff menus on Win32
     "   T: enable toolbar on Win32
     set guioptions=
-    " set guioptions-=T         " no toolbar
-    set number                " line numbers
-    set guifont=Monospace\ 10 " gui font
-    set nomh                  " no mouse hide
+    " set guioptions-=T      " no toolbar
+    set number               " line numbers
+    set guifont=Terminus\ 12 " gui font
+    set nomh                 " no mouse hide
     "call SetColorSchemaBaseOnTime("desert","pablo")
     colorscheme ron
     map <F3> :call SwitchColorScheme("desert","ron")<CR>
@@ -287,9 +287,9 @@ endif
 
 set secure
 
-" #################################
-" # adding custome header variables
-" #################################
+" ################################
+" # adding custom header variables
+" ################################
 function! AddStdHeader()
   let s:line=line(".")
   call append(s:line," $Id$")

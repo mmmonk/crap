@@ -11,14 +11,17 @@ if __name__ == '__main__':
   newlinks = {}
 
   cleanolderthenthis = 60*24*3600
-  keepnumlimit = 5000
+  keepnumlimit = 10000
 
   oldlimit = int(time.time()) - cleanolderthenthis
   if os.path.isfile(urlhistory) and os.stat(urlhistory).st_size > 0:
-    for line in open(urlhistory,'r').readlines():
-      (url,ts) = line.split()
-      if ts > oldlimit:
-        seenurls[url] = ts
+    data = open(urlhistory,'r').read().decode('bz2')
+    for line in data.split("\n"):
+      if len(line) > 5:
+        (url,ts) = line.split()
+        if ts > oldlimit:
+          seenurls[url] = ts
+    data = ""
 
   if os.path.isfile(urlfile) and os.stat(urlfile).st_size > 0:
     for line in open(urlfile,'r').readlines():
@@ -43,13 +46,16 @@ if __name__ == '__main__':
       smtpObj = smtplib.SMTP("127.0.0.1")
       smtpObj.sendmail('m.lukaszuk@gmail.com','m.lukaszuk@gmail.com',msg)
 
-      fd = open(urlhistory,'w')
+      data = ""
       i = 0
       for link,ts in sorted(seenurls.items(), key = lambda x: x[1], reverse=True):
-        fd.write(link+" "+str(ts)+"\n")
+        data += link+" "+str(ts)+"\n"
         i += 1
         if i >= keepnumlimit:
           break
+
+      fd = open(urlhistory,'w')
+      fd.write(data.encode('bz2'))
       fd.close()
 
       os.unlink(urlfile)

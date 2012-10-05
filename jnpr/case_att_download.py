@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121004$
-# $Date: 2012-10-04 14:45:54$
+# $Id: 20121005$
+# $Date: 2012-10-05 11:37:38$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -635,6 +635,7 @@ if __name__ == '__main__':
 
       # printing detail case notes
       if arg.case_notes == True:
+        print ""
         try:
           form = fparser.get_form(text,"case_detail")
           dat = urllib2.urlopen(urlcm+"case_all_note_details.jsp?cid="+quote(form['cid'])+"&cobj="+quote(form['cobj'])+"&caseOwnerEmail="+quote(form['caseOwnerEmail']))

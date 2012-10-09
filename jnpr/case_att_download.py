@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20121009$
-# $Date: 2012-10-09 12:15:09$
+# $Date: 2012-10-09 16:28:49$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -662,7 +662,7 @@ if __name__ == '__main__':
 
       # case notes
       if arg.case_notes == True:
-        print ""
+
         try:
           form = fparser.get_form(text,"case_detail")
           dat = urllib2.urlopen(urlcm+"case_all_note_details.jsp?cid="+quote(form['cid'])+"&cobj="+quote(form['cobj'])+"&caseOwnerEmail="+quote(form['caseOwnerEmail']))
@@ -681,14 +681,23 @@ if __name__ == '__main__':
           except OSError:
             txt.warn("no case_notes.txt file present, skipping. Use --save-case-notes first.")
             continue
+
           lastcn = re.search(" class=\"tbc\">(\w+\s+\d+\s+\d+\s+\d+:\d+)\s+</td> <",notes[0]).group(1)
-          lastcn_tt = time.strptime(lastcn,"%b %d %Y %H:%M")
-          lastcn = int(time.mktime(lastcn_tt))
+          try: # attachments upload time is in PST/PDT we need to convert it to local time
+            os.environ['TZ'] = "America/Los_Angeles"
+            time.tzset()
+            lastcn = int(time.mktime(time.strptime(lastcn,"%b %d %Y %H:%M")))
+            os.environ.pop('TZ')
+            time.tzset()
+          except:
+            txt.warn("problem in decoding time of the latest case note")
+            continue
+
           if mtime < lastcn:
-            txt.ok(ct.style(ct.text,"there are new case notes in this case. Latest one is from "+time.asctime(lastcn_tt)+"\n",True))
+            txt.ok(ct.style(ct.text,"there are new case notes in this case. Latest one is from ")+ct.style(ct.num,time.asctime(time.localtime(lastcn)))+"\n",True)
             arg.save_case_notes = True
           else:
-            txt.ok(ct.style(ct.text,"no new updates in the case\n"))
+            txt.ok(ct.style(ct.text,"no new updates in the case")+"\n")
             continue
 
         if arg.save_case_notes == True:
@@ -699,7 +708,7 @@ if __name__ == '__main__':
           except:
             txt.warn("can't create file to save case notes")
             continue
-          txt.ok(ct.style(ct.text,"saving case notes into a file\n"))
+          txt.ok(ct.style(ct.text,"saving case notes into a file")+"\n")
 
         line = 0
         for note in notes:

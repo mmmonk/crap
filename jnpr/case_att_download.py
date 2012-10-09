@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121005$
-# $Date: 2012-10-05 11:37:38$
+# $Id: 20121009$
+# $Date: 2012-10-09 12:15:09$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -9,12 +9,12 @@ from urllib import urlencode,quote
 from cookielib import LWPCookieJar
 from ftplib import FTP,error_perm,error_temp
 from getpass import getpass
-import argparse, os, re, sys, time, socket, urllib2, httplib, urlparse, HTMLParser
+import argparse, os, re, sys, time, socket, urllib2, httplib, urlparse, HTMLParser, unicodedata
 
 # the default timeout for all operations
 socket.setdefaulttimeout(20)
 
-version = "20121004-dev"
+version = "20121009-dev"
 
 # TODO - make the HTTP connection use keep-alive
 
@@ -282,7 +282,7 @@ def uniqfilename(flist, filename):
   '''
   makes sure that the filenames are unique and encoded correctly
   '''
-  filename = filename.decode('ascii','ignore').encode('ascii').replace(os.sep,"_")
+  filename = to_ascii(filename).replace(os.sep,"_")
   try:
     flist[filename] += 1
   except KeyError:
@@ -319,6 +319,12 @@ def ts2time(ts,withseconds=False):
   if withseconds == True or asctime == "":
     return asctime+str(ts)+"s"
   return asctime
+
+def to_ascii(s):
+  if isinstance(s, str):
+    return unicodedata.normalize('NFKD',s.decode('UTF-8','ignore')).encode('ascii','ignore')
+  elif isinstance(s, unicode):
+    return unicodedata.normalize('NFKD',s).encode('ascii','ignore')
 
 def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
   '''
@@ -445,6 +451,8 @@ if __name__ == '__main__':
     group_case = parser.add_argument_group('Case info')
     group_case.add_argument('-s','--status',action='store_true',help='show case status, customer information and exit, don\'t download anything')
     group_case.add_argument('-cn','--case-notes',action='store_true',help='show case notes and exit, don\'t download anything')
+    group_case.add_argument('-scn','--save-case-notes',action='store_true',help='save case notes to a file case_notes.txt in the case directory and exits')
+    group_case.add_argument('-ccn','--check-case-notes',action='store_true',help='check if there are any new case notes (based on the timestamp of the case_notes.txt) and create a new case_notes.txt file if there is anything new')
     group_auth = parser.add_argument_group('Authentication')
     group_auth.add_argument('-u','--user',default=opt_user,help='user name used for the CM')
     group_auth.add_argument('-p','--passwd',default=opt_pass,help='password used for the CM')
@@ -453,7 +461,7 @@ if __name__ == '__main__':
     group_color.add_argument('-bbg','--bright-background-color',action='store_true',help='bright background (different color theme)')
     group_color.add_argument('-dc','--disable-colors',action='store_true',help='disable colors')
     parser.add_argument('-q','--quiet',action='store_true',help='be quiet, print only information when a file is downloaded')
-    parser.add_argument('-v','--version',action='version', version="%(prog)s "+str(version))
+    parser.add_argument('-v','--version',action='version', version="%(prog)s\nversion: "+str(version))
     parser.add_argument('caseid',nargs='+',default=[],help="Case ID - if not provided script will check if the current folder name starts with something that looks like a case id, if yes then it will be used");
 
     (arg,rest_argv) = parser.parse_known_args(sys.argv)
@@ -468,6 +476,9 @@ if __name__ == '__main__':
     if not sys.stdout.isatty():
       ct = nocolor_theme()
       arg.quiet = True
+
+    if arg.save_case_notes == True or arg.check_case_notes == True:
+      arg.case_notes = True
 
     cases = {}
     for cid in arg.caseid+rest_argv:
@@ -571,6 +582,22 @@ if __name__ == '__main__':
     # the main loop over the case IDs
     for caseid in sorted(cases.keys()):
 
+      # lets normalize the where to save the files here,
+      # because we need this information in many places later
+      arg.directory = arg.directory.rstrip(os.sep)
+      casedir = str(arg.directory)+os.sep+str(caseid)+os.sep
+
+      if arg.temp_folder == True:
+        casedir = str(arg.directory)+os.sep+"temp"+os.sep+str(caseid)+os.sep
+
+      if opt_ucwd == True:
+        casedir = os.curdir+os.sep
+
+      if arg.no_dir == True:
+        casedir = str(arg.directory)+os.sep
+
+      casedir = os.path.normpath(casedir)
+
       txt.case(caseid)
       txt.ok(ct.style(ct.text,"case search")+"\r")
       try:
@@ -633,7 +660,7 @@ if __name__ == '__main__':
           line += 1
         continue # we drop out of the loop here
 
-      # printing detail case notes
+      # case notes
       if arg.case_notes == True:
         print ""
         try:
@@ -647,15 +674,48 @@ if __name__ == '__main__':
         text = re.sub("[ \t\n\r\f\v]+"," ",dat.read(),flags=re.M)
         text = re.sub("(</?br>)+","<br>",text,flags=re.I)
         notes = re.findall("<tr valign=\"top\">(.+?)</tr>",text)
+
+        if arg.check_case_notes == True:
+          try:
+            mtime = os.stat(casedir+"/case_notes.txt")[8]
+          except OSError:
+            txt.warn("no case_notes.txt file present, skipping. Use --save-case-notes first.")
+            continue
+          lastcn = re.search(" class=\"tbc\">(\w+\s+\d+\s+\d+\s+\d+:\d+)\s+</td> <",notes[0]).group(1)
+          lastcn_tt = time.strptime(lastcn,"%b %d %Y %H:%M")
+          lastcn = int(time.mktime(lastcn_tt))
+          if mtime < lastcn:
+            txt.ok(ct.style(ct.text,"there are new case notes in this case. Latest one is from "+time.asctime(lastcn_tt)+"\n",True))
+            arg.save_case_notes = True
+          else:
+            txt.ok(ct.style(ct.text,"no new updates in the case\n"))
+            continue
+
+        if arg.save_case_notes == True:
+          if not os.path.exists(casedir):
+            os.makedirs(casedir,mode=0755)
+          try:
+            cn = open(casedir+"/case_notes.txt","w")
+          except:
+            txt.warn("can't create file to save case notes")
+            continue
+          txt.ok(ct.style(ct.text,"saving case notes into a file\n"))
+
         line = 0
         for note in notes:
+          note = to_ascii(h.unescape(to_ascii(note)))
           note = re.sub("</?br>","\n",note,flags=re.I+re.M)
           note = re.sub("<.+?>","",note)
           rowcol = ct.row1
           if line % 2 == 0:
             rowcol = ct.row2
-          print ct.style(rowcol,str(h.unescape(note.decode('ascii','ignore'))))+"\n\n"+"#%"*37+"\n\n"
+          if arg.save_case_notes == True:
+            cn.write(note+"\n\n"+"#%"*37+"\n\n")
+          else:
+            print ct.style(rowcol,note)+"\n\n"+"#%"*37+"\n\n"
           line += 1
+        if arg.save_case_notes == True:
+          cn.close()
         continue # we drop out of the loop here
 
       # uploading files
@@ -688,19 +748,6 @@ if __name__ == '__main__':
       attmtime = re.findall("<td class=\"tbc\" width=\"\d+%\">\s*(\d+-\d+-\d+ \d+:\d+:\d+)\.0\s*<\/td>",text)
       attmtime.reverse()
 
-      arg.directory = arg.directory.rstrip(os.sep)
-      casedir = str(arg.directory)+os.sep+str(caseid)+os.sep
-
-      if arg.temp_folder == True:
-        casedir = str(arg.directory)+os.sep+"temp"+os.sep+str(caseid)+os.sep
-
-      if opt_ucwd == True:
-        casedir = os.curdir+os.sep
-
-      if arg.no_dir == True:
-        casedir = str(arg.directory)+os.sep
-
-      casedir = os.path.normpath(casedir)
       if arg.list == False:
         txt.ok(ct.style(ct.text,"will download to ")+ct.style(ct.fold,str(casedir)+"         ")+"\n")
 

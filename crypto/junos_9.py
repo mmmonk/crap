@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121008$
-# $Date: 2012-10-08 11:46:41$
+# $Id: 20121009$
+# $Date: 2012-10-09 13:30:00$
 # $Author: Marek Lukaszuk$
 
 # based on:
@@ -105,3 +105,6 @@ if __name__ == "__main__":
   print jp9.decode(a.split()[1])
   a = jp9.encode("netscreen")
   print jp9.decode(a.split()[1])
+  for line in sys.stdin.read().split("\n"):
+    if len(line) > 3:
+      print jp9.decode(line)

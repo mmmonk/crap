@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20121010$
-# $Date: 2012-10-10 10:13:36$
+# $Date: 2012-10-10 15:22:55$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -280,7 +280,7 @@ def fileexists(filename):
 
 def uniqfilename(flist, filename):
   '''
-  makes sure that the filenames are unique and encoded correctly
+  makes sure that the filenames are unique
   '''
   filename = to_ascii(filename).replace(os.sep,"_")
   try:
@@ -295,9 +295,7 @@ def uniqfilename(flist, filename):
   return filename + "_"+str(flist[filename]) # if we don't see any extension then add the number at the end
 
 def progressindicator(sign):
-  '''
-  rotating line, progress indicator
-  '''
+  # rotating line, progress indicator
   if sign == "|":
     return "/"
   elif sign == "/":
@@ -307,6 +305,7 @@ def progressindicator(sign):
   return "|"
 
 def ts2time(ts,withseconds=False):
+  # converting seconds to a nicer looking display
   ts = int(ts)
 
   asctime = ""
@@ -321,6 +320,7 @@ def ts2time(ts,withseconds=False):
   return asctime
 
 def adjust_time(ts,format):
+  # adjusting various times to local tz
   os.environ['TZ'] = "America/Los_Angeles"
   time.tzset()
   ts = int(time.mktime(time.strptime(ts,format)))
@@ -329,10 +329,18 @@ def adjust_time(ts,format):
   return ts
 
 def to_ascii(s):
+  # this functions converts any UTF crap we may get into pure ascii
   if isinstance(s, str):
     return unicodedata.normalize('NFKD',s.decode('UTF-8','ignore')).encode('ascii','ignore')
   elif isinstance(s, unicode):
     return unicodedata.normalize('NFKD',s).encode('ascii','ignore')
+
+def cleandirname(s):
+  # this function is to clean up the directory name
+  s = re.sub("\W","_",s)
+  s =re.sub("_+","_",s)
+  s = s.strip("_")
+  return s
 
 def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
   '''
@@ -458,7 +466,6 @@ if __name__ == '__main__':
     group_attach.add_argument('-t','--temp-folder',action='store_true',help='this will download attachments to a folder "temp" in the destination folder (for cases that you just want to look at)')
     group_case = parser.add_argument_group('Case info')
     group_case.add_argument('-s','--status',action='store_true',help='show case status, customer information and exit, don\'t download anything')
-    group_case.add_argument('-cn','--case-notes',action='store_true',help='show case notes and exit, don\'t download anything')
     group_case.add_argument('-scn','--save-case-notes',action='store_true',help='save case notes to a file case_notes.txt in the case directory and exits')
     group_case.add_argument('-ccn','--check-case-notes',action='store_true',help='check if there are any new case notes (based on the timestamp of the case_notes.txt) and create a new case_notes.txt file if there is anything new')
     group_auth = parser.add_argument_group('Authentication')
@@ -485,8 +492,9 @@ if __name__ == '__main__':
       ct = nocolor_theme()
       arg.quiet = True
 
+    opt_case_notes = False
     if arg.save_case_notes == True or arg.check_case_notes == True:
-      arg.case_notes = True
+      opt_case_notes = True
 
     cases = {}
     for cid in arg.caseid+rest_argv:
@@ -580,7 +588,7 @@ if __name__ == '__main__':
       txt.err("wrong credentials for CM.")
       sys.exit(1)
 
-    if arg.case_notes == False and arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
+    if opt_case_notes == False and arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
       txt.ok(ct.style(ct.text,"logging into ftp server")+"\r")
       # trying to login to the ftp server
       try:
@@ -604,19 +612,21 @@ if __name__ == '__main__':
       if arg.temp_folder == True:
         arg.directory = str(arg.directory)+os.sep+"temp"
 
-      casedir = str(arg.directory)+os.sep+str(caseid)+os.sep
+      casedir = str(arg.directory)+os.sep+str(caseid)
 
+      casedirexists = False
       for direntry in os.listdir(arg.directory):
         if os.path.isdir(direntry) and direntry.startswith(caseid):
-          casedir =  str(arg.directory)+os.sep+str(direntry)+os.sep
+          casedirexists = True
+          casedir =  str(arg.directory)+os.sep+str(direntry)
 
       if opt_ucwd == True:
-        casedir = os.curdir+os.sep
+        casedirexists = True
+        casedir = os.curdir
 
       if arg.no_dir == True:
-        casedir = str(arg.directory)+os.sep
-
-      casedir = os.path.normpath(casedir)
+        casedirexists = True
+        casedir = str(arg.directory)
 
       txt.case(caseid)
       txt.ok(ct.style(ct.text,"case search")+"\r")
@@ -650,12 +660,21 @@ if __name__ == '__main__':
       cj.store()
 
       text = dat.read()
+      ntext = text.replace("\n"," ").replace("\r"," ")
+      details = dict(re.findall("<b>((?:\w|\s)+?):&nbsp;&nbsp;<\/b>(.+?)</t",ntext,flags=re.M))
+
+      if casedirexists == False:
+        casedir_suffix = "_" + cleandirname(to_ascii(details['Site']))[:10]+"_-_"+cleandirname(to_ascii(details['Synopsis']))[:30]
+        casedir += casedir_suffix
+
+      casedir = os.path.normpath(casedir+os.sep)
+
+      form = fparser.get_form(text,"case_detail")
 
       # this is for printing the detail status of the case
       if arg.status == True:
-        text = text.replace("\n"," ").replace("\r"," ")
 
-        contact = re.findall("onclick=\"NewWindow\('(my_contact_info\.jsp\?contact=.+?')",text)
+        contact = re.findall("onclick=\"NewWindow\('(my_contact_info\.jsp\?contact=.+?')",ntext)
 
         line = 0
         if len(contact) > 0:
@@ -669,7 +688,8 @@ if __name__ == '__main__':
             txt.ok(ct.style(rowcol,"Contact details - "+str(desc)+": "+str(value).replace("&nbsp;","").strip())+"\n",True)
             line += 1
 
-        for desc,value in re.findall("<b>((?:\w|\s)+?):&nbsp;&nbsp;<\/b>(.+?)</t",text,flags=re.M):
+        for desc in details:
+          value = details[desc]
           value = re.sub("<a.+?>.+?</a>"," ",value)
           value = re.sub("<(br|BR)/?>","\n",value,0)
           value = re.sub("<.+?>"," ",value,count=0)
@@ -681,10 +701,9 @@ if __name__ == '__main__':
         continue # we drop out of the loop here
 
       # case notes
-      if arg.case_notes == True:
+      if opt_case_notes == True or os.path.isfile(casedir+os.sep+"case_notes.txt"):
 
         try:
-          form = fparser.get_form(text,"case_detail")
           dat = urllib2.urlopen(urlcm+"case_all_note_details.jsp?cid="+quote(form['cid'])+"&cobj="+quote(form['cobj'])+"&caseOwnerEmail="+quote(form['caseOwnerEmail']))
         except urllib2.URLError as errstr:
           txt.err("while loading the case notes\nERROR: "+str(errstr))
@@ -695,9 +714,9 @@ if __name__ == '__main__':
         text = re.sub("(</?br>)+","<br>",text,flags=re.I)
         notes = re.findall("<tr valign=\"top\">(.+?)</tr>",text)
 
-        if arg.check_case_notes == True:
+        if arg.check_case_notes == True or os.path.isfile(casedir+os.sep+"case_notes.txt"):
           try:
-            mtime = os.stat(casedir+"/case_notes.txt")[8]
+            mtime = os.stat(casedir+os.sep+"case_notes.txt")[8]
           except OSError:
             txt.warn("no case_notes.txt file present, skipping. Use --save-case-notes first.")
             continue
@@ -709,44 +728,38 @@ if __name__ == '__main__':
             txt.warn("problem in decoding time of the latest case note")
             continue
 
+          opt_update_case_notes = False
           if mtime < lastcn:
             txt.ok(ct.style(ct.text,"there are new case notes in this case. Latest one is from ")+ct.style(ct.num,time.asctime(time.localtime(lastcn)))+"\n",True)
-            arg.save_case_notes = True
+            opt_update_case_notes = True
           else:
             txt.ok(ct.style(ct.text,"no new updates in the case")+"\n")
-            continue
 
-        if arg.save_case_notes == True:
+        if arg.save_case_notes == True or opt_update_case_notes == True:
           if not os.path.exists(casedir):
             os.makedirs(casedir,mode=0755)
+
           try:
             cn = open(casedir+"/case_notes.txt","w")
           except:
             txt.warn("can't create file to save case notes")
             continue
+
           txt.ok(ct.style(ct.text,"saving case notes into a file")+"\n")
 
-        line = 0
-        for note in notes:
-          note = to_ascii(h.unescape(to_ascii(note)))
-          note = re.sub("</?br>","\n",note,flags=re.I+re.M)
-          note = re.sub("<.+?>","",note)
-          rowcol = ct.row1
-          if line % 2 == 0:
-            rowcol = ct.row2
-          if arg.save_case_notes == True:
+          for note in notes:
+            note = to_ascii(h.unescape(to_ascii(note)))
+            note = re.sub("</?br>","\n",note,flags=re.I+re.M)
+            note = re.sub("<.+?>","",note)
             cn.write(note+"\n\n"+"#%"*37+"\n\n")
-          else:
-            print ct.style(rowcol,note)+"\n\n"+"#%"*37+"\n\n"
-          line += 1
-        if arg.save_case_notes == True:
+
           cn.close()
-        continue # we drop out of the loop here
+          if arg.save_case_notes == True:
+            continue # we drop out of the loop here
 
       # uploading files
       if len(arg.attach) > 0:
         try:
-          form = fparser.get_form(text,"case_detail")
           dat = urllib2.urlopen(urlcm+"case_attachments.jsp?cid="+form['cid']+"&cobj="+form['cobj']+"&caseOwnerEmail="+form['caseOwnerEmail'])
         except urllib2.URLError as errstr:
           txt.err("while loading the upload form\nERROR: "+str(errstr))
@@ -901,7 +914,7 @@ if __name__ == '__main__':
         except error_perm:
           pass
 
-    if arg.case_notes == False and arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
+    if opt_case_notes == False and arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
       ftp.quit()
 
     cj.store()

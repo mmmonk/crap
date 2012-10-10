@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121009$
-# $Date: 2012-10-09 16:28:49$
+# $Id: 20121010$
+# $Date: 2012-10-10 10:13:36$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -320,6 +320,14 @@ def ts2time(ts,withseconds=False):
     return asctime+str(ts)+"s"
   return asctime
 
+def adjust_time(ts,format):
+  os.environ['TZ'] = "America/Los_Angeles"
+  time.tzset()
+  ts = int(time.mktime(time.strptime(ts,format)))
+  os.environ.pop('TZ')
+  time.tzset()
+  return ts
+
 def to_ascii(s):
   if isinstance(s, str):
     return unicodedata.normalize('NFKD',s.decode('UTF-8','ignore')).encode('ascii','ignore')
@@ -492,8 +500,15 @@ if __name__ == '__main__':
       m = re.match("^\d{4}-\d{4}-\d{4}",os.path.basename(os.getcwd()))
       if m != None:
         cases[m.group(0)] = 1
-        arg.directory = ""
+        arg.directory = "."
         opt_ucwd = True
+      else:
+        for direntry in os.listdir("."):
+          if os.path.isdir(direntry):
+            m = re.match("^\d{4}-\d{4}-\d{4}",direntry)
+            if m != None:
+              cases[m.group(0)] = 1
+              arg.directory = "."
 
     # just to check we have enough information to go further
     if len(cases) == 0 or arg.user == "":
@@ -585,10 +600,15 @@ if __name__ == '__main__':
       # lets normalize the where to save the files here,
       # because we need this information in many places later
       arg.directory = arg.directory.rstrip(os.sep)
-      casedir = str(arg.directory)+os.sep+str(caseid)+os.sep
 
       if arg.temp_folder == True:
-        casedir = str(arg.directory)+os.sep+"temp"+os.sep+str(caseid)+os.sep
+        arg.directory = str(arg.directory)+os.sep+"temp"
+
+      casedir = str(arg.directory)+os.sep+str(caseid)+os.sep
+
+      for direntry in os.listdir(arg.directory):
+        if os.path.isdir(direntry) and direntry.startswith(caseid):
+          casedir =  str(arg.directory)+os.sep+str(direntry)+os.sep
 
       if opt_ucwd == True:
         casedir = os.curdir+os.sep
@@ -683,12 +703,8 @@ if __name__ == '__main__':
             continue
 
           lastcn = re.search(" class=\"tbc\">(\w+\s+\d+\s+\d+\s+\d+:\d+)\s+</td> <",notes[0]).group(1)
-          try: # attachments upload time is in PST/PDT we need to convert it to local time
-            os.environ['TZ'] = "America/Los_Angeles"
-            time.tzset()
-            lastcn = int(time.mktime(time.strptime(lastcn,"%b %d %Y %H:%M")))
-            os.environ.pop('TZ')
-            time.tzset()
+          try: # updates are in PST/PDT we need to convert it to local time
+            lastcn = adjust_time(lastcn,"%b %d %Y %H:%M")
           except:
             txt.warn("problem in decoding time of the latest case note")
             continue
@@ -777,11 +793,7 @@ if __name__ == '__main__':
           attsize = "?"
 
         try: # attachments upload time is in PST/PDT we need to convert it to local time
-          os.environ['TZ'] = "America/Los_Angeles"
-          time.tzset()
-          atttime = int(time.mktime(time.strptime(attmtime.pop(),"%Y-%m-%d %H:%M:%S")))
-          os.environ.pop('TZ')
-          time.tzset()
+          atttime = adjust_time(attmtime.pop(),"%Y-%m-%d %H:%M:%S")
         except:
           atttime = int(time.time())
 

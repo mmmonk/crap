@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121010$
-# $Date: 2012-10-10 15:22:55$
+# $Id: 20121011$
+# $Date: 2012-10-11 11:01:24$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -463,6 +463,7 @@ if __name__ == '__main__':
     group_attach.add_argument('-n','--newest',type=int,default=0,help='number of newest attachments to download/list from CM, this will skip FTP and SFTP')
     group_attach.add_argument('-nd','--no-dir',action='store_true',help='don\'t create the case directory just dump everything into root of the specified directory')
     group_attach.add_argument('-o','--overwrite',action='store_true',help='force overwrite of the files')
+    group_attach.add_argument('-rd','--rename-directory',action='store_true',help='rename a directory that is only a case number to add a better description')
     group_attach.add_argument('-t','--temp-folder',action='store_true',help='this will download attachments to a folder "temp" in the destination folder (for cases that you just want to look at)')
     group_case = parser.add_argument_group('Case info')
     group_case.add_argument('-s','--status',action='store_true',help='show case status, customer information and exit, don\'t download anything')
@@ -663,8 +664,15 @@ if __name__ == '__main__':
       ntext = text.replace("\n"," ").replace("\r"," ")
       details = dict(re.findall("<b>((?:\w|\s)+?):&nbsp;&nbsp;<\/b>(.+?)</t",ntext,flags=re.M))
 
-      if casedirexists == False:
+      if casedirexists == False or (arg.rename_directory == True and re.match("^\d{4}-\d{4}-\d{4}$",os.path.basename(casedir))):
         casedir_suffix = "_" + cleandirname(to_ascii(details['Site']))[:10]+"_-_"+cleandirname(to_ascii(details['Synopsis']))[:30]
+        if arg.rename_directory == True:
+          try:
+            os.rename(casedir,casedir+casedir_suffix)
+            txt.ok(ct.style(ct.text,"folder renamed from ")+ct.style(ct.fold,casedir)+ct.style(ct.text," to ")+ct.style(ct.fold,casedir+casedir_suffix)+"\n")
+          except:
+            txt.warn("folder renamed failed")
+            continue
         casedir += casedir_suffix
 
       casedir = os.path.normpath(casedir+os.sep)

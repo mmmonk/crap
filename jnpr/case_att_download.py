@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121011$
-# $Date: 2012-10-11 11:01:24$
+# $Id: 20121012$
+# $Date: 2012-10-12 14:05:09$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -17,6 +17,7 @@ socket.setdefaulttimeout(20)
 version = "20121009-dev"
 
 # TODO - make the HTTP connection use keep-alive
+# so that we only have a single TCP connection
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -60,7 +61,7 @@ class ftpcallback:
         eta = ts2time(int(((time.time()-self.ftpstime)/done)*(100-done)))
 
       self.ftpprogind = progressindicator(self.ftpprogind)
-      txt.ok(ct.style(ct.ok,"["+str(self.ftpprogind)+"]")+ct.style(ct.text," Getting ")+ct.style(ct.att,str(self.ftpatt))+" "+ct.style(ct.num,str(self.fcount/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+"        \r",True)
+      txt.ok(ct.ok("["+str(self.ftpprogind)+"]")+ct.text(" Getting ")+ct.att(str(self.ftpatt))+" "+ct.num(str(self.fcount/1024))+ct.text(" kB (")+ct.num(str(int(done)))+ct.text("% ETA:"+str(eta)+")")+"        \r",True)
 
 class FormParser(SGMLParser):
   '''
@@ -171,6 +172,41 @@ class bbg_theme(default_theme):
   '''
   pass
 
+class colortext:
+  # the actual printing class
+  def __init__(self,th):
+    self.theme = th
+
+  def att(self,text):
+    return self.theme.att+text+self.theme.norm
+
+  def case(self,text):
+    return self.theme.case+text+self.theme.norm
+
+  def err(self,text):
+    return self.theme.err+text+self.theme.norm
+
+  def fold(self,text):
+    return self.theme.fold+text+self.theme.norm
+
+  def num(self,text):
+    return self.theme.num+text+self.theme.norm
+
+  def ok(self,text):
+    return self.theme.ok+text+self.theme.norm
+
+  def row1(self,text):
+    return self.theme.row1+text+self.theme.norm
+
+  def row2(self,text):
+    return self.theme.row2+text+self.theme.norm
+
+  def text(self,text):
+    return self.theme.text+text+self.theme.norm
+
+  def warn(self,text):
+    return self.theme.warn+text+self.theme.norm
+
 class msg:
   '''
   messages printing class
@@ -193,19 +229,19 @@ class msg:
     normal messages
     '''
     if arg.quiet == False or force_print == True:
-      print ct.style(ct.ok,"[")+ct.style(ct.case,str(self.printcase("+")))+ct.style(ct.ok,"] ")+str(mesg),
+      print ct.ok("[")+ct.case(str(self.printcase("+")))+ct.ok("] ")+str(mesg),
 
   def warn(self,mesg):
     '''
     warning messages
     '''
-    print ct.style(ct.warn,"["+str(self.printcase("-"))+"] warning: "+str(mesg))
+    print ct.warn("["+str(self.printcase("-"))+"] warning: "+str(mesg))
 
   def err(self,mesg):
     '''
     error messages
     '''
-    print ct.style(ct.err,"["+str(self.printcase("!"))+"] error: "+str(mesg))
+    print ct.err("["+str(self.printcase("!"))+"] error: "+str(mesg))
 
 class cookiemonster (LWPCookieJar):
   '''
@@ -352,7 +388,7 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
   except error_perm:
     return
 
-  txt.ok(ct.style(ct.text,"found ")+ct.style(ct.num,str(len(ftplist)))+ct.style(ct.text," file(s) in ")+ct.style(ct.fold,str(ftp.pwd()))+"\n")
+  txt.ok(ct.text("found ")+ct.num(str(len(ftplist)))+ct.text(" file(s) in ")+ct.fold(str(ftp.pwd()))+"\n")
 
   for filename in ftplist:
 
@@ -372,7 +408,7 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
 
     if list == True:
       ftp.sendcmd("TYPE i")
-      txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(filename))+ct.style(ct.text," size: ")+ct.style(ct.num,str(int(ftp.size(str(filename)))/1024))+ct.style(ct.text," kB")+"\n",True)
+      txt.ok(ct.text("filename: ")+ct.att(str(filename))+ct.text(" size: ")+ct.num(str(int(ftp.size(str(filename)))/1024))+ct.text(" kB")+"\n",True)
       continue
 
     try:
@@ -384,13 +420,13 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
 
     # do we overwrite or not?
     if over == False and fileexists(lcasedir+os.sep+ftpatt):
-      txt.ok(ct.style(ct.text,"file already exists: ")+ct.style(ct.att,str(ftpatt))+"\n")
+      txt.ok(ct.text("file already exists: ")+ct.att(str(ftpatt))+"\n")
       continue
 
     if not os.path.exists(lcasedir):
       os.makedirs(lcasedir,mode=0755)
 
-    txt.ok(ct.style(ct.text,"downloading ")+ct.style(ct.att,str(ftpatt))+"\r",True)
+    txt.ok(ct.text("downloading ")+ct.att(str(ftpatt))+"\r",True)
     try:
       ftpfile = open(lcasedir+os.sep+str(ftpatt),"wb")
       ftp.sendcmd("TYPE i")
@@ -401,10 +437,10 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
       fcount = ftpcb.fcount
     except:
       os.unlink(lcasedir+os.sep+ftpatt)
-      txt.warn("error while downloading file: "+ct.style(ct.att,str(ftpatt)))
+      txt.warn("error while downloading file: "+ct.att(str(ftpatt)))
       continue
 
-    txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(ftpatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(fcount/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-ftpstime),1)))+"\n",True)
+    txt.ok(ct.text("download of ")+(ct.att,str(ftpatt))+ct.text(" size: ")+ct.num(str(fcount/1024))+ct.text(" kB done in "+str(ts2time(int(time.time()-ftpstime),1)))+"\n",True)
     os.utime(lcasedir+os.sep+ftpatt,(atttime,atttime))
     if os.name == "posix":
       os.chmod(lcasedir+os.sep+ftpatt,0644)
@@ -441,7 +477,7 @@ if __name__ == '__main__':
       pass
 
     # by default we use colors
-    ct = color_theme()
+    theme = color_theme()
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
         description="\
@@ -484,14 +520,16 @@ if __name__ == '__main__':
 
     # setting colors
     if arg.bright_background_color == True:
-      ct = bbg_theme()
+      theme = bbg_theme()
 
     if arg.disable_colors == True:
-      ct = nocolor_theme()
+      theme = nocolor_theme()
 
     if not sys.stdout.isatty():
-      ct = nocolor_theme()
+      theme = nocolor_theme()
       arg.quiet = True
+
+    ct = colortext(theme)
 
     opt_case_notes = False
     if arg.save_case_notes == True or arg.check_case_notes == True:
@@ -571,7 +609,7 @@ if __name__ == '__main__':
       arg.ftp_passwd = arg.passwd
 
     if not "Case Management Home" in text:
-      txt.ok(ct.style(ct.text,"logging into the CM")+"\r")
+      txt.ok(ct.text("logging into the CM")+"\r")
       try:
         form = fparser.get_form(text,"Login")
         form['login'] = arg.user
@@ -581,7 +619,7 @@ if __name__ == '__main__':
         txt.err("can't log into CM,\nERROR:"+str(errstr))
         sys.exit(1)
 
-    txt.ok(ct.style(ct.text,"in the CM")+"\r")
+    txt.ok(ct.text("in the CM")+"\r")
 
     mainpage = dat.read()
 
@@ -590,7 +628,7 @@ if __name__ == '__main__':
       sys.exit(1)
 
     if opt_case_notes == False and arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
-      txt.ok(ct.style(ct.text,"logging into ftp server")+"\r")
+      txt.ok(ct.text("logging into ftp server")+"\r")
       # trying to login to the ftp server
       try:
         ftp = FTP(ftpserver)
@@ -630,7 +668,7 @@ if __name__ == '__main__':
         casedir = str(arg.directory)
 
       txt.case(caseid)
-      txt.ok(ct.style(ct.text,"case search")+"\r")
+      txt.ok(ct.text("case search")+"\r")
       try:
         form = fparser.get_form(mainpage,"Login")
         form['keyword'] = caseid
@@ -640,7 +678,7 @@ if __name__ == '__main__':
         txt.err("while searching for the case\nERROR: "+str(errstr))
         continue
 
-      txt.ok(ct.style(ct.text,"getting details")+"\r")
+      txt.ok(ct.text("getting details")+"\r")
       try:
         text = dat.read()
         if not caseid in text:
@@ -669,7 +707,7 @@ if __name__ == '__main__':
         if arg.rename_directory == True:
           try:
             os.rename(casedir,casedir+casedir_suffix)
-            txt.ok(ct.style(ct.text,"folder renamed from ")+ct.style(ct.fold,casedir)+ct.style(ct.text," to ")+ct.style(ct.fold,casedir+casedir_suffix)+"\n")
+            txt.ok(ct.text("folder renamed from ")+ct.fold(casedir)+ct.text(" to ")+ct.fold(casedir+casedir_suffix)+"\n")
           except:
             txt.warn("folder renamed failed")
             continue
@@ -693,7 +731,7 @@ if __name__ == '__main__':
             rowcol = ct.row1
             if line % 2 == 0:
               rowcol = ct.row2
-            txt.ok(ct.style(rowcol,"Contact details - "+str(desc)+": "+str(value).replace("&nbsp;","").strip())+"\n",True)
+            txt.ok(rowcol("Contact details - "+str(desc)+": "+str(value).replace("&nbsp;","").strip())+"\n",True)
             line += 1
 
         for desc in details:
@@ -704,7 +742,7 @@ if __name__ == '__main__':
           rowcol = ct.row1
           if line % 2 == 0:
             rowcol = ct.row2
-          txt.ok(ct.style(rowcol,str(desc)+": "+str(value).replace("&nbsp;"," ").strip())+"\n",True)
+          txt.ok(rowcol(str(desc)+": "+str(value).replace("&nbsp;"," ").strip())+"\n",True)
           line += 1
         continue # we drop out of the loop here
 
@@ -738,10 +776,10 @@ if __name__ == '__main__':
 
           opt_update_case_notes = False
           if mtime < lastcn:
-            txt.ok(ct.style(ct.text,"there are new case notes in this case. Latest one is from ")+ct.style(ct.num,time.asctime(time.localtime(lastcn)))+"\n",True)
+            txt.ok(ct.text("there are new case notes in this case. Latest one is from ")+ct.num(time.asctime(time.localtime(lastcn)))+"\n",True)
             opt_update_case_notes = True
           else:
-            txt.ok(ct.style(ct.text,"no new updates in the case")+"\n")
+            txt.ok(ct.text("no new updates in the case")+"\n")
 
         if arg.save_case_notes == True or opt_update_case_notes == True:
           if not os.path.exists(casedir):
@@ -753,7 +791,7 @@ if __name__ == '__main__':
             txt.warn("can't create file to save case notes")
             continue
 
-          txt.ok(ct.style(ct.text,"saving case notes into a file")+"\n")
+          txt.ok(ct.text("saving case notes into a file")+"\n")
 
           for note in notes:
             note = to_ascii(h.unescape(to_ascii(note)))
@@ -762,7 +800,7 @@ if __name__ == '__main__':
             cn.write(note+"\n\n"+"#%"*37+"\n\n")
 
           cn.close()
-          if arg.save_case_notes == True:
+          if opt_case_notes == True:
             continue # we drop out of the loop here
 
       # uploading files
@@ -779,7 +817,7 @@ if __name__ == '__main__':
         print str(form)
         continue # upload has finished
 
-      txt.ok(ct.style(ct.text,"searching for files")+"\r")
+      txt.ok(ct.text("searching for files")+"\r")
       try:
         form = fparser.get_form(text,"case_detail")
         dat = urllib2.urlopen(urlcm+"case_attachments.jsp",urlencode(form))
@@ -795,10 +833,10 @@ if __name__ == '__main__':
       attmtime.reverse()
 
       if arg.list == False:
-        txt.ok(ct.style(ct.text,"will download to ")+ct.style(ct.fold,str(casedir)+"         ")+"\n")
+        txt.ok(ct.text("will download to ")+ct.fold(str(casedir)+"         ")+"\n")
 
       maxcmatt = len(attach)
-      txt.ok(ct.style(ct.text,"found total of ")+ct.style(ct.num,str(maxcmatt))+ct.style(ct.text," attachment(s) in CM")+"\n")
+      txt.ok(ct.text("found total of ")+ct.num(str(maxcmatt))+ct.text(" attachment(s) in CM")+"\n")
 
       filelist = dict()
 
@@ -834,7 +872,7 @@ if __name__ == '__main__':
         # just listing attachments
         if arg.list == True:
 
-          txt.ok(ct.style(ct.text,"filename: ")+ct.style(ct.att,str(attfilename))+ct.style(ct.text,"  size: ")+ct.style(ct.num,str(attsize))+ct.style(ct.text," KB  time: ")+ct.style(ct.fold,time.asctime(time.localtime(atttime)))+"\n",True)
+          txt.ok(ct.text("filename: ")+(ct.att,str(attfilename))+ct.text("  size: ")+ct.num(str(attsize))+ct.text(" KB  time: ")+ct.fold(time.asctime(time.localtime(atttime)))+"\n",True)
         else:
           # downloading attachments
 
@@ -843,7 +881,7 @@ if __name__ == '__main__':
 
           # do we overwrite or not?
           if arg.overwrite == 0 and fileexists(casedir+os.sep+caseatt):
-            txt.ok(ct.style(ct.text,"file already exists: ")+ct.style(ct.att,str(caseatt))+"\n")
+            txt.ok(ct.text("file already exists: ")+ct.att(str(caseatt))+"\n")
             continue
 
           # lets make sure that we have the destination directory
@@ -857,7 +895,7 @@ if __name__ == '__main__':
             att = urllib2.urlopen(urlcm+att)
           except urllib2.HTTPError as errstr:
             if "302" in str(errstr):
-              txt.ok(ct.style(ct.att,str(caseatt))+ct.style(ct.text," - this is probably from SFTP, will get it using FTP")+"\n")
+              txt.ok(ct.att(str(caseatt))+ct.text(" - this is probably from SFTP, will get it using FTP")+"\n")
             else:
               txt.warn("HTTP error while downloading "+str(caseatt)+" ERROR:"+str(errstr).replace(os.linesep," "))
             continue
@@ -881,23 +919,23 @@ if __name__ == '__main__':
                 lastprint = int(time.time())
                 progind = progressindicator(progind)
                 if attsize == "?":
-                  txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB")+(" "*20)+"\r",True)
+                  txt.ok(ct.ok("["+str(progind)+"]")+ct.text(" getting ")+ct.att(str(caseatt))+ct.text(" : ")+ct.num(str(csize/1024))+ct.text(" kB")+(" "*20)+"\r",True)
                 else:
                   done = (float(csize)/(attsize*1000))*100
                   if done == 0:
                     eta = "?"
                   else:
                     eta = ts2time(int(((time.time()-stime)/done)*(100-done)))
-                  txt.ok(ct.style(ct.ok,"["+str(progind)+"]")+ct.style(ct.text," getting ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," : ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB (")+ct.style(ct.num,str(int(done)))+ct.style(ct.text,"% ETA:"+str(eta)+")")+(" "*10)+"\r",True)
+                  txt.ok(ct.ok("["+str(progind)+"]")+ct.text(" getting ")+ct.att(str(caseatt))+(ct.text," : ")+ct.num(str(csize/1024))+ct.text(" kB (")+ct.num(str(int(done)))+ct.text("% ETA:"+str(eta)+")")+(" "*10)+"\r",True)
 
             save.close()
-            txt.ok(ct.style(ct.text,"download of ")+ct.style(ct.att,str(caseatt))+ct.style(ct.text," size: ")+ct.style(ct.num,str(csize/1024))+ct.style(ct.text," kB done in "+str(ts2time(int(time.time()-stime),1)))+"\n",True)
+            txt.ok(ct.text("download of ")+ct.att(str(caseatt))+ct.text(" size: ")+ct.num(str(csize/1024))+ct.text(" kB done in "+str(ts2time(int(time.time()-stime),1)))+"\n",True)
             os.utime(casedir+os.sep+caseatt,(atttime,atttime))
             if os.name == "posix":
               os.chmod(casedir+os.sep+caseatt,0644)
           except IOError as errstr:
             os.unlink(casedir+caseatt)
-            txt.warn("while downloading file: "+ct.style(ct.att,str(caseatt))+" ERROR:"+str(errstr))
+            txt.warn("while downloading file: "+ct.att(str(caseatt))+" ERROR:"+str(errstr))
 
       ### FTP SERVER
       if arg.newest == 0:

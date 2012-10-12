@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20121012$
-# $Date: 2012-10-12 14:05:09$
+# $Date: 2012-10-12 14:26:02$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -800,8 +800,8 @@ if __name__ == '__main__':
             cn.write(note+"\n\n"+"#%"*37+"\n\n")
 
           cn.close()
-          if opt_case_notes == True:
-            continue # we drop out of the loop here
+        if opt_case_notes == True:
+          continue # we drop out of the loop here
 
       # uploading files
       if len(arg.attach) > 0:

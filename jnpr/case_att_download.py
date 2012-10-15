@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20121015$
-# $Date: 2012-10-15 08:37:34$
+# $Date: 2012-10-15 17:39:24$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -440,7 +440,7 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
       txt.warn("error while downloading file: "+ct.att(str(ftpatt)))
       continue
 
-    txt.ok(ct.text("download of ")+(ct.att,str(ftpatt))+ct.text(" size: ")+ct.num(str(fcount/1024))+ct.text(" kB done in "+str(ts2time(int(time.time()-ftpstime),1)))+"\n",True)
+    txt.ok(ct.text("download of ")+ct.att(str(ftpatt))+ct.text(" size: ")+ct.num(str(fcount/1024))+ct.text(" kB done in "+str(ts2time(int(time.time()-ftpstime),1)))+"\n",True)
     os.utime(lcasedir+os.sep+ftpatt,(atttime,atttime))
     if os.name == "posix":
       os.chmod(lcasedir+os.sep+ftpatt,0644)
@@ -872,7 +872,7 @@ if __name__ == '__main__':
         # just listing attachments
         if arg.list == True:
 
-          txt.ok(ct.text("filename: ")+(ct.att,str(attfilename))+ct.text("  size: ")+ct.num(str(attsize))+ct.text(" KB  time: ")+ct.fold(time.asctime(time.localtime(atttime)))+"\n",True)
+          txt.ok(ct.text("filename: ")+ct.att(str(attfilename))+ct.text("  size: ")+ct.num(str(attsize))+ct.text(" KB  time: ")+ct.fold(time.asctime(time.localtime(atttime)))+"\n",True)
         else:
           # downloading attachments
 
@@ -926,7 +926,7 @@ if __name__ == '__main__':
                     eta = "?"
                   else:
                     eta = ts2time(int(((time.time()-stime)/done)*(100-done)))
-                  txt.ok(ct.ok("["+str(progind)+"]")+ct.text(" getting ")+ct.att(str(caseatt))+(ct.text," : ")+ct.num(str(csize/1024))+ct.text(" kB (")+ct.num(str(int(done)))+ct.text("% ETA:"+str(eta)+")")+str(" "*10)+"\r",True)
+                  txt.ok(ct.ok("["+str(progind)+"]")+ct.text(" getting ")+ct.att(str(caseatt))+ct.text(" : ")+ct.num(str(csize/1024))+ct.text(" kB (")+ct.num(str(int(done)))+ct.text("% ETA:"+str(eta)+")")+str(" "*10)+"\r",True)
 
             save.close()
             txt.ok(ct.text("download of ")+ct.att(str(caseatt))+ct.text(" size: ")+ct.num(str(csize/1024))+ct.text(" kB done in "+str(ts2time(int(time.time()-stime),1)))+"\n",True)

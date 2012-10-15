@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121012$
-# $Date: 2012-10-12 14:26:02$
+# $Id: 20121015$
+# $Date: 2012-10-15 08:37:34$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -926,7 +926,7 @@ if __name__ == '__main__':
                     eta = "?"
                   else:
                     eta = ts2time(int(((time.time()-stime)/done)*(100-done)))
-                  txt.ok(ct.ok("["+str(progind)+"]")+ct.text(" getting ")+ct.att(str(caseatt))+(ct.text," : ")+ct.num(str(csize/1024))+ct.text(" kB (")+ct.num(str(int(done)))+ct.text("% ETA:"+str(eta)+")")+(" "*10)+"\r",True)
+                  txt.ok(ct.ok("["+str(progind)+"]")+ct.text(" getting ")+ct.att(str(caseatt))+(ct.text," : ")+ct.num(str(csize/1024))+ct.text(" kB (")+ct.num(str(int(done)))+ct.text("% ETA:"+str(eta)+")")+str(" "*10)+"\r",True)
 
             save.close()
             txt.ok(ct.text("download of ")+ct.att(str(caseatt))+ct.text(" size: ")+ct.num(str(csize/1024))+ct.text(" kB done in "+str(ts2time(int(time.time()-stime),1)))+"\n",True)

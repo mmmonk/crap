@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121015$
-# $Date: 2012-10-15 17:39:24$
+# $Id: 20121017$
+# $Date: 2012-10-17 10:01:51$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -707,6 +707,7 @@ if __name__ == '__main__':
         if arg.rename_directory == True:
           try:
             os.rename(casedir,casedir+casedir_suffix)
+            os.chmod(casedir+casedir_suffix,0755)
             txt.ok(ct.text("folder renamed from ")+ct.fold(casedir)+ct.text(" to ")+ct.fold(casedir+casedir_suffix)+"\n")
           except:
             txt.warn("folder renamed failed")

@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
-# version: 20120114 
+# $Id: 20121017$
+# $Date: 2012-10-17 14:50:04$
+# $Author: Marek Lukaszuk$
 
 from scapy.all import conf,IP,TCP,sniff,send
-conf.verb = 0 
+conf.verb = 0
 
 from md5 import md5
 from time import sleep
@@ -32,7 +34,7 @@ salt = str(randint(0,256))
 
 # uniq seqence number generator based on some data
 def seqgen(data):
-  return int(md5(data).hexdigest(),16) >> 96 
+  return int(md5(data).hexdigest(),16) >> 96
 
 # function to check and print matching packets
 def checkpkt(pkt):
@@ -42,7 +44,7 @@ def checkpkt(pkt):
       if txt not in seen:
         print txt
         seen.append(txt)
-        return False # True if you want to capture the packets 
+        return False # True if you want to capture the packets
       else:
         return False
     else:
@@ -67,7 +69,7 @@ if __name__ == '__main__':
     ip6 = True
     maxmask = 128
 
-  msk = maxmask 
+  msk = maxmask
 
   if "/" in hosts:
     (net,msk) = hosts.split("/")
@@ -84,18 +86,18 @@ if __name__ == '__main__':
 
   addrbeg = (laddr>>(maxmask-msk)<<(maxmask-msk))
   addrend = (addrbeg|numhosts)
-   
+
   cpid = os.fork()
   if cpid:
     # the sending process
 
     sleep(5) # to make sure that the other process started listening for packets
-  
+
     if ip6 == False:
       pkt = IP(dst = int2addr(addrbeg,ip6))/TCP(sport = 1026, dport = port)
     else:
       pkt = IPV6(dst = int2addr(addrbeg,ip6))/TCP(sport = 1026, dport = port)
-    
+
     host = addrbeg
 
     try:

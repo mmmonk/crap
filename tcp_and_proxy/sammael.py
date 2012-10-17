@@ -1,13 +1,15 @@
 #!/usr/bin/python -u
 
-# $Id$
+# $Id: 20121017$
+# $Date: 2012-10-17 21:30:52$
+# $Author: Marek Lukaszuk$
 
 from fcntl import fcntl,F_SETFL
-from OpenSSL.SSL import WantReadError as SSL_WantReadError,SysCallError as SSL_SysCallError,ZeroReturnError as SSL_ZeroReturnError,Context as SSL_Context,SSLv3_METHOD,Connection as SSL_Connection
+from OpenSSL.SSL import WantReadError as SSL_WantReadError,SysCallError as SSL_SysCallError,ZeroReturnError as SSL_ZeroReturnError,Context as SSL_Context,TLSv1_METHOD,Connection as SSL_Connection
 from select import select
-from socket import socket,has_ipv6,SHUT_RDWR,AF_INET,AF_INET6,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,SOL_SOCKET,SO_REUSEADDR,error as socket_error 
+from socket import socket,has_ipv6,SHUT_RDWR,AF_INET,AF_INET6,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,SOL_SOCKET,SO_REUSEADDR,error as socket_error
 from os import chdir,getuid,setgid,setuid,umask,O_NONBLOCK,WNOHANG,fork,waitpid,getpid,getppid,chroot,makedirs,path
-from sys import exit 
+from sys import exit
 import pwd, grp
 
 phost = ''
@@ -52,18 +54,18 @@ def deamonsetup(uid_name='nobody', gid_name='nogroup'):
   umask(077)
 
 # main data exchnage function
-def exchange(s,c): 
-  # input: 
-  # s - ssl socket object 
+def exchange(s,c):
+  # input:
+  # s - ssl socket object
   # c - normal socket object
   # return:
   # nothing :)
-  
-  # setting every descriptor to be non blocking 
+
+  # setting every descriptor to be non blocking
   #fcntl(s, F_SETFL, O_NONBLOCK)
   #s.setblocking(0)
   #fcntl(c, F_SETFL, O_NONBLOCK)
-  
+
   s_recv = s.recv
   s_send = s.sendall
   c_recv = c.recv
@@ -81,9 +83,9 @@ def exchange(s,c):
       except SSL_SysCallError,SSL_ZeroReturnError:
         s.sock_shutdown(SHUT_RDWR)
         c.shutdown(SHUT_RDWR)
-        exit() 
+        exit()
 
-      if len(data) > 0: 
+      if len(data) > 0:
         c_send(data)
 
     elif c in toread and s in towrite:
@@ -92,7 +94,7 @@ def exchange(s,c):
       if len(data) == 0:
         c.shutdown(SHUT_RDWR)
         s.sock_shutdown(SHUT_RDWR)
-        exit() 
+        exit()
 
       else:
         s_send(data)
@@ -106,7 +108,7 @@ def main():
 
   plog("sammael ("+str(ver)+") - daemon starting")
 
-  if has_ipv6 == True: 
+  if has_ipv6 == True:
     s = socket(AF_INET6, SOCK_STREAM)
     s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
     s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -128,12 +130,12 @@ def main():
   plog("dropped privs")
 
   ### SSL context
-  ctx = SSL_Context(SSLv3_METHOD)
+  ctx = SSL_Context(TLSv1_METHOD)
 
   ctx.use_privatekey_file('/usr/local/certs/server.key')
   ctx.use_certificate_file('/usr/local/certs/server.crt')
   ctx.set_cipher_list('RC4:-aNULL')
- 
+
 
   plog("SSL context ready")
   plog("listening for connections")
@@ -147,16 +149,16 @@ def main():
       try:
         waitpid(0,WNOHANG)
       except OSError:
-        pass 
-   
+        pass
+
       pid = fork()
-   
+
       if pid == 0:
 
         chpid = getpid()
         plog("got connection from "+str(addr[0])+":"+str(addr[1]),chpid)
 
-        # let's add SSL to this socket 
+        # let's add SSL to this socket
         ssl = SSL_Connection(ctx,conn)
         ssl.setblocking(True)
         ssl.set_accept_state()
@@ -164,7 +166,7 @@ def main():
           ssl.do_handshake()
         except:
           plog("ssl handshake failed/not done",chpid)
-          exit()        
+          exit()
 
         plog("ssl handshake done",chpid)
         try:
@@ -175,8 +177,8 @@ def main():
         ssl.setblocking(False)
 
         if data and 'qwerty' in data:
-          dport = 22 
-     
+          dport = 22
+
         plog("connecting to "+str(dhost)+":"+str(dport)+" from "+str(addr[0])+":"+str(addr[1]),chpid)
         if has_ipv6 == True:
           proxy = socket(AF_INET6, SOCK_STREAM)
@@ -192,16 +194,16 @@ def main():
           exit()
 
         plog("connected to "+str(dhost)+":"+str(dport)+" from "+str(addr[0])+":"+str(addr[1]),chpid)
-        
+
         if dport == 80:
           proxy.send(data)
-      
+
         fcntl(proxy, F_SETFL, O_NONBLOCK)
 
         plog("going into exchange between "+str(dhost)+":"+str(dport)+" and "+str(addr[0])+":"+str(addr[1]),chpid)
 
         exchange(ssl,proxy)
-        exit() 
+        exit()
 
       else:
         plog("child forked "+str(pid))

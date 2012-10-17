@@ -1,7 +1,7 @@
 #!/usr/bin/python -u
 
 # $Id: 20121017$
-# $Date: 2012-10-17 21:30:52$
+# $Date: 2012-10-17 21:58:41$
 # $Author: Marek Lukaszuk$
 
 from fcntl import fcntl,F_SETFL
@@ -134,8 +134,9 @@ def main():
 
   ctx.use_privatekey_file('/usr/local/certs/server.key')
   ctx.use_certificate_file('/usr/local/certs/server.crt')
+  if path.isfile('/usr/local/cert/dh.dat'):
+    ctx.load_tmp_dh('/usr/local/cert/dh.dat')
   ctx.set_cipher_list('RC4:-aNULL')
-
 
   plog("SSL context ready")
   plog("listening for connections")

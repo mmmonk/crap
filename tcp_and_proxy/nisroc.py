@@ -1,8 +1,10 @@
 #!/usr/bin/python -u
 
-# $Id$
+# $Id: 20121017$
+# $Date: 2012-10-17 21:59:22$
+# $Author: Marek Lukaszuk$
 
-from OpenSSL.SSL import WantReadError as SSL_WantReadError,SysCallError as SSL_SysCallError,Context as SSL_Context,SSLv3_METHOD,Connection as SSL_Connection
+from OpenSSL.SSL import WantReadError as SSL_WantReadError,SysCallError as SSL_SysCallError,Context as SSL_Context,TLSv1_METHOD,Connection as SSL_Connection
 from fcntl import fcntl,F_SETFL
 from os import O_NONBLOCK,fork,environ
 from select import select
@@ -13,9 +15,9 @@ configfile = environ['HOME']+"/.nisrocrc"
 version = "$Rev$"
 
 def loadconfig():
-  
+
   global hostdata
-  
+
   hostdata = {}
 
   try:
@@ -31,7 +33,7 @@ def loadconfig():
       stderr.write("[?] data: "+str(val[0])+"-"+str(val[1])+"-"+str(val[2])+"-"+str(val[3])+"\n")
       if len(val) == 4:
         hostdata[str(val[0])+":"+str(val[1])] = str(val[2])+";"+str(val[3])
-        
+
 
 def appconfig(host,port,digest,key):
 
@@ -50,7 +52,7 @@ def exchange(s):
   # c - second socket object
   # return:
   # nothing :)
-  
+
   # setting every descriptor to be non blocking
   #fcntl(s, F_SETFL, O_NONBLOCK)
   fcntl(0, F_SETFL, O_NONBLOCK)
@@ -91,33 +93,33 @@ def exchange(s):
 if __name__ == '__main__':
 
   if len(argv) >= 3:
- 
+
     host = argv[1]
     port = int(argv[2])
- 
+
     if len(argv) >= 4:
       phost = argv[3]
       pport = 8080
 
     if len(argv) >= 5:
-      pport = int(argv[4]) 
+      pport = int(argv[4])
 
     loadconfig()
 
-    ctx = SSL_Context(SSLv3_METHOD)
-    
+    ctx = SSL_Context(TLSv1_METHOD)
+
     if (":" in host and has_ipv6 == True) or (len(argv) >= 4 and ":" in phost and has_ipv6 == True):
       proxy = socket(AF_INET6, SOCK_STREAM)
     else:
       proxy = socket(AF_INET, SOCK_STREAM)
-    proxy.setsockopt(IPPROTO_TCP, TCP_CORK,1)  
-  
+    proxy.setsockopt(IPPROTO_TCP, TCP_CORK,1)
+
     if len(argv) >= 4:
-      
+
       proxy_str = "CONNECT "+str(host)+":"+str(port)+" HTTP/1.0\r"
-      
+
       if len(argv) >= 5:
-        proxy_str = proxy_str + "Proxy-Authorization: Basic " + str(argv[5]) + "\r" 
+        proxy_str = proxy_str + "Proxy-Authorization: Basic " + str(argv[5]) + "\r"
 
       try:
         proxy.connect((phost,pport))
@@ -132,7 +134,7 @@ if __name__ == '__main__':
       except socket_error:
         proxy.close()
         exit("[-] problem connecting to proxy "+str(phost)+":"+str(pport))
-    else: 
+    else:
       try:
         proxy.connect((host,port))
       except socket_error:
@@ -156,7 +158,7 @@ if __name__ == '__main__':
 
     if digest_save != 0:
       if digest_save not in digest:
-        stderr.write("[-] cert digest wrong, possible MITM, exiting\n") 
+        stderr.write("[-] cert digest wrong, possible MITM, exiting\n")
     else:
       stderr.write("[?] cert digest "+str(digest)+" - not verifed\n")
 
@@ -171,11 +173,11 @@ if __name__ == '__main__':
     if data and 'OpenSSH' in data:
       stderr.write("[+] connected succesfully - nisroc ("+str(version)+")\n")
     else:
-      exit("[-] wrong key")      
+      exit("[-] wrong key")
 
     if key == 0:
       stderr.write("[+] adding host information to config file "+str(configfile)+"\n")
-      appconfig(host,port,digest,environ['nisroc']) 
+      appconfig(host,port,digest,environ['nisroc'])
 
     stdout.write(data)
 

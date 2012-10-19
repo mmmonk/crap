@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20121019$
-# $Date: 2012-10-19 11:10:55$
+# $Date: 2012-10-19 11:29:00$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -297,11 +297,12 @@ def LoadConf(filename):
   line = conf.readline()
 
   while line:
-    try:
-      conft = line.replace(os.linesep,'').split("=")
-      confvar[conft[0]] = conft[1]
-    except:
-      pass
+    if not line.startswith("#"):
+      try:
+        conft = line.replace(os.linesep,'').split("=")
+        confvar[conft[0]] = conft[1]
+      except:
+        pass
     line = conf.readline()
 
   return confvar
@@ -469,6 +470,7 @@ if __name__ == '__main__':
     try:
       opt_pass = confvar['cmpass']
     except:
+      opt_pass = ""
       pass
 
     try:

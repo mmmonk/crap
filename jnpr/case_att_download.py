@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20121019$
-# $Date: 2012-10-19 11:29:00$
+# $Date: 2012-10-19 11:57:00$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -493,8 +493,9 @@ if __name__ == '__main__':
   cmpass=YOUR_PASSWORD_FOR_CM\n\
   cmdir=THE_MAIN_DIRECTORY_WHERE_TO_DOWNLOAD_ATTACHMENTS")
 
+    parser.add_argument('caseid',nargs='+',default=[],help="Case ID - if the caseid is not provided script will check if the current folder name starts with something that looks like a case id, if yes then it will be used. If ths fails, then we will look for folders inside current directory that start with caseid's and work on all of them");
     group_attach = parser.add_argument_group('Attachments')
-    group_attach.add_argument('-a','--attach',default=[],action='append',help='attach file to the case')
+    group_attach.add_argument('-a','--attach',default=[],action='append',help='attach file to the case - ### DOESN\'T WORK YET ###') # TODO
     group_attach.add_argument('-d','--directory',default=opt_dir,help='directory where to download attachments,inside that directory a directory with the case number will be created. If not provided the value from the config file will be used, if the config file is not there the current directory will be used')
     group_attach.add_argument('-e','--exclude',default="",help='(exclude) skip downloading or listing attachments which filenames match regexp')
     group_attach.add_argument('-i','--include',default="",help='(include) download or list only attachments which filenames match regexp. If specified together with --exclude the --include regexp is matched first')
@@ -517,7 +518,6 @@ if __name__ == '__main__':
     group_color.add_argument('-dc','--disable-colors',action='store_true',help='disable colors')
     parser.add_argument('-q','--quiet',action='store_true',help='be quiet, print only information when a file is downloaded')
     parser.add_argument('-v','--version',action='version', version="%(prog)s\nversion: "+str(version))
-    parser.add_argument('caseid',nargs='+',default=[],help="Case ID - if not provided script will check if the current folder name starts with something that looks like a case id, if yes then it will be used");
 
     (arg,rest_argv) = parser.parse_known_args(sys.argv)
 

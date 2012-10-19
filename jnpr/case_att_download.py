@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121017$
-# $Date: 2012-10-17 10:01:51$
+# $Id: 20121019$
+# $Date: 2012-10-19 11:10:55$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -463,6 +463,7 @@ if __name__ == '__main__':
     try:
       opt_user = confvar['cmuser']
     except:
+      opt_user = ""
       pass
 
     try:

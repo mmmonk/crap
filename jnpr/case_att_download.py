@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121019$
-# $Date: 2012-10-19 11:57:00$
+# $Id: 20121024$
+# $Date: 2012-10-24 16:25:07$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -14,10 +14,12 @@ import argparse, os, re, sys, time, socket, urllib2, httplib, urlparse, HTMLPars
 # the default timeout for all operations
 socket.setdefaulttimeout(20)
 
-version = "20121009-dev"
+version = "20121024-dev"
 
-# TODO - make the HTTP connection use keep-alive
-# so that we only have a single TCP connection
+# TODO:
+# - make the HTTP connection use keep-alive
+#   so that we only have a single TCP connection
+# - upload attachments
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -213,34 +215,22 @@ class msg:
   '''
   caseid = ""
 
-  def case(self,cid):
-    '''
-    sets case id
-    '''
-    self.caseid = cid
-
   def printcase(self,sign):
     if self.caseid == "":
       return sign
     return self.caseid
 
   def ok(self,mesg,force_print=False):
-    '''
-    normal messages
-    '''
+    # normal messages
     if arg.quiet == False or force_print == True:
       print ct.ok("[")+ct.case(str(self.printcase("+")))+ct.ok("] ")+str(mesg),
 
   def warn(self,mesg):
-    '''
-    warning messages
-    '''
+    # warning messages
     print ct.warn("["+str(self.printcase("-"))+"] warning: "+str(mesg))
 
   def err(self,mesg):
-    '''
-    error messages
-    '''
+    # error messages
     print ct.err("["+str(self.printcase("!"))+"] error: "+str(mesg))
 
 class cookiemonster (LWPCookieJar):
@@ -255,30 +245,30 @@ class cookiemonster (LWPCookieJar):
           os.chmod(self.filename,0600)
       except:
         pass
-
+# TODO
 # http://code.activestate.com/recipes/456195/
-class MyHTTPConnection(httplib.HTTPConnection):
-  def __init__(self, host, port = None):
-    print str(host)+" "+str(port)
-    urllib2.HTTPConnection.__init__(self, host, port)
-
-  def send(self, s):
-    print str(s)
-    httplib.HTTPConnection.send(self, s)
-
-  def close(self):
-    pass
-
-  def connect(self):
-    print "== connecting =="
-    urllib2.HTTPConnection.connect(self)
-
-class MyHTTPHandler(urllib2.HTTPHandler):
-
-  def http_open(self, req):
-    pass
-    urllib2.HTTPHandler.set_http_debuglevel(self, 255)
-    return self.do_open(MyHTTPConnection, req)
+#class MyHTTPConnection(httplib.HTTPConnection):
+#  def __init__(self, host, port = None):
+#    print str(host)+" "+str(port)
+#    urllib2.HTTPConnection.__init__(self, host, port)
+#
+#  def send(self, s):
+#    print str(s)
+#    httplib.HTTPConnection.send(self, s)
+#
+#  def close(self):
+#    pass
+#
+#  def connect(self):
+#    print "== connecting =="
+#    urllib2.HTTPConnection.connect(self)
+#
+#class MyHTTPHandler(urllib2.HTTPHandler):
+#
+#  def http_open(self, req):
+#    pass
+#    urllib2.HTTPHandler.set_http_debuglevel(self, 255)
+#    return self.do_open(MyHTTPConnection, req)
 
 def LoadConf(filename):
   '''
@@ -309,8 +299,7 @@ def LoadConf(filename):
 
 def fileexists(filename):
   try:
-    save = open(filename,"r")
-    save.close()
+    open(filename,"r")
     return 1
   except IOError:
     return 0
@@ -375,7 +364,7 @@ def to_ascii(s):
 def cleandirname(s):
   # this function is to clean up the directory name
   s = re.sub("\W","_",s)
-  s =re.sub("_+","_",s)
+  s = re.sub("_+","_",s)
   s = s.strip("_")
   return s
 
@@ -507,8 +496,6 @@ if __name__ == '__main__':
     group_attach.add_argument('-t','--temp-folder',action='store_true',help='this will download attachments to a folder "temp" in the destination folder (for cases that you just want to look at)')
     group_case = parser.add_argument_group('Case info')
     group_case.add_argument('-s','--status',action='store_true',help='show case status, customer information and exit, don\'t download anything')
-    group_case.add_argument('-scn','--save-case-notes',action='store_true',help='save case notes to a file case_notes.txt in the case directory and exits')
-    group_case.add_argument('-ccn','--check-case-notes',action='store_true',help='check if there are any new case notes (based on the timestamp of the case_notes.txt) and create a new case_notes.txt file if there is anything new')
     group_auth = parser.add_argument_group('Authentication')
     group_auth.add_argument('-u','--user',default=opt_user,help='user name used for the CM')
     group_auth.add_argument('-p','--passwd',default=opt_pass,help='password used for the CM')
@@ -533,10 +520,6 @@ if __name__ == '__main__':
       arg.quiet = True
 
     ct = colortext(theme)
-
-    opt_case_notes = False
-    if arg.save_case_notes == True or arg.check_case_notes == True:
-      opt_case_notes = True
 
     cases = {}
     for cid in arg.caseid+rest_argv:
@@ -571,10 +554,6 @@ if __name__ == '__main__':
       cj.load(ignore_discard=True, ignore_expires=True)
     except IOError:
       pass
-
-#    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#    url = urlparse.urlparse(urlcm)
-#    sock.connect((socket.gethostbyname(url[1]),int(socket.getservbyname(url[0]))))
 
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
     opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20100101 Firefox/16.0'),('Accept-Language','en-us,en;q=0.5'),('Accept','text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'),('Connection','Keep-Alive')]
@@ -611,6 +590,7 @@ if __name__ == '__main__':
     if arg.ftp_passwd == "":
       arg.ftp_passwd = arg.passwd
 
+    # logging into the web CM
     if not "Case Management Home" in text:
       txt.ok(ct.text("logging into the CM")+"\r")
       try:
@@ -630,7 +610,7 @@ if __name__ == '__main__':
       txt.err("wrong credentials for CM.")
       sys.exit(1)
 
-    if opt_case_notes == False and arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
+    if arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
       txt.ok(ct.text("logging into ftp server")+"\r")
       # trying to login to the ftp server
       try:
@@ -670,7 +650,8 @@ if __name__ == '__main__':
         casedirexists = True
         casedir = str(arg.directory)
 
-      txt.case(caseid)
+      # searching for the case
+      txt.caseid = caseid
       txt.ok(ct.text("case search")+"\r")
       try:
         form = fparser.get_form(mainpage,"Login")
@@ -705,6 +686,7 @@ if __name__ == '__main__':
       ntext = text.replace("\n"," ").replace("\r"," ")
       details = dict(re.findall("<b>((?:\w|\s)+?):&nbsp;&nbsp;<\/b>(.+?)</t",ntext,flags=re.M))
 
+      # creating the correct folder name, also renaming folders
       if casedirexists == False or (arg.rename_directory == True and re.match("^\d{4}-\d{4}-\d{4}$",os.path.basename(casedir))):
         casedir_suffix = "_" + cleandirname(to_ascii(details['Site']))[:10]+"_-_"+cleandirname(to_ascii(details['Synopsis']))[:30]
         if arg.rename_directory == True:
@@ -751,61 +733,57 @@ if __name__ == '__main__':
         continue # we drop out of the loop here
 
       # case notes
-      if opt_case_notes == True or os.path.isfile(casedir+os.sep+"case_notes.txt"):
+      try:
+        dat = urllib2.urlopen(urlcm+"case_all_note_details.jsp?cid="+quote(form['cid'])+"&cobj="+quote(form['cobj'])+"&caseOwnerEmail="+quote(form['caseOwnerEmail']))
+      except urllib2.URLError as errstr:
+        txt.err("while loading the case notes\nERROR: "+str(errstr))
+        continue
+
+      h = HTMLParser.HTMLParser()
+      text = re.sub("[ \t\n\r\f\v]+"," ",dat.read(),flags=re.M)
+      text = re.sub("(</?br>)+","<br>",text,flags=re.I)
+      notes = re.findall("<tr valign=\"top\">(.+?)</tr>",text)
+
+      try:
+        mtime = os.stat(casedir+os.sep+"case_notes.txt")[8]
+      except OSError:
+        mtime = 0
+
+      lastcn = re.search(" class=\"tbc\">(\w+\s+\d+\s+\d+\s+\d+:\d+)\s+</td> <",notes[0]).group(1)
+      try: # updates are in PST/PDT we need to convert it to local time
+        lastcn = adjust_time(lastcn,"%b %d %Y %H:%M")
+      except:
+        txt.warn("problem in decoding time of the latest case note")
+        continue
+
+      opt_update_case_notes = False
+      if mtime < lastcn:
+        if mtime > 0:
+          txt.ok(ct.text("there are new case notes in this case. Latest one is from ")+ct.num(time.asctime(time.localtime(lastcn)))+"\n",True)
+        opt_update_case_notes = True
+      else:
+        txt.ok(ct.text("no new updates in the case")+"\n")
+
+      if opt_update_case_notes == True:
+
+        if not os.path.exists(casedir):
+          os.makedirs(casedir,mode=0755)
 
         try:
-          dat = urllib2.urlopen(urlcm+"case_all_note_details.jsp?cid="+quote(form['cid'])+"&cobj="+quote(form['cobj'])+"&caseOwnerEmail="+quote(form['caseOwnerEmail']))
-        except urllib2.URLError as errstr:
-          txt.err("while loading the case notes\nERROR: "+str(errstr))
+          cn = open(casedir+"/case_notes.txt","w")
+        except:
+          txt.warn("can't create file to save case notes")
           continue
 
-        h = HTMLParser.HTMLParser()
-        text = re.sub("[ \t\n\r\f\v]+"," ",dat.read(),flags=re.M)
-        text = re.sub("(</?br>)+","<br>",text,flags=re.I)
-        notes = re.findall("<tr valign=\"top\">(.+?)</tr>",text)
+        txt.ok(ct.text("saving case notes into a file in ")+ct.fold(casedir)+"\n")
 
-        if arg.check_case_notes == True or os.path.isfile(casedir+os.sep+"case_notes.txt"):
-          try:
-            mtime = os.stat(casedir+os.sep+"case_notes.txt")[8]
-          except OSError:
-            txt.warn("no case_notes.txt file present, skipping. Use --save-case-notes first.")
-            continue
+        for note in notes:
+          note = to_ascii(h.unescape(to_ascii(note)))
+          note = re.sub("</?br>","\n",note,flags=re.I+re.M)
+          note = re.sub("<.+?>","",note)
+          cn.write(note+"\n\n"+"#%"*37+"\n\n")
 
-          lastcn = re.search(" class=\"tbc\">(\w+\s+\d+\s+\d+\s+\d+:\d+)\s+</td> <",notes[0]).group(1)
-          try: # updates are in PST/PDT we need to convert it to local time
-            lastcn = adjust_time(lastcn,"%b %d %Y %H:%M")
-          except:
-            txt.warn("problem in decoding time of the latest case note")
-            continue
-
-          opt_update_case_notes = False
-          if mtime < lastcn:
-            txt.ok(ct.text("there are new case notes in this case. Latest one is from ")+ct.num(time.asctime(time.localtime(lastcn)))+"\n",True)
-            opt_update_case_notes = True
-          else:
-            txt.ok(ct.text("no new updates in the case")+"\n")
-
-        if arg.save_case_notes == True or opt_update_case_notes == True:
-          if not os.path.exists(casedir):
-            os.makedirs(casedir,mode=0755)
-
-          try:
-            cn = open(casedir+"/case_notes.txt","w")
-          except:
-            txt.warn("can't create file to save case notes")
-            continue
-
-          txt.ok(ct.text("saving case notes into a file")+"\n")
-
-          for note in notes:
-            note = to_ascii(h.unescape(to_ascii(note)))
-            note = re.sub("</?br>","\n",note,flags=re.I+re.M)
-            note = re.sub("<.+?>","",note)
-            cn.write(note+"\n\n"+"#%"*37+"\n\n")
-
-          cn.close()
-        if opt_case_notes == True:
-          continue # we drop out of the loop here
+        cn.close()
 
       # uploading files
       if len(arg.attach) > 0:
@@ -821,6 +799,7 @@ if __name__ == '__main__':
         print str(form)
         continue # upload has finished
 
+      # downloading files
       txt.ok(ct.text("searching for files")+"\r")
       try:
         form = fparser.get_form(text,"case_detail")
@@ -941,10 +920,10 @@ if __name__ == '__main__':
             os.unlink(casedir+caseatt)
             txt.warn("while downloading file: "+ct.att(str(caseatt))+" ERROR:"+str(errstr))
 
-      ### FTP SERVER
+      # FTP server connection
       if arg.newest == 0:
 
-        ### checking ftp upload directory
+        # checking ftp upload directory
         try:
           try:
             ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
@@ -957,14 +936,14 @@ if __name__ == '__main__':
         except error_perm:
           pass
 
-        ### checking sftp upload directory
+        # checking sftp upload directory
         try:
           ftp.cwd("/volume/sftp/pub/incoming/"+caseid)
           ftpcheck(filelist,caseid,casedir,ftp,arg.include,arg.exclude,arg.list,arg.overwrite)
         except error_perm:
           pass
 
-    if opt_case_notes == False and arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
+    if arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
       ftp.quit()
 
     cj.store()

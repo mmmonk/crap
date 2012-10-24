@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20121024$
-# $Date: 2012-10-24 17:03:48$
+# $Date: 2012-10-24 17:52:35$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -21,10 +21,6 @@ TODO:
 - make the HTTP connection use keep-alive
   so that we only have a single TCP connection
 - upload attachments
-- def for creating dirs with proper permissions
-  check for POSIX and then 755
-- def for changing all the files permissions to 644
-  again, check for POSIX
 
 '''
 
@@ -311,6 +307,17 @@ def fileexists(filename):
   except IOError:
     return 0
 
+def makedir(dir):
+
+  if not os.path.exists(dir):
+    try:
+      os.makedirs(dir)
+      if os.name == "posix":
+        os.chmod(dir,0755)
+    except:
+      txt.err("can't create directory "+dir)
+      sys.exit(1)
+
 def uniqfilename(flist, filename):
   '''
   makes sure that the filenames are unique
@@ -420,8 +427,7 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
       txt.ok(ct.text("file already exists: ")+ct.att(str(ftpatt))+"\n")
       continue
 
-    if not os.path.exists(lcasedir):
-      os.makedirs(lcasedir,mode=0755)
+    makedir(lcasedir)
 
     txt.ok(ct.text("downloading ")+ct.att(str(ftpatt))+"\r",True)
     try:
@@ -774,8 +780,7 @@ if __name__ == '__main__':
 
       if opt_update_case_notes == True:
 
-        if not os.path.exists(casedir):
-          os.makedirs(casedir,mode=0755)
+        makedir(casedir)
 
         try:
           cn = open(casedir+os.sep+casenotesfile,"w")
@@ -792,6 +797,8 @@ if __name__ == '__main__':
           cn.write(note+"\n\n"+"#%"*37+"\n\n")
 
         cn.close()
+        if os.name == "posix":
+          os.chmod(casedir+os.sep+casenotesfile,0644)
 
       # uploading files
       if len(arg.attach) > 0:
@@ -877,8 +884,7 @@ if __name__ == '__main__':
             continue
 
           # lets make sure that we have the destination directory
-          if not os.path.exists(casedir):
-            os.makedirs(casedir,mode=0755)
+          makedir(casedir)
 
           try:
             #att = quote(att) # this doesn't work anymore

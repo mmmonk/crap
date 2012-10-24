@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20121024$
-# $Date: 2012-10-24 16:25:07$
+# $Date: 2012-10-24 17:03:48$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -16,10 +16,17 @@ socket.setdefaulttimeout(20)
 
 version = "20121024-dev"
 
-# TODO:
-# - make the HTTP connection use keep-alive
-#   so that we only have a single TCP connection
-# - upload attachments
+'''
+TODO:
+- make the HTTP connection use keep-alive
+  so that we only have a single TCP connection
+- upload attachments
+- def for creating dirs with proper permissions
+  check for POSIX and then 755
+- def for changing all the files permissions to 644
+  again, check for POSIX
+
+'''
 
 # class for unbuffering stdout
 class Unbuffered:
@@ -239,7 +246,7 @@ class cookiemonster (LWPCookieJar):
   '''
   def store(self):
     if not self.filename == "":
-      try:
+      try: # we don't care if the cookie expired or is per session
         self.save(self.filename,ignore_discard=True,ignore_expires=True)
         if os.name == "posix":
           os.chmod(self.filename,0600)
@@ -440,6 +447,7 @@ if __name__ == '__main__':
   sys.stdout = Unbuffered(sys.stdout)
 
   cookiefile = ""
+  casenotesfile = "case_notes.txt" # in this file we will save case notes
 
   if os.name == "posix":
     conffile = str(os.environ['HOME'])+os.sep+'.cm.conf'
@@ -745,7 +753,7 @@ if __name__ == '__main__':
       notes = re.findall("<tr valign=\"top\">(.+?)</tr>",text)
 
       try:
-        mtime = os.stat(casedir+os.sep+"case_notes.txt")[8]
+        mtime = os.stat(casedir+os.sep+casenotesfile)[8]
       except OSError:
         mtime = 0
 
@@ -770,7 +778,7 @@ if __name__ == '__main__':
           os.makedirs(casedir,mode=0755)
 
         try:
-          cn = open(casedir+"/case_notes.txt","w")
+          cn = open(casedir+os.sep+casenotesfile,"w")
         except:
           txt.warn("can't create file to save case notes")
           continue
@@ -822,6 +830,7 @@ if __name__ == '__main__':
       txt.ok(ct.text("found total of ")+ct.num(str(maxcmatt))+ct.text(" attachment(s) in CM")+"\n")
 
       filelist = dict()
+      filelist[casenotesfile] = 0 # to make sure that we will never have a collision with the case notes file
 
       curcmatt = 1
       # looping through the attachments

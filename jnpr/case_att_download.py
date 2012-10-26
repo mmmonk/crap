@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121024$
-# $Date: 2012-10-24 17:52:35$
+# $Id: 20121025$
+# $Date: 2012-10-25 16:59:13$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -14,14 +14,15 @@ import argparse, os, re, sys, time, socket, urllib2, httplib, urlparse, HTMLPars
 # the default timeout for all operations
 socket.setdefaulttimeout(20)
 
-version = "20121024-dev"
+version = "BETA !!!"
 
 '''
 TODO:
 - make the HTTP connection use keep-alive
   so that we only have a single TCP connection
 - upload attachments
-
+- check for errors on writing to file /write
+  make them fatal (sys.exit(1))
 '''
 
 # class for unbuffering stdout
@@ -308,7 +309,6 @@ def fileexists(filename):
     return 0
 
 def makedir(dir):
-
   if not os.path.exists(dir):
     try:
       os.makedirs(dir)
@@ -448,12 +448,14 @@ def ftpcheck(filelist,caseid,lcasedir,ftp,include,exclude,list,over):
     if os.name == "posix":
       os.chmod(lcasedir+os.sep+ftpatt,0644)
 
+###################### MAIN ######################
 if __name__ == '__main__':
 
   sys.stdout = Unbuffered(sys.stdout)
 
   cookiefile = ""
   casenotesfile = "case_notes.txt" # in this file we will save case notes
+  casestatusfile = "case_status.txt" # in this file we will save case status
 
   if os.name == "posix":
     conffile = str(os.environ['HOME'])+os.sep+'.cm.conf'
@@ -508,8 +510,8 @@ if __name__ == '__main__':
     group_attach.add_argument('-o','--overwrite',action='store_true',help='force overwrite of the files')
     group_attach.add_argument('-rd','--rename-directory',action='store_true',help='rename a directory that is only a case number to add a better description')
     group_attach.add_argument('-t','--temp-folder',action='store_true',help='this will download attachments to a folder "temp" in the destination folder (for cases that you just want to look at)')
-    group_case = parser.add_argument_group('Case info')
-    group_case.add_argument('-s','--status',action='store_true',help='show case status, customer information and exit, don\'t download anything')
+    #group_case = parser.add_argument_group('Case info')
+    #group_case.add_argument('-s','--status',action='store_true',help='show case status, customer information and exit, don\'t download anything')
     group_auth = parser.add_argument_group('Authentication')
     group_auth.add_argument('-u','--user',default=opt_user,help='user name used for the CM')
     group_auth.add_argument('-p','--passwd',default=opt_pass,help='password used for the CM')
@@ -624,7 +626,7 @@ if __name__ == '__main__':
       txt.err("wrong credentials for CM.")
       sys.exit(1)
 
-    if arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
+    if arg.newest == 0 and len(arg.attach) == 0:
       txt.ok(ct.text("logging into ftp server")+"\r")
       # trying to login to the ftp server
       try:
@@ -706,7 +708,8 @@ if __name__ == '__main__':
         if arg.rename_directory == True:
           try:
             os.rename(casedir,casedir+casedir_suffix)
-            os.chmod(casedir+casedir_suffix,0755)
+            if os.name == "posix":
+              os.chmod(casedir+casedir_suffix,0755)
             txt.ok(ct.text("folder renamed from ")+ct.fold(casedir)+ct.text(" to ")+ct.fold(casedir+casedir_suffix)+"\n")
           except:
             txt.warn("folder renamed failed")
@@ -717,88 +720,91 @@ if __name__ == '__main__':
 
       form = fparser.get_form(text,"case_detail")
 
-      # this is for printing the detail status of the case
-      if arg.status == True:
+      # the detail status of the case
+      if arg.list == False:
+
+        makedir(casedir)
+        txt.ok(ct.text("case folder is ")+ct.fold(str(casedir)+" "*30)+"\n")
 
         contact = re.findall("onclick=\"NewWindow\('(my_contact_info\.jsp\?contact=.+?')",ntext)
 
-        line = 0
+        txt.ok(ct.text("saving case status into a file")+"\n")
+        try:
+          cs = open(casedir+os.sep+casestatusfile,"w")
+        except:
+          txt.warn("can't create file to save case notes")
+          continue
+
         if len(contact) > 0:
           dat = urllib2.urlopen(urlcm+contact[0])
           contact = re.sub("\s+"," ",dat.read().replace("\n"," ").replace("\r"," "))
           contact = re.sub("</?a(>| href=.+?>)","",contact)
           for desc,value in re.findall("<td class=\"tbcbold\">(.+?):</td>.*?<td class=\"tbc\">(.+?)</td>",contact):
-            rowcol = ct.row1
-            if line % 2 == 0:
-              rowcol = ct.row2
-            txt.ok(rowcol("Contact details - "+str(desc)+": "+str(value).replace("&nbsp;","").strip())+"\n",True)
-            line += 1
+            cs.write(str(desc)+": "+str(value).replace("&nbsp;"," ").strip()+"\n")
 
         for desc in details:
           value = details[desc]
           value = re.sub("<a.+?>.+?</a>"," ",value)
           value = re.sub("<(br|BR)/?>","\n",value,0)
           value = re.sub("<.+?>"," ",value,count=0)
-          rowcol = ct.row1
-          if line % 2 == 0:
-            rowcol = ct.row2
-          txt.ok(rowcol(str(desc)+": "+str(value).replace("&nbsp;"," ").strip())+"\n",True)
-          line += 1
-        continue # we drop out of the loop here
+          cs.write(str(desc)+": "+str(value).replace("&nbsp;"," ").strip()+"\n")
 
-      # case notes
-      try:
-        dat = urllib2.urlopen(urlcm+"case_all_note_details.jsp?cid="+quote(form['cid'])+"&cobj="+quote(form['cobj'])+"&caseOwnerEmail="+quote(form['caseOwnerEmail']))
-      except urllib2.URLError as errstr:
-        txt.err("while loading the case notes\nERROR: "+str(errstr))
-        continue
+        cs.close()
+        if os.name == "posix":
+            os.chmod(casedir+os.sep+casestatusfile,0644)
 
-      h = HTMLParser.HTMLParser()
-      text = re.sub("[ \t\n\r\f\v]+"," ",dat.read(),flags=re.M)
-      text = re.sub("(</?br>)+","<br>",text,flags=re.I)
-      notes = re.findall("<tr valign=\"top\">(.+?)</tr>",text)
-
-      try:
-        mtime = os.stat(casedir+os.sep+casenotesfile)[8]
-      except OSError:
-        mtime = 0
-
-      lastcn = re.search(" class=\"tbc\">(\w+\s+\d+\s+\d+\s+\d+:\d+)\s+</td> <",notes[0]).group(1)
-      try: # updates are in PST/PDT we need to convert it to local time
-        lastcn = adjust_time(lastcn,"%b %d %Y %H:%M")
-      except:
-        txt.warn("problem in decoding time of the latest case note")
-        continue
-
-      opt_update_case_notes = False
-      if mtime < lastcn:
-        if mtime > 0:
-          txt.ok(ct.text("there are new case notes in this case. Latest one is from ")+ct.num(time.asctime(time.localtime(lastcn)))+"\n",True)
-        opt_update_case_notes = True
-      else:
-        txt.ok(ct.text("no new updates in the case")+"\n")
-
-      if opt_update_case_notes == True:
-
-        makedir(casedir)
-
+        # case notes
         try:
-          cn = open(casedir+os.sep+casenotesfile,"w")
-        except:
-          txt.warn("can't create file to save case notes")
+          dat = urllib2.urlopen(urlcm+"case_all_note_details.jsp?cid="+quote(form['cid'])+"&cobj="+quote(form['cobj'])+"&caseOwnerEmail="+quote(form['caseOwnerEmail']))
+        except urllib2.URLError as errstr:
+          txt.err("while loading the case notes\nERROR: "+str(errstr))
           continue
 
-        txt.ok(ct.text("saving case notes into a file in ")+ct.fold(casedir)+"\n")
+        h = HTMLParser.HTMLParser()
+        text = re.sub("[ \t\n\r\f\v]+"," ",dat.read(),flags=re.M)
+        text = re.sub("(</?br>)+","<br>",text,flags=re.I)
+        notes = re.findall("<tr valign=\"top\">(.+?)</tr>",text)
 
-        for note in notes:
-          note = to_ascii(h.unescape(to_ascii(note)))
-          note = re.sub("</?br>","\n",note,flags=re.I+re.M)
-          note = re.sub("<.+?>","",note)
-          cn.write(note+"\n\n"+"#%"*37+"\n\n")
+        try:
+          mtime = os.stat(casedir+os.sep+casenotesfile)[8]
+        except OSError:
+          mtime = 0
 
-        cn.close()
-        if os.name == "posix":
-          os.chmod(casedir+os.sep+casenotesfile,0644)
+        opt_update_case_notes = False
+        if arg.overwrite == False:
+          lastcn = re.search(" class=\"tbc\">(\w+\s+\d+\s+\d+\s+\d+:\d+)\s+</td> <",notes[0]).group(1)
+          try: # updates are in PST/PDT we need to convert it to local time
+            lastcn = adjust_time(lastcn,"%b %d %Y %H:%M")
+          except:
+            txt.warn("problem in decoding time of the latest case note")
+            continue
+
+          if mtime < lastcn:
+            if mtime > 0:
+              txt.ok(ct.text("there are new case notes in this case. Latest one is from ")+ct.num(time.asctime(time.localtime(lastcn)))+"\n",True)
+            opt_update_case_notes = True
+          else:
+            txt.ok(ct.text("no new updates in the case")+"\n")
+
+        if opt_update_case_notes == True or arg.overwrite == True:
+
+          try:
+            cn = open(casedir+os.sep+casenotesfile,"w")
+          except:
+            txt.warn("can't create file to save case notes")
+            continue
+
+          txt.ok(ct.text("saving case notes into a file")+"\n")
+
+          for note in notes:
+            note = to_ascii(h.unescape(to_ascii(note)))
+            note = re.sub("</?br>","\n",note,flags=re.I+re.M)
+            note = re.sub("<.+?>","",note)
+            cn.write(note+"\n\n"+"#%"*37+"\n\n")
+
+          cn.close()
+          if os.name == "posix":
+            os.chmod(casedir+os.sep+casenotesfile,0644)
 
       # uploading files
       if len(arg.attach) > 0:
@@ -830,14 +836,12 @@ if __name__ == '__main__':
       attmtime = re.findall("<td class=\"tbc\" width=\"\d+%\">\s*(\d+-\d+-\d+ \d+:\d+:\d+)\.0\s*<\/td>",text)
       attmtime.reverse()
 
-      if arg.list == False:
-        txt.ok(ct.text("will download to ")+ct.fold(str(casedir)+"         ")+"\n")
-
       maxcmatt = len(attach)
       txt.ok(ct.text("found total of ")+ct.num(str(maxcmatt))+ct.text(" attachment(s) in CM")+"\n")
 
       filelist = dict()
       filelist[casenotesfile] = 0 # to make sure that we will never have a collision with the case notes file
+      filelist[casestatusfile] = 0 # to make sure that we will never have a collision with the case notes file
 
       curcmatt = 1
       # looping through the attachments
@@ -958,7 +962,7 @@ if __name__ == '__main__':
         except error_perm:
           pass
 
-    if arg.newest == 0 and arg.status == False and len(arg.attach) == 0:
+    if arg.newest == 0 and len(arg.attach) == 0:
       ftp.quit()
 
     cj.store()

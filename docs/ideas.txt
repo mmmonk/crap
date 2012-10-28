@@ -1,0 +1,12 @@
+* make a multiplexing daemon (http://www.o0o.nu/projects/bouncers),
+* dns (or any any stateless protocol) tunnel
+* modify sammel to remove ssl from sockets after establishing the connection
+* upnp proxy - http://www.upnp-hacks.org/
+* ssh v2 mitm (paramiko)
+* scapy - pcap analysis - switch leakage, information gathering (CDP, broadcast, STP, other crap)
+* collection of default ssh keys for users and servers and also default ssl keys,
+* routing injection into RIP, OSPF, EIGRP, BGP .... PIM? ) (BlackHat slides)
+* aes/salsa20 in pure python,
+* sql injection via http tool,
+* simple http cmd shell,
+*

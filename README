@@ -1,5 +1,5 @@
 This is a repository of various things. If one day any of those tools will become more widly used (yeah, right ;))
-I may consider putting them in a separete repository. For now it is easier for my if they are all in one place.
+I may consider putting them in a separete repository. For now it is easier for me if they are all in one place.
 
 autologin/        - automatic login scripts in expect
 cable_modems/     - scripts for cable modems in DOCSIS standard

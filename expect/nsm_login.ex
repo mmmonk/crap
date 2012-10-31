@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
 
-# $Id: 20120817$
-# $Date: 2012-08-17 15:54:17$
+# $Id: 20121031$
+# $Date: 2012-10-31 10:05:27$
 # $Author: Marek Lukaszuk$
 #
 # ChangeLog:
@@ -116,7 +116,7 @@ expect timeout {
 } "Are you sure you want to continue connecting (yes/no)?" {
   send -s "yes\r"
   exp_continue
-} "assword:" {
+} "assword" {
   send -s "$pass\r"
   exp_continue
 } "Run NSMXPress system setup" {

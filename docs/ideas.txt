@@ -9,4 +9,4 @@
 * aes/salsa20 in pure python,
 * sql injection via http tool,
 * simple http cmd shell,
-*
+* make a separate class for ssh over ssl and ssh over udp,

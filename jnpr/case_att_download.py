@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121025$
-# $Date: 2012-10-25 16:59:13$
+# $Id: 20121103$
+# $Date: 2012-11-03 11:02:07$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -14,15 +14,13 @@ import argparse, os, re, sys, time, socket, urllib2, httplib, urlparse, HTMLPars
 # the default timeout for all operations
 socket.setdefaulttimeout(20)
 
-version = "BETA !!!"
+version = "20121103"
 
 '''
 TODO:
 - make the HTTP connection use keep-alive
   so that we only have a single TCP connection
 - upload attachments
-- check for errors on writing to file /write
-  make them fatal (sys.exit(1))
 '''
 
 # class for unbuffering stdout
@@ -53,7 +51,11 @@ class ftpcallback:
     call back function used while getting data via ftplib
     '''
     self.fcount += len(data)
-    self.ftpfile.write(data)
+    try:
+      self.ftpfile.write(data)
+    except:
+      txt.err("error writing file")
+      sys.exit(1)
 
     if self.lastprint < int(time.time()) and sys.stdout.isatty():
 
@@ -740,14 +742,22 @@ if __name__ == '__main__':
           contact = re.sub("\s+"," ",dat.read().replace("\n"," ").replace("\r"," "))
           contact = re.sub("</?a(>| href=.+?>)","",contact)
           for desc,value in re.findall("<td class=\"tbcbold\">(.+?):</td>.*?<td class=\"tbc\">(.+?)</td>",contact):
-            cs.write(str(desc)+": "+str(value).replace("&nbsp;"," ").strip()+"\n")
+            try:
+              cs.write(str(desc)+": "+str(value).replace("&nbsp;"," ").strip()+"\n")
+            except:
+              txt.err("error writing file")
+              sys.exit(1)
 
         for desc in details:
           value = details[desc]
           value = re.sub("<a.+?>.+?</a>"," ",value)
           value = re.sub("<(br|BR)/?>","\n",value,0)
           value = re.sub("<.+?>"," ",value,count=0)
-          cs.write(str(desc)+": "+str(value).replace("&nbsp;"," ").strip()+"\n")
+          try:
+            cs.write(str(desc)+": "+str(value).replace("&nbsp;"," ").strip()+"\n")
+          except:
+            txt.err("error writing file")
+            sys.exit(1)
 
         cs.close()
         if os.name == "posix":
@@ -800,7 +810,11 @@ if __name__ == '__main__':
             note = to_ascii(h.unescape(to_ascii(note)))
             note = re.sub("</?br>","\n",note,flags=re.I+re.M)
             note = re.sub("<.+?>","",note)
-            cn.write(note+"\n\n"+"#%"*37+"\n\n")
+            try:
+              cn.write(note+"\n\n"+"#%"*37+"\n\n")
+            except:
+              txt.err("error writing file")
+              sys.exit(1)
 
           cn.close()
           if os.name == "posix":
@@ -914,7 +928,11 @@ if __name__ == '__main__':
               if not data:
                 break
 
-              save.write(data)
+              try:
+                save.write(data)
+              except:
+                txt.err("error writing file")
+                sys.exit(1)
               csize = csize + len(data)
 
               if lastprint < int(time.time()) and sys.stdout.isatty():

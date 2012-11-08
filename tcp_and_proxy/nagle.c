@@ -1,6 +1,8 @@
 /*
 
-  $Id$
+ $Id: 20121107$
+ $Date: 2012-11-07 16:52:24$
+ $Author: Marek Lukaszuk$
 
 */
 
@@ -14,7 +16,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define BUFFSIZE 4096 
+#define BUFFSIZE 4096
 
 void die (char *mesg){
   perror(mesg);
@@ -27,7 +29,7 @@ int main (int argc, char **argv) {
   struct addrinfo hints;
   struct addrinfo *rp;
   struct timeval tv;
-  fd_set rfds, wfds; 
+  fd_set rfds, wfds;
   char* buff[BUFFSIZE];
   int state = 1;
 
@@ -38,23 +40,23 @@ int main (int argc, char **argv) {
 
   memset(&hints,0,sizeof(hints));
   hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
-  hints.ai_socktype = SOCK_STREAM; 
+  hints.ai_socktype = SOCK_STREAM;
   hints.ai_flags = 0;
-  hints.ai_protocol = 0; 
+  hints.ai_protocol = 0;
 
   if (getaddrinfo(argv[1],argv[2],&hints,&rp) != 0)
     die("getaddrinfo()");
- 
-  if ((sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol)) < 0) 
+
+  if ((sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol)) < 0)
     die("socket()");
-  
+
   if (setsockopt(sock,IPPROTO_TCP, TCP_CORK,&state,sizeof(state)) <0)
     die("setsockopt()");
- 
+
   if (connect(sock,rp->ai_addr,rp->ai_addrlen) == -1)
     die("connect()");
 
-  
+
 //  flags = fcntl(sock, F_GETFL, 0);
   fcntl(sock, F_SETFL, O_NONBLOCK);
   fcntl(0, F_SETFL, O_NONBLOCK);
@@ -71,9 +73,9 @@ int main (int argc, char **argv) {
     FD_SET(sock, &rfds);
     FD_SET(1, &wfds);
     FD_SET(sock, &wfds);
-    
+
     retrd = select(sock+1, &rfds, NULL, NULL, &tv);
-    retwr = select(sock+1, NULL, &wfds, NULL, &tv); 
+    retwr = select(sock+1, NULL, &wfds, NULL, &tv);
 
     if (retrd == -1 || retwr == -1) {
 
@@ -90,10 +92,10 @@ int main (int argc, char **argv) {
           exit(0);
         }
 
-        send(sock,buff,len,0); 
+        send(sock,buff,len,0);
 
-      } 
-      
+      }
+
       if (FD_ISSET(sock,&rfds) && FD_ISSET(1,&wfds)) {
 
         len = recv(sock,buff,sizeof(buff),0);
@@ -103,11 +105,11 @@ int main (int argc, char **argv) {
           exit(0);
         }
 
-        write(1,buff,len); 
+        write(1,buff,len);
 
       }
     }
   }
-  
+
   exit(0);
 }

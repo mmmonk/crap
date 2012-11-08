@@ -6,7 +6,8 @@
 * scapy - pcap analysis - switch leakage, information gathering (CDP, broadcast, STP, other crap)
 * collection of default ssh keys for users and servers and also default ssl keys,
 * routing injection into RIP, OSPF, EIGRP, BGP .... PIM? ) (BlackHat slides)
-* aes/salsa20 in pure python,
+* aes/salsa20 in pure python (https://en.wikipedia.org/wiki/Salsa20 http://www.cryptolounge.org/wiki/Salsa20),
 * sql injection via http tool,
 * simple http cmd shell,
 * make a separate class for ssh over ssl and ssh over udp,
+* play with dns response and requests

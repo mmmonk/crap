@@ -5,7 +5,6 @@ autologin/        - automatic login scripts in expect
 cable_modems/     - scripts for cable modems in DOCSIS standard
 cisco/            - scripts for cisco devices/software
 cisco_tcl/        - cisco tcl scripts
-configs/          - configurations for various things
 crypto/           - some simple crypto fun
 dsbl_cleanup/     - dsbl cleanup - doesn't work anymore
 expect/           - Expect scripts

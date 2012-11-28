@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121103$
-# $Date: 2012-11-03 11:02:07$
+# $Id: 20121128$
+# $Date: 2012-11-28 14:58:45$
 # $Author: Marek Lukaszuk$
 
 from sgmllib import SGMLParser
@@ -12,9 +12,9 @@ from getpass import getpass
 import argparse, os, re, sys, time, socket, urllib2, httplib, urlparse, HTMLParser, unicodedata
 
 # the default timeout for all operations
-socket.setdefaulttimeout(20)
+socket.setdefaulttimeout(60)
 
-version = "20121103"
+version = "20121128"
 
 '''
 TODO:
@@ -635,8 +635,8 @@ if __name__ == '__main__':
         ftp = FTP(ftpserver)
         ftp.login(arg.user,arg.ftp_passwd)
       except:
-        txt.err("can't connect to the ftp server "+str(ftpserver)+": "+str(sys.exc_info()))
-        sys.exit(1)
+        txt.warn("can't connect to the ftp server currently "+str(ftpserver)+": "+str(sys.exc_info()))
+
 
     if "form id=\"Login\" name=\"Login\" method=\"post\"" in mainpage:
       txt.err("something went wrong we are not logged in.")
@@ -970,18 +970,21 @@ if __name__ == '__main__':
             ftp.cwd("/volume/ftp/pub/incoming/"+caseid)
 
           ftpcheck(filelist,caseid,casedir,ftp,arg.include,arg.exclude,arg.list,arg.overwrite)
-        except error_perm:
+        except:
           pass
 
         # checking sftp upload directory
         try:
           ftp.cwd("/volume/sftp/pub/incoming/"+caseid)
           ftpcheck(filelist,caseid,casedir,ftp,arg.include,arg.exclude,arg.list,arg.overwrite)
-        except error_perm:
+        except:
           pass
 
     if arg.newest == 0 and len(arg.attach) == 0:
-      ftp.quit()
+      try:
+        ftp.quit()
+      except:
+        pass
 
     cj.store()
   except (KeyboardInterrupt,IOError):

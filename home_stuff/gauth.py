@@ -1,14 +1,14 @@
 #!/usr/bin/python
 
-# $Id: 20120725$
-# $Date: 2012-07-25 21:28:49$
+# $Id: 20121130$
+# $Date: 2012-11-30 07:21:51$
 # $Author: Marek Lukaszuk$
 
 from time import time
 from struct import pack,unpack
-from hmac import HMAC 
+from hmac import HMAC
 from hashlib import sha1
-from base64 import b32decode 
+from base64 import b32decode
 from os import getenv
 from sys import exit
 
@@ -20,10 +20,13 @@ except:
 
 tm = int(time() / 30)
 
-s = fd.read()
-while (s != ""):
-  s = s.split("|")
-  secretkey = b32decode(s[1].replace(" ","").rstrip().upper())
+lines = fd.read().split("\n")
+for s in lines:
+  try:
+    s = s.split("|")
+    secretkey = b32decode(s[1].replace(" ","").rstrip().upper())
+  except:
+    continue
 
   # convert timestamp to raw bytes
   b = pack(">q", tm)

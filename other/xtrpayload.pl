@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 # $Id: 20121219$
-# $Date: 2012-12-19 13:18:09$
+# $Date: 2012-12-19 13:59:26$
 # $Author: Marek Lukaszuk$
 
 use strict;
@@ -41,15 +41,20 @@ foreach my $pair (keys %pairs){
 
     $cmd = "ngrep -qxI $file \"\" src host $a[0] and src port $a[1] and dst host $a[2] and dst port $a[3]";
     open(CMD,"$cmd | ");
-    open(OUT,"> out_$ts\_$a[0]\_$a[1]\_$a[2]\_$a[3].bin");
+    open(OUT,"> temp.bin");
+    my $empty = 1;
     while(<CMD>){
       next unless (/^\ \ \S\S\ \S\S/);
       # extracting only the hex values
       s/^\ \ (.+?)\ {4}(.+?)\ {3}.*/$1 $2/;
       # converting the hex output to real characters
       print OUT map(chr(hex($_)),split(" "));
+      $empty = 0;
     }
     close(CMD);
     close(OUT);
+    if ($empty == 0){
+      rename("temp.bin","out_$ts\_$a[0]\_$a[1]\_$a[2]\_$a[3].bin");
+    }
   }
 }

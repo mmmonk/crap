@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 # $Id: 20121219$
-# $Date: 2012-12-19 20:59:19$
+# $Date: 2012-12-19 21:04:06$
 # $Author: Marek Lukaszuk$
 
 use strict;
@@ -24,7 +24,7 @@ my $conv = "";
 my $buff = "";
 
 # finding unique communication streams
-open(CMD,"ngrep -qxlI $file \"$bpf\" |");
+open(CMD,"ngrep -qxlI $file \"\" \"$bpf\" |");
 while(<CMD>){
   chomp;
   if (/^\S+ (\S+?):(\d+) -> (\S+?):(\d+) /){

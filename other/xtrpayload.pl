@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
-# $Id: 20120808$
-# $Date: 2012-08-08 06:56:26$
+# $Id: 20121219$
+# $Date: 2012-12-19 13:18:09$
 # $Author: Marek Lukaszuk$
 
 use strict;
@@ -36,18 +36,20 @@ close(CMD);
 # extracting each stream
 foreach my $pair (keys %pairs){
   my @a=split(" ",$pair);
-  print "[+] extracting payload from stream src=$a[0]:$a[1] dst=$a[2]:$a[3]\n";
+  if ($a[0] and $a[1] and $a[2] and $a[3]) {
+    print "[+] extracting payload from stream src=$a[0]:$a[1] dst=$a[2]:$a[3]\n";
 
-  $cmd = "ngrep -qxI $file \"\" src host $a[0] and src port $a[1] and dst host $a[2] and dst port $a[3]";
-  open(CMD,"$cmd | ");
-  open(OUT,"> out_$ts\_$a[0]\_$a[1]\_$a[2]\_$a[3].bin");
-  while(<CMD>){
-    next unless (/^\ \ \S\S\ \S\S/);
-    # extracting only the hex values
-    s/^\ \ (.+?)\ {4}(.+?)\ {3}.*/$1 $2/;
-    # converting the hex output to real characters
-    print OUT map(chr(hex($_)),split(" "));
+    $cmd = "ngrep -qxI $file \"\" src host $a[0] and src port $a[1] and dst host $a[2] and dst port $a[3]";
+    open(CMD,"$cmd | ");
+    open(OUT,"> out_$ts\_$a[0]\_$a[1]\_$a[2]\_$a[3].bin");
+    while(<CMD>){
+      next unless (/^\ \ \S\S\ \S\S/);
+      # extracting only the hex values
+      s/^\ \ (.+?)\ {4}(.+?)\ {3}.*/$1 $2/;
+      # converting the hex output to real characters
+      print OUT map(chr(hex($_)),split(" "));
+    }
+    close(CMD);
+    close(OUT);
   }
-  close(CMD);
-  close(OUT);
 }

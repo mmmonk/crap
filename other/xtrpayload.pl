@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 # $Id: 20121219$
-# $Date: 2012-12-19 21:04:06$
+# $Date: 2012-12-19 23:02:02$
 # $Author: Marek Lukaszuk$
 
 use strict;
@@ -27,7 +27,7 @@ my $buff = "";
 open(CMD,"ngrep -qxlI $file \"\" \"$bpf\" |");
 while(<CMD>){
   chomp;
-  if (/^\S+ (\S+?):(\d+) -> (\S+?):(\d+) /){
+  if (/^\S+ (\S+?):(\d+) -> (\S+?):(\d+)(\s|$)/){
     if ($conv ne "" and $buff ne ""){
       open(OUT,">> $conv");
       print OUT map(chr(hex($_)),split(" ",$buff));
@@ -35,10 +35,10 @@ while(<CMD>){
     }
     $buff = "";
     $conv = "out_$1_$2_$3_$4_$ts.bin";
-    print "$conv ==\n";
+    print "\r.";
   }
-  if (/^\s+(.+?)\ {4}(.+?)\ {3}.*/) {
-    $buff .= "$1 $2 ";
+  if (/^\s{2}(.{50})/) {
+    $buff .= "$1 ";
   }
 }
 close(CMD);

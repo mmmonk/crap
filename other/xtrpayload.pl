@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 # $Id: 20121219$
-# $Date: 2012-12-19 13:59:26$
+# $Date: 2012-12-19 20:59:19$
 # $Author: Marek Lukaszuk$
 
 use strict;
@@ -17,44 +17,28 @@ unless ($bpf){
 
 This script will extract payload from the streams it finds in the
 filename.pcap using the provided bpf filter.
-It uses tcpdump and ngrep.\n";
+It uses ngrep.\n";
 }
 
-my %pairs=();
+my $conv = "";
+my $buff = "";
 
 # finding unique communication streams
-my $cmd = "tcpdump -nr $file \"$bpf\"";
-open(CMD,"$cmd |");
+open(CMD,"ngrep -qxlI $file \"$bpf\" |");
 while(<CMD>){
   chomp;
-  # extracting unique src dst pairs, should work for tcp and udp
-  s/^\S+? \S+? (\S+?)\.(\d+) > (\S+?)\.(\d+): .*/$1 $2 $3 $4/;
-  $pairs{$_}=1;
-}
-close(CMD);
-
-# extracting each stream
-foreach my $pair (keys %pairs){
-  my @a=split(" ",$pair);
-  if ($a[0] and $a[1] and $a[2] and $a[3]) {
-    print "[+] extracting payload from stream src=$a[0]:$a[1] dst=$a[2]:$a[3]\n";
-
-    $cmd = "ngrep -qxI $file \"\" src host $a[0] and src port $a[1] and dst host $a[2] and dst port $a[3]";
-    open(CMD,"$cmd | ");
-    open(OUT,"> temp.bin");
-    my $empty = 1;
-    while(<CMD>){
-      next unless (/^\ \ \S\S\ \S\S/);
-      # extracting only the hex values
-      s/^\ \ (.+?)\ {4}(.+?)\ {3}.*/$1 $2/;
-      # converting the hex output to real characters
-      print OUT map(chr(hex($_)),split(" "));
-      $empty = 0;
+  if (/^\S+ (\S+?):(\d+) -> (\S+?):(\d+) /){
+    if ($conv ne "" and $buff ne ""){
+      open(OUT,">> $conv");
+      print OUT map(chr(hex($_)),split(" ",$buff));
+      close(OUT);
     }
-    close(CMD);
-    close(OUT);
-    if ($empty == 0){
-      rename("temp.bin","out_$ts\_$a[0]\_$a[1]\_$a[2]\_$a[3].bin");
-    }
+    $buff = "";
+    $conv = "out_$1_$2_$3_$4_$ts.bin";
+    print "$conv ==\n";
+  }
+  if (/^\s+(.+?)\ {4}(.+?)\ {3}.*/) {
+    $buff .= "$1 $2 ";
   }
 }
+close(CMD);

@@ -1,7 +1,7 @@
 #!/usr/bin/python -u
 
-# $Id: 20121017$
-# $Date: 2012-10-17 21:58:41$
+# $Id: 20121228$
+# $Date: 2012-12-28 14:55:08$
 # $Author: Marek Lukaszuk$
 
 from fcntl import fcntl,F_SETFL
@@ -16,7 +16,7 @@ phost = ''
 pport = 443
 dhost = '::1'
 dport = 80
-ver = "20111208"
+ver = "20121028"
 
 def plog(msg, childpid = 0):
   global mainpid
@@ -81,9 +81,7 @@ def exchange(s,c):
       except SSL_WantReadError:
         data = ''
       except SSL_SysCallError,SSL_ZeroReturnError:
-        s.sock_shutdown(SHUT_RDWR)
-        c.shutdown(SHUT_RDWR)
-        exit()
+        break
 
       if len(data) > 0:
         c_send(data)
@@ -92,12 +90,13 @@ def exchange(s,c):
 
       data = c_recv(4096)
       if len(data) == 0:
-        c.shutdown(SHUT_RDWR)
-        s.sock_shutdown(SHUT_RDWR)
-        exit()
-
+        break
       else:
         s_send(data)
+
+  c.shutdown(SHUT_RDWR)
+  s.sock_shutdown(SHUT_RDWR)
+  exit()
 
 ##### main crap
 def main():
@@ -167,12 +166,14 @@ def main():
           ssl.do_handshake()
         except:
           plog("ssl handshake failed/not done",chpid)
+          ssl.shutdown()
           exit()
 
         plog("ssl handshake done",chpid)
         try:
           data = ssl.recv(1024)
         except:
+          ssl.shutdown()
           exit()
 
         ssl.setblocking(False)
@@ -190,8 +191,9 @@ def main():
         try:
           proxy.connect((dhost, dport))
         except socket_error:
-          proxy.close()
-          conn.close()
+          ssl.shutdown()
+          proxy.shutdown()
+          #proxy.close()
           exit()
 
         plog("connected to "+str(dhost)+":"+str(dport)+" from "+str(addr[0])+":"+str(addr[1]),chpid)
@@ -204,6 +206,13 @@ def main():
         plog("going into exchange between "+str(dhost)+":"+str(dport)+" and "+str(addr[0])+":"+str(addr[1]),chpid)
 
         exchange(ssl,proxy)
+
+        try:
+          ssl.shutdown()
+          proxy.shutdown()
+        except:
+          pass
+
         exit()
 
       else:

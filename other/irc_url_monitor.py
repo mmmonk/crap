@@ -10,8 +10,8 @@ if __name__ == '__main__':
   seenurls = {}
   newlinks = {}
 
-  cleanolderthenthis = 60*24*3600
-  keepnumlimit = 10000
+  cleanolderthenthis = 180*24*3600
+  keepnumlimit = 20000
 
   oldlimit = int(time.time()) - cleanolderthenthis
   if os.path.isfile(urlhistory) and os.stat(urlhistory).st_size > 0:
@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     if len(newlinks) > 0:
 
-      msg = "From: irssi@monkey.geeks.pl\nTo: m.lukaszuk@gmail.com\nSubject: irssi links from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localtime()))+"\n\n"
+      msg = "From: marek@mmmonk.net\nTo: m.lukaszuk@gmail.com\nSubject: irssi links from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localtime()))+"\n\n"
       for link,channel in sorted(newlinks.items(), key=lambda x: x[0].replace("//www.","//",1).split(":")[1]):
         msg += link+" "+channel+"\n"
 

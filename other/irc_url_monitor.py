@@ -1,30 +1,63 @@
 #!/usr/bin/env python
 
+# $Id: 20130118$
+# $Date: 2013-01-18 06:46:20$
+# $Author: Marek Lukaszuk$
+
+import pymongo
 import sys, os, time, smtplib
 
-urlfile = "/home/case/.irssi/url"
-urlhistory = "/home/case/.irssi/urlhistory"
+home = os.environ['HOME']
+
+ircurlfile = home+"/.irssi/url"
+ggurlfile = home+"/.gg/urllog.txt"
+twurlfile = home+"/.twitter_url_log.txt"
+
+def mongocheck(newlinks,urls,source,user,url):
+  if urls.find({'_id': url}).count() > 0:
+    urls.update({"_id": url},{"ts":int(time.time())})
+  else:
+    if urls.find({'_id': url.lower()}).count() > 0:
+      urls.update({"_id": url.lower()},{"ts":int(time.time())})
+    else:
+      item = {'_id': url, 'ts': int(time.time())}
+      urls.insert(item)
+      newlinks[url] = source+" "+user
+
+  return newlinks
+
 
 if __name__ == '__main__':
 
-  seenurls = {}
   newlinks = {}
 
-  cleanolderthenthis = 180*24*3600
-  keepnumlimit = 20000
+  try:
+    connection = pymongo.Connection()
+  except:
+    print "Problem with connecting to the mongoDB"
+    sys.exit(1)
+  db = connection.urls
+  urls = db['urls']
 
-  oldlimit = int(time.time()) - cleanolderthenthis
-  if os.path.isfile(urlhistory) and os.stat(urlhistory).st_size > 0:
-    data = open(urlhistory,'r').read().decode('bz2')
-    for line in data.split("\n"):
-      if len(line) > 5:
-        (url,ts) = line.split()
-        if ts > oldlimit:
-          seenurls[url] = ts
-    data = ""
+  ## twitter url logs
+  if os.path.isfile(twurlfile) and os.stat(twurlfile).st_size > 0:
+    for line in open(twurlfile,'r').readlines():
+      line = line.strip()
+      linea = line.split()
 
-  if os.path.isfile(urlfile) and os.stat(urlfile).st_size > 0:
-    for line in open(urlfile,'r').readlines():
+      newlinks = mongocheck(newlinks,urls,"twitter",linea[1],linea[0])
+
+  ## gg url logs
+  if os.path.isfile(ggurlfile) and os.stat(ggurlfile).st_size > 0:
+    for line in open(ggurlfile,'r').readlines():
+      line = line.strip()
+      linea = line.split()
+
+      newlinks = mongocheck(newlinks,urls,"gg",linea[1],linea[2])
+
+  ## irc logs
+  if os.path.isfile(ircurlfile) and os.stat(ircurlfile).st_size > 0:
+    for line in open(ircurlfile,'r').readlines():
       line = line.strip()
       line = line.strip(",.")
       linea = line.split()
@@ -32,30 +65,21 @@ if __name__ == '__main__':
       if "://" not in linea[9]:
         continue
 
-      if not seenurls.has_key(linea[9]):
-        newlinks[linea[9]] = linea[8]+" "+linea[7]
+      newlinks = mongocheck(newlinks,urls,linea[8],linea[7],linea[9])
 
-      seenurls[linea[9]] = int(time.time())
+  ## send out the email
+  if len(newlinks) > 0:
 
-    if len(newlinks) > 0:
+    msg = "From: marek@mmmonk.net\nTo: m.lukaszuk@gmail.com\nSubject: urls from logs - "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localtime()))+"\n\n"
+    for link,channel in sorted(newlinks.items(), key=lambda x: x[0].replace("//www.","//",1).split(":")[1]):
+      msg += link+" "+channel+"\n"
 
-      msg = "From: marek@mmmonk.net\nTo: m.lukaszuk@gmail.com\nSubject: irssi links from "+(time.strftime("%Y/%m/%d %H:%M:%S",time.localtime()))+"\n\n"
-      for link,channel in sorted(newlinks.items(), key=lambda x: x[0].replace("//www.","//",1).split(":")[1]):
-        msg += link+" "+channel+"\n"
+    smtpObj = smtplib.SMTP("127.0.0.1")
+    smtpObj.sendmail('m.lukaszuk@gmail.com','m.lukaszuk@gmail.com',msg)
 
-      smtpObj = smtplib.SMTP("127.0.0.1")
-      smtpObj.sendmail('m.lukaszuk@gmail.com','m.lukaszuk@gmail.com',msg)
-
-      data = ""
-      i = 0
-      for link,ts in sorted(seenurls.items(), key = lambda x: x[1], reverse=True):
-        data += link+" "+str(ts)+"\n"
-        i += 1
-        if i >= keepnumlimit:
-          break
-
-      fd = open(urlhistory,'w')
-      fd.write(data.encode('bz2'))
-      fd.close()
-
-      os.unlink(urlfile)
+    if os.path.isfile(ircurlfile) and os.stat(ircurlfile).st_size > 0:
+      os.unlink(ircurlfile)
+    if os.path.isfile(ggurlfile) and os.stat(ggurlfile).st_size > 0:
+      os.unlink(ggurlfile)
+    if os.path.isfile(twurlfile) and os.stat(twurlfile).st_size > 0:
+      os.unlink(twurlfile)

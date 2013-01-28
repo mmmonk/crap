@@ -11,3 +11,4 @@
 * simple http cmd shell,
 * make a separate class for ssh over ssl and ssh over udp,
 * play with dns response and requests
+* add logging of data in the packet that is dropped by sammael

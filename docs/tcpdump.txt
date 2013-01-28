@@ -1,0 +1,1 @@
+'tcp[tcpflags] == 2 and ((tcp[12] & 0xf0)>>4) > 0x0b' - syn packets with large number of options

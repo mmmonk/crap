@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20130131$
-# $Date: 2013-01-31 17:12:43$
+# $Id: 20130212$
+# $Date: 2013-02-12 13:35:31$
 # $Author: Marek Lukaszuk$
 
 import time
@@ -17,21 +17,27 @@ fmt = [
     ["\d+:\d+:\d+","%H:%M:%S",3,6], # 12:32:54
     ["\d+:\d+","%H:%M",3,5], # 12:32
 ]
-def rematch(line,t,ff):
+def rematch(line,ff):
   m = re.match(ff[0],line) 
   if m:
-    return time.strptime(m.group(0),ff[1])
-  return t 
+    return True
+  return False
 
-def converttime(line,dt=0):
-  
-  t = (time.localtime(int(dt)),0,1)
-  i = 0
-  while (i<len(fmt)):
-    t = rematch(line,t,fmt[i])
-    i += 1
+def converttime(line,ifmt=-1):
+ 
+  if ifmt == -1:
+    i = 0
+    while (i<len(fmt)):
+      if rematch(line,fmt[i]) == True:
+        ifmt = i
+        break
+      i += 1
+ 
+  if ifmt == -1:
+    return (ifmt,0)
 
-  return (t[0],
+  m = re.match(fmt[ifmt][0],line)
+  return (ifmt,time.strptime(m.group(0),fmt[ifmt][1]))
 
 if __name__ == "__main__":
   
@@ -41,22 +47,15 @@ if __name__ == "__main__":
 
   args = p.parse_args()
   
-  try:
-    ts = converttime(args.stime)
-  except:
-    p.print_help()
-    sys.exit(1)
+  ts = converttime(args.stime)
+  te = converttime(args.etime)
 
-  try:
-    te = converttime(args.etime,9999999999)
-  except:
-    p.print_help()
-    sys.exit(1)
-
+  print "|"+str(ts)+"| |"+str(te)+"|"
+  sys.exit(0)
   try:
     for line in sys.stdin.readlines():
 
-      lt = converttime(line)[0]
+      lt = converttime(line)
       if lt[ts[1]:ts[2]] > ts[ts[1]:ts[2]] and lt[te[1]:te[2]] < te[te[1]:te[2]]: 
         print line,
   except:

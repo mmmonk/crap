@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20130118$
-# $Date: 2013-01-18 06:46:20$
+# $Id: 20130207$
+# $Date: 2013-02-07 14:39:01$
 # $Author: Marek Lukaszuk$
 
 import pymongo
@@ -13,6 +13,16 @@ ircurlfile = home+"/.irssi/url"
 ggurlfile = home+"/.gg/urllog.txt"
 twurlfile = home+"/.twitter_url_log.txt"
 
+ignorelist = (
+  "://www.youtube.com/",
+  "://youtu.be/",
+  "://pastebin.",
+  "://pastebay",
+  "://pastie.org",
+  "://lmgtfy.com",
+  "://www.lmgtfy.com"
+  )
+
 def mongocheck(newlinks,urls,source,user,url):
   if urls.find({'_id': url}).count() > 0:
     urls.update({"_id": url},{"ts":int(time.time())})
@@ -20,9 +30,14 @@ def mongocheck(newlinks,urls,source,user,url):
     if urls.find({'_id': url.lower()}).count() > 0:
       urls.update({"_id": url.lower()},{"ts":int(time.time())})
     else:
-      item = {'_id': url, 'ts': int(time.time())}
-      urls.insert(item)
-      newlinks[url] = source+" "+user
+      good = True
+      for ignore in ignorelist:
+        if ignore in url:
+          good = False
+          break
+
+      if good == True:
+        newlinks[url] = source+" "+user
 
   return newlinks
 
@@ -36,6 +51,7 @@ if __name__ == '__main__':
   except:
     print "Problem with connecting to the mongoDB"
     sys.exit(1)
+
   db = connection.urls
   urls = db['urls']
 
@@ -77,9 +93,13 @@ if __name__ == '__main__':
     smtpObj = smtplib.SMTP("127.0.0.1")
     smtpObj.sendmail('m.lukaszuk@gmail.com','m.lukaszuk@gmail.com',msg)
 
-    if os.path.isfile(ircurlfile) and os.stat(ircurlfile).st_size > 0:
-      os.unlink(ircurlfile)
-    if os.path.isfile(ggurlfile) and os.stat(ggurlfile).st_size > 0:
-      os.unlink(ggurlfile)
-    if os.path.isfile(twurlfile) and os.stat(twurlfile).st_size > 0:
-      os.unlink(twurlfile)
+    for link,channel in newlinks.items():
+      item = {'_id': link, 'ts': int(time.time())}
+      urls.insert(item)
+
+#    if os.path.isfile(ircurlfile) and os.stat(ircurlfile).st_size > 0:
+#      os.unlink(ircurlfile)
+#    if os.path.isfile(ggurlfile) and os.stat(ggurlfile).st_size > 0:
+#      os.unlink(ggurlfile)
+#    if os.path.isfile(twurlfile) and os.stat(twurlfile).st_size > 0:
+#      os.unlink(twurlfile)

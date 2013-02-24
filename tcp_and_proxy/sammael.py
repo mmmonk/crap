@@ -1,225 +1,240 @@
 #!/usr/bin/python -u
 
-# $Id: 20121228$
-# $Date: 2012-12-28 14:55:08$
+# $Id: 20130224$
+# $Date: 2013-02-24 23:46:19$
 # $Author: Marek Lukaszuk$
 
-from fcntl import fcntl,F_SETFL
-from OpenSSL.SSL import WantReadError as SSL_WantReadError,SysCallError as SSL_SysCallError,ZeroReturnError as SSL_ZeroReturnError,Context as SSL_Context,TLSv1_METHOD,Connection as SSL_Connection
+import fcntl
+from OpenSSL import SSL
 from select import select
 from socket import socket,has_ipv6,SHUT_RDWR,AF_INET,AF_INET6,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,SOL_SOCKET,SO_REUSEADDR,error as socket_error
-from os import chdir,getuid,setgid,setuid,umask,O_NONBLOCK,WNOHANG,fork,waitpid,getpid,getppid,chroot,makedirs,path
-from sys import exit
-import pwd, grp
-
-phost = ''
-pport = 443
-dhost = '::1'
-dport = 80
-ver = "20121028"
-
-def plog(msg, childpid = 0):
-  global mainpid
-
-  if childpid == 0:
-    print "["+str(mainpid)+"] "+str(msg)
-  else:
-    print "["+str(mainpid)+"->"+str(childpid)+"] "+str(msg)
+import os
+import sys
+import pwd
+import grp
+import time
+import random
 
 
-def deamonsetup(uid_name='nobody', gid_name='nogroup'):
+class sammael():
 
-  if not path.exists("/var/run/sammael/"):
-    makedirs("/var/run/sammael/")
-  chdir("/var/run/sammael/")
+  def __init__(self,phost="",pport=443,dhost="::1",dport=80):
+    self.ver = "20121028"
+    self.phost = phost
+    self.pport = pport
+    self.dhost = dhost
+    self.dport = dport
+    self.mainpid = os.getpid()
 
-  if getuid() != 0:
-    # We're not root so, like, whatever dude
-    return
+    self.log("sammael ("+str(self.ver)+") - daemon starting")
 
-  # Get the uid/gid from the name
-  running_uid = pwd.getpwnam(uid_name).pw_uid
-  running_gid = grp.getgrnam(gid_name).gr_gid
+    if has_ipv6 == True:
+      self.s = socket(AF_INET6, SOCK_STREAM)
+    else:
+      self.s = socket(AF_INET, SOCK_STREAM)
 
-  #chroot("/var/run/sammael")
+    self.s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
+    self.s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
-  # Try setting the new uid/gid
-  setgid(running_gid)
-  setuid(running_uid)
+  def serve(self):
+    # starting the server
+    self.s.bind((self.phost, self.pport))
+    self.s.setblocking(False)
+    self.log("bound to socket - "+str(self.phost)+":"+str(self.pport))
 
-  # Remove group privileges
-  #os.setgroups([])
+    self.deamonsetup()
+    self.s.listen(1)
+    self.log("listening for connections")
+    self.sslctx()
 
-  # Ensure a very conservative umask
-  umask(077)
+    # main server loop
+    while 1:
+      accept,[],[] = select([self.s],[],[],60)
 
-# main data exchnage function
-def exchange(s,c):
-  # input:
-  # s - ssl socket object
-  # c - normal socket object
-  # return:
-  # nothing :)
+      if self.s in accept:
+        conn,addr = self.s.accept()
 
-  # setting every descriptor to be non blocking
-  #fcntl(s, F_SETFL, O_NONBLOCK)
-  #s.setblocking(0)
-  #fcntl(c, F_SETFL, O_NONBLOCK)
+        if os.fork() == 0:
+          # this is forked child
+          self.chpid = os.getpid()
 
-  s_recv = s.recv
-  s_send = s.sendall
-  c_recv = c.recv
-  c_send = c.send
+          data = self.sconn(addr,conn)
 
-  while 1:
-    toread,[],[] = select([c,s],[],[],30)
-    [],towrite,[] = select([],[c,s],[],30)
+          # here we do different things depending on the data recevied
+          if data and 'qwerty' in data:
+            self.dport = 22
 
-    if c in towrite and s in toread:
-      try:
-        data = s_recv(4096)
-      except SSL_WantReadError:
-        data = ''
-      except SSL_SysCallError,SSL_ZeroReturnError:
-        break
+          self.pconn(addr,data)
+          self.exchange(addr)
+          conn.close()
+          sys.exit() # killing the child
 
-      if len(data) > 0:
-        c_send(data)
-
-    elif c in toread and s in towrite:
-
-      data = c_recv(4096)
-      if len(data) == 0:
-        break
       else:
-        s_send(data)
-
-  c.shutdown(SHUT_RDWR)
-  s.sock_shutdown(SHUT_RDWR)
-  exit()
-
-##### main crap
-def main():
-
-  global mainpid
-  global dport
-  mainpid = getpid()
-
-  plog("sammael ("+str(ver)+") - daemon starting")
-
-  if has_ipv6 == True:
-    s = socket(AF_INET6, SOCK_STREAM)
-    s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
-    s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-    s.bind((phost,pport))
-    s.listen(1)
-    s.setblocking(False)
-    plog("bound to socket - "+str(phost)+":"+str(pport))
-  else:
-    s = socket(AF_INET, SOCK_STREAM)
-    s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
-    s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-    s.bind((phost, pport))
-    s.listen(1)
-    s.setblocking(False)
-    plog("bound to socket - "+str(phost)+":"+str(pport))
-
-  deamonsetup()
-
-  plog("dropped privs")
-
-  ### SSL context
-  ctx = SSL_Context(TLSv1_METHOD)
-
-  ctx.use_privatekey_file('/usr/local/certs/server.key')
-  ctx.use_certificate_file('/usr/local/certs/server.crt')
-  if path.isfile('/usr/local/cert/dh.dat'):
-    ctx.load_tmp_dh('/usr/local/cert/dh.dat')
-  ctx.set_cipher_list('RC4:-aNULL')
-
-  plog("SSL context ready")
-  plog("listening for connections")
-
-  while (True):
-    accept,[],[] = select([s],[],[],30);
-
-    if s in accept:
-      conn,addr = s.accept()
-
-      try:
-        waitpid(0,WNOHANG)
-      except OSError:
-        pass
-
-      pid = fork()
-
-      if pid == 0:
-
-        chpid = getpid()
-        plog("got connection from "+str(addr[0])+":"+str(addr[1]),chpid)
-
-        # let's add SSL to this socket
-        ssl = SSL_Connection(ctx,conn)
-        ssl.setblocking(True)
-        ssl.set_accept_state()
+        # cleaning old children
         try:
-          ssl.do_handshake()
-        except:
-          plog("ssl handshake failed/not done",chpid)
-          ssl.shutdown()
-          exit()
+          os.waitpid(0,os.WNOHANG)
+        except OSError:
+            pass
 
-        plog("ssl handshake done",chpid)
+  def sslctx(self,prvkey="/usr/local/certs/server.key",pubkey="/usr/local/certs/server.crt",dhfile="/usr/local/cert/dh.dat"):
+    # SSL context setup
+    self.ctx = SSL.Context(SSL.TLSv1_METHOD)
+
+    self.ctx.use_privatekey_file(prvkey)
+    self.ctx.use_certificate_file(pubkey)
+    if os.path.isfile(dhfile):
+      self.ctx.load_tmp_dh(dhfile)
+    self.ctx.set_cipher_list('RC4:-aNULL')
+
+    self.log("SSL context ready")
+
+  def sconn(self,addr,conn):
+    # SSL connection initiation
+    # conn - socket from the accept call
+    # addr - connecting address
+    # @data - initial data read
+
+    self.log("new connection from "+str(addr[0])+":"+str(addr[1]))
+
+    # let's add SSL to this socket
+    self.ssl = SSL.Connection(self.ctx,conn)
+    self.ssl.setblocking(True)
+    self.ssl.set_accept_state() # we are SSL server
+    time.sleep(random.randint(1000,4000)/1000.0) # random sleep
+    self.log(str(self.ssl.state_string()))
+    try:
+      self.ssl.do_handshake()
+    except SSL.Error as e:
+      self.log(self.ssl.state_string()+": "+str(e))
+      self.ssl.shutdown(SHUT_RDWR)
+      conn.shutdown(SHUT_RDWR)
+      sys.exit()
+
+    self.log(str(self.ssl.state_string()))
+
+    if not self.ssl.get_servername() == None:
+      self.log("client requested servername: "+self.ssl.get_servername())
+
+    try:
+      data = self.ssl.recv(1024)
+    except:
+      self.ssl.shutdown()
+      self.log("can't read - connection closed")
+      sys.exit()
+
+    self.ssl.setblocking(False)
+
+    return(data)
+
+  def pconn(self,addr,data):
+    # Proxy connection initiation
+    # addr - connecting address
+    # data - initial data read while doing SSL handshake
+    self.log("connecting to "+str(self.dhost)+":"+str(self.dport)+" from "+str(addr[0])+":"+str(addr[1]))
+
+    if has_ipv6 == True:
+      self.proxy = socket(AF_INET6, SOCK_STREAM)
+    else:
+      self.proxy = socket(AF_INET, SOCK_STREAM)
+    self.proxy.setsockopt(IPPROTO_TCP, TCP_CORK,1)
+
+    try:
+      self.proxy.connect((self.dhost, self.dport))
+    except socket_error:
+      self.ssl.shutdown(SHUT_RDWR)
+      self.proxy.shutdown(SHUT_RDWR)
+      self.log("problems connecting to "+str(self.dhost)+":"+str(self.dport)+" - connection closed")
+      sys.exit()
+
+    self.log("connected to "+str(self.dhost)+":"+str(self.dport)+" from "+str(addr[0])+":"+str(addr[1]))
+
+    #### DEFAULT
+    if self.dport == 80: # if we hit the default we need to send the data that we already read from the socket
+      self.proxy.send(data)
+
+    fcntl.fcntl(self.proxy, fcntl.F_SETFL, os.O_NONBLOCK)
+
+
+  def log(self,msg):
+    # a more verbose logging
+    try:
+      print "["+str(self.mainpid)+"->"+str(self.chpid)+"] "+str(msg)
+    except:
+      print "["+str(self.mainpid)+"] "+str(msg)
+
+
+  def deamonsetup(self,path="/var/run/sammael/",uid_name='nobody', gid_name='nogroup'):
+
+    if not os.path.exists(path):
+      os.makedirs(path)
+    os.chdir(path)
+
+    if os.getuid() == 0:
+      # We're root, we need to fix that
+
+      # Get the uid/gid from the name
+      running_uid = pwd.getpwnam(uid_name).pw_uid
+      running_gid = grp.getgrnam(gid_name).gr_gid
+
+      #os.chroot("/var/run/sammael")
+
+      # Try setting the new uid/gid
+      os.setgid(running_gid)
+      os.setuid(running_uid)
+
+      # Remove group privileges
+      #os.setgroups([])
+
+    # Ensure a very conservative umask
+    os.umask(077)
+    self.log("dropped privs, current ("+str(os.getuid())+"/"+str(os.getgid())+")")
+
+  def exchange(self,addr):
+    # main data exchnage function
+    # addr - connecting address
+
+    # setting every descriptor to be non blocking
+    #fcntl(s, F_SETFL, O_NONBLOCK)
+    #s.setblocking(0)
+    #fcntl(c, F_SETFL, O_NONBLOCK)
+
+    s_recv = self.ssl.recv
+    s_send = self.ssl.sendall
+    p_recv = self.proxy.recv
+    p_send = self.proxy.send
+
+    self.log("going into exchange between "+str(self.dhost)+":"+str(self.dport)+" and "+str(addr[0])+":"+str(addr[1]))
+
+    while 1:
+      toread,[],[] = select([self.proxy,self.ssl],[],[],30)
+      [],towrite,[] = select([],[self.proxy,self.ssl],[],30)
+
+      if self.proxy in towrite and self.ssl in toread:
         try:
-          data = ssl.recv(1024)
-        except:
-          ssl.shutdown()
-          exit()
+          data = s_recv(4096)
+        except SSL.WantReadError:
+          data = ''
+        except: #  SSL.SysCallError,SSL.ZeroReturnError:
+          break
 
-        ssl.setblocking(False)
+        ld = len(data)
+        if ld > 0:
+          p_send(data)
 
-        if data and 'qwerty' in data:
-          dport = 22
+      elif self.proxy in toread and self.ssl in towrite:
 
-        plog("connecting to "+str(dhost)+":"+str(dport)+" from "+str(addr[0])+":"+str(addr[1]),chpid)
-        if has_ipv6 == True:
-          proxy = socket(AF_INET6, SOCK_STREAM)
+        data = p_recv(4096)
+        ld = len(data)
+        if ld == 0:
+          break
         else:
-          proxy = socket(AF_INET, SOCK_STREAM)
-        proxy.setsockopt(IPPROTO_TCP, TCP_CORK,1)
+          s_send(data)
 
-        try:
-          proxy.connect((dhost, dport))
-        except socket_error:
-          ssl.shutdown()
-          proxy.shutdown()
-          #proxy.close()
-          exit()
+    self.proxy.shutdown(SHUT_RDWR)
+    self.ssl.sock_shutdown(SHUT_RDWR)
+    self.log("connection closed")
 
-        plog("connected to "+str(dhost)+":"+str(dport)+" from "+str(addr[0])+":"+str(addr[1]),chpid)
-
-        if dport == 80:
-          proxy.send(data)
-
-        fcntl(proxy, F_SETFL, O_NONBLOCK)
-
-        plog("going into exchange between "+str(dhost)+":"+str(dport)+" and "+str(addr[0])+":"+str(addr[1]),chpid)
-
-        exchange(ssl,proxy)
-
-        try:
-          ssl.shutdown()
-          proxy.shutdown()
-        except:
-          pass
-
-        exit()
-
-      else:
-        plog("child forked "+str(pid))
-
-
-# main program
+# main
 if __name__ == "__main__":
-  main()
-
+  server = sammael()
+  server.serve()

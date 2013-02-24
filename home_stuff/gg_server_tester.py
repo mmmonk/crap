@@ -6,30 +6,23 @@ from sys import exit
 from random import choice as rndchoice
 from os import getenv
 
-timem = 1000000
-goodenough = 60000 # delay of ans including reading 2 first bytes in us
-servers = [] 
+servers = []
 
-socket.setdefaulttimeout(2)
+socket.setdefaulttimeout(30)
 
-def testserver(srv,timem):
+def testserver(srv):
   s = socket.socket()
   try:
-    stime = time()
-    s.connect((server,8074))
+    s.connect((srv,8074))
     data = s.recv(2)
-    if str(data).encode('hex') == "0100":
-      etime = time()
-    else:
-      etime = stime + timem*10
     s.close()
-    return int((etime-stime)*timem)
+    if str(data).encode('hex') == "0100":
+      return True
+    return False
   except socket.error:
-    return timem*10
+    return False
 
 if __name__ == '__main__':
-
-  sleep(3)
 
   # generate all the IPs
   for o4 in xrange(2,100):
@@ -42,28 +35,15 @@ if __name__ == '__main__':
     server = rndchoice(servers)
     servers.remove(server)
 
-    times = ""
-    ok = 1
-
-    # test it if it is ok 3 times
-    for i in xrange(0,3):
-      delay = testserver(server,timem)
-      if delay > goodenough:
-        ok = 0
-        break
-      else:
-        times += str(delay)+"us "
-
-    if ok == 1:
+    if testserver(server):
+      print server
       try:
         open(str(getenv('HOME'))+"/.gg/cmd","w").write("\
             /set server "+str(server)+"\n\
             /wr\n\
             /reconnect\n\
-            /echo server:"+str(server)+" times:"+str(times)+"\n\
             /beep\n")
       except:
-        exit(1)
-      break
-    else:
-      continue
+        continue
+      sleep(30)
+      exit(0)

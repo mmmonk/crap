@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121129$
-# $Date: 2012-11-29 23:14:48$
+# $Id: 20130221$
+# $Date: 2013-02-21 20:09:13$
 # $Author: Marek Lukaszuk$
 
 from time import strftime,tzset
@@ -51,13 +51,13 @@ except:
 
 ## battery information
 ## TODO: maybe use the /sys/ filesystem to dig out this information?
-if fs_exists("/sys/devices/LNXSYSTM:00/device:00/PNP0C0A:00/power_supply/BAT0"):
+if fs_exists("/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0A:00/power_supply/BAT0"):
 
   try:
-    dmax = float(open("/sys/devices/LNXSYSTM:00/device:00/PNP0C0A:00/power_supply/BAT0/charge_full_design").read().strip())
-    cmax = float(open("/sys/devices/LNXSYSTM:00/device:00/PNP0C0A:00/power_supply/BAT0/charge_full").read().strip())
-    cur = float(open("/sys/devices/LNXSYSTM:00/device:00/PNP0C0A:00/power_supply/BAT0/charge_now").read().strip())
-    bstat = open("/sys/devices/LNXSYSTM:00/device:00/PNP0C0A:00/power_supply/BAT0/status").read().strip()
+    dmax = float(open("/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0A:00/power_supply/BAT0/charge_full_design").read().strip())
+    cmax = float(open("/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0A:00/power_supply/BAT0/charge_full").read().strip())
+    cur = float(open("/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0A:00/power_supply/BAT0/charge_now").read().strip())
+    bstat = open("/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0A:00/power_supply/BAT0/status").read().strip()
   except:
     dmax = 1.0
     cmax = 1.0

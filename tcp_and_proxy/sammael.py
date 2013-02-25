@@ -1,20 +1,20 @@
 #!/usr/bin/python -u
 
-# $Id: 20130224$
-# $Date: 2013-02-24 23:46:19$
+# $Id: 20130225$
+# $Date: 2013-02-25 15:59:24$
 # $Author: Marek Lukaszuk$
 
-import fcntl
 from OpenSSL import SSL
+from OpenSSL import crypto
 from select import select
-from socket import socket,has_ipv6,SHUT_RDWR,AF_INET,AF_INET6,SOCK_STREAM,IPPROTO_TCP,TCP_CORK,SOL_SOCKET,SO_REUSEADDR,error as socket_error
+import fcntl
+import socket
 import os
 import sys
 import pwd
 import grp
 import time
 import random
-
 
 class sammael():
 
@@ -26,28 +26,29 @@ class sammael():
     self.dport = dport
     self.mainpid = os.getpid()
 
-    self.log("sammael ("+str(self.ver)+") - daemon starting")
-
-    if has_ipv6 == True:
-      self.s = socket(AF_INET6, SOCK_STREAM)
-    else:
-      self.s = socket(AF_INET, SOCK_STREAM)
-
-    self.s.setsockopt(IPPROTO_TCP, TCP_CORK, 1)
-    self.s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-
   def serve(self):
     # starting the server
+    self.log("sammael ("+str(self.ver)+") - daemon starting")
+    if socket.has_ipv6 == True:
+      self.s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    else:
+      self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    self.s.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, 1)
+    self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     self.s.bind((self.phost, self.pport))
     self.s.setblocking(False)
     self.log("bound to socket - "+str(self.phost)+":"+str(self.pport))
 
     self.deamonsetup()
+    self.sslctx()
     self.s.listen(1)
     self.log("listening for connections")
-    self.sslctx()
+    self.main_loop()
 
+  def main_loop(self):
     # main server loop
+    self.log("entering main accept loop")
     while 1:
       accept,[],[] = select([self.s],[],[],60)
 
@@ -69,22 +70,40 @@ class sammael():
           conn.close()
           sys.exit() # killing the child
 
-      else:
-        # cleaning old children
-        try:
-          os.waitpid(0,os.WNOHANG)
-        except OSError:
-            pass
+      # cleaning old children
+      try:
+        os.waitpid(0,os.WNOHANG)
+      except OSError:
+          pass
 
-  def sslctx(self,prvkey="/usr/local/certs/server.key",pubkey="/usr/local/certs/server.crt",dhfile="/usr/local/cert/dh.dat"):
+  def sslctx(self,prvkeyfile="/usr/local/certs/server.key",certfile="/usr/local/certs/server.crt",dhfile="/usr/local/certs/dh.dat",ciphers="RC4:-aNULL"):
     # SSL context setup
     self.ctx = SSL.Context(SSL.TLSv1_METHOD)
 
-    self.ctx.use_privatekey_file(prvkey)
-    self.ctx.use_certificate_file(pubkey)
+    priv = crypto.load_privatekey(crypto.FILETYPE_PEM,open(prvkeyfile).read())
+    priv.check()
+    self.log("priv key bits: "+str(priv.bits()))
+    self.log("priv key type: "+str(priv.type()))
+    cert = crypto.load_certificate(crypto.FILETYPE_PEM,open(certfile).read())
+    self.log("cert subject: "+str(cert.get_subject().get_components()))
+    self.log("cert notBefore: "+str(cert.get_notBefore()))
+    self.log("cert notAfter: "+str(cert.get_notAfter()))
+    self.log("cert issuer: "+str(cert.get_issuer().get_components()))
+    self.log("cert digest_md5: "+str(cert.digest("md5")))
+    self.log("cert digest_sha1: "+str(cert.digest("sha1")))
+    if cert.has_expired():
+      self.log("cert expired !!!!! - exiting")
+      sys.exit()
+    self.ctx.use_privatekey(priv)
+    self.ctx.use_certificate(cert)
+    self.ctx.check_privatekey()
+    self.log("certificate and private key loaded correctly")
     if os.path.isfile(dhfile):
+      # openssl dHParam -outform PEM -out /usr/local/cert/dh.dat 2048
       self.ctx.load_tmp_dh(dhfile)
-    self.ctx.set_cipher_list('RC4:-aNULL')
+      self.log("Ephemeral Diffie-Hellman parameteres loaded correctly from file")
+    self.ctx.set_cipher_list(ciphers)
+    self.log("cipher suits used are: "+str(ciphers))
 
     self.log("SSL context ready")
 
@@ -106,8 +125,8 @@ class sammael():
       self.ssl.do_handshake()
     except SSL.Error as e:
       self.log(self.ssl.state_string()+": "+str(e))
-      self.ssl.shutdown(SHUT_RDWR)
-      conn.shutdown(SHUT_RDWR)
+      self.ssl.shutdown(socket.SHUT_RDWR)
+      conn.shutdown(socket.SHUT_RDWR)
       sys.exit()
 
     self.log(str(self.ssl.state_string()))
@@ -132,17 +151,17 @@ class sammael():
     # data - initial data read while doing SSL handshake
     self.log("connecting to "+str(self.dhost)+":"+str(self.dport)+" from "+str(addr[0])+":"+str(addr[1]))
 
-    if has_ipv6 == True:
-      self.proxy = socket(AF_INET6, SOCK_STREAM)
+    if socket.has_ipv6 == True:
+      self.proxy = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     else:
-      self.proxy = socket(AF_INET, SOCK_STREAM)
-    self.proxy.setsockopt(IPPROTO_TCP, TCP_CORK,1)
+      self.proxy = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.proxy.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK,1)
 
     try:
       self.proxy.connect((self.dhost, self.dport))
-    except socket_error:
-      self.ssl.shutdown(SHUT_RDWR)
-      self.proxy.shutdown(SHUT_RDWR)
+    except socket.error:
+      self.ssl.shutdown(socket.SHUT_RDWR)
+      self.proxy.shutdown(socket.SHUT_RDWR)
       self.log("problems connecting to "+str(self.dhost)+":"+str(self.dport)+" - connection closed")
       sys.exit()
 
@@ -153,7 +172,6 @@ class sammael():
       self.proxy.send(data)
 
     fcntl.fcntl(self.proxy, fcntl.F_SETFL, os.O_NONBLOCK)
-
 
   def log(self,msg):
     # a more verbose logging
@@ -193,16 +211,6 @@ class sammael():
     # main data exchnage function
     # addr - connecting address
 
-    # setting every descriptor to be non blocking
-    #fcntl(s, F_SETFL, O_NONBLOCK)
-    #s.setblocking(0)
-    #fcntl(c, F_SETFL, O_NONBLOCK)
-
-    s_recv = self.ssl.recv
-    s_send = self.ssl.sendall
-    p_recv = self.proxy.recv
-    p_send = self.proxy.send
-
     self.log("going into exchange between "+str(self.dhost)+":"+str(self.dport)+" and "+str(addr[0])+":"+str(addr[1]))
 
     while 1:
@@ -211,7 +219,7 @@ class sammael():
 
       if self.proxy in towrite and self.ssl in toread:
         try:
-          data = s_recv(4096)
+          data = self.ssl.recv(4096)
         except SSL.WantReadError:
           data = ''
         except: #  SSL.SysCallError,SSL.ZeroReturnError:
@@ -219,19 +227,19 @@ class sammael():
 
         ld = len(data)
         if ld > 0:
-          p_send(data)
+          self.proxy.send(data)
 
       elif self.proxy in toread and self.ssl in towrite:
 
-        data = p_recv(4096)
+        data = self.proxy.recv(4096)
         ld = len(data)
         if ld == 0:
           break
         else:
-          s_send(data)
+          self.ssl.sendall(data)
 
-    self.proxy.shutdown(SHUT_RDWR)
-    self.ssl.sock_shutdown(SHUT_RDWR)
+    self.proxy.shutdown(socket.SHUT_RDWR)
+    self.ssl.sock_shutdown(socket.SHUT_RDWR)
     self.log("connection closed")
 
 # main

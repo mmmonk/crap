@@ -1,7 +1,7 @@
 #!/usr/bin/python -u
 
-# $Id: 20130225$
-# $Date: 2013-02-25 15:59:24$
+# $Id: 20130226$
+# $Date: 2013-02-26 22:46:26$
 # $Author: Marek Lukaszuk$
 
 from OpenSSL import SSL
@@ -76,7 +76,7 @@ class sammael():
       except OSError:
           pass
 
-  def sslctx(self,prvkeyfile="/usr/local/certs/server.key",certfile="/usr/local/certs/server.crt",dhfile="/usr/local/certs/dh.dat",ciphers="RC4:-aNULL"):
+  def sslctx(self,prvkeyfile="/usr/local/certs/server.key",certfile="/usr/local/certs/server.crt",dhfile="/usr/local/certs/dh.dat",ciphers="AES:-MEDIUM:RC4:!aNULL"):
     # SSL context setup
     self.ctx = SSL.Context(SSL.TLSv1_METHOD)
 
@@ -104,8 +104,10 @@ class sammael():
       self.log("Ephemeral Diffie-Hellman parameteres loaded correctly from file")
     self.ctx.set_cipher_list(ciphers)
     self.log("cipher suits used are: "+str(ciphers))
-
     self.log("SSL context ready")
+
+  def CertNamePrint(a):
+    return ", ".join([ "=".join(b) for b in a ])
 
   def sconn(self,addr,conn):
     # SSL connection initiation

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20130227$
-# $Date: 2013-02-27 16:49:51$
+# $Date: 2013-02-27 22:08:30$
 # $Author: Marek Lukaszuk$
 
 # anarchy protocol aka stateless protocol ;)
@@ -10,6 +10,10 @@ import sys
 import os
 import time
 import struct
+
+# protocol my somehow keep track of a session but it can't relay on any src addressesa
+# SYN "packets" should allow for exchange of DH (suffciently big - in the data part)
+# that will be used for xoring over the transfered data.
 
 class anarchy():
 
@@ -39,7 +43,7 @@ class anarchy():
   def dechead(self, head):
     pass
 
-  def enchead(self,syn=0,fin=0,keepalive=0,moredata=0):
+  def enchead(self, syn=0, fin=0, keepalive=0, moredata=0):
     # header:
     # flags(syn,fin,keepalive,moredata,0,0,0,0) == byte
     # seq = 1 byte
@@ -48,10 +52,10 @@ class anarchy():
 
     return ""
 
-  def decflags(self,flags):
+  def decflags(self, flags):
     return list(bin(int(flags)).replace("0b",""))
 
-  def encflags(self,flags):
+  def encflags(self, flags):
     flags = [ str(d) for d in flags]
     return int("".join(flags),2)
 
@@ -60,8 +64,8 @@ class anarchy():
 
 
 class aserver(anarchy):
-  
-  def __init__(self,lserver="127.0.0.1",lport=22):
+
+  def __init__(self, lserver="127.0.0.1", lport=22):
     self.lserver = lserver
     self.lport = lport
 

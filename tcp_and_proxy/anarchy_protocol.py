@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20130226$
-# $Date: 2013-02-26 22:48:36$
+# $Id: 20130227$
+# $Date: 2013-02-27 16:49:51$
 # $Author: Marek Lukaszuk$
 
 # anarchy protocol aka stateless protocol ;)
@@ -58,3 +58,14 @@ class anarchy():
   def transform(self, data):
     return data
 
+
+class aserver(anarchy):
+  
+  def __init__(self,lserver="127.0.0.1",lport=22):
+    self.lserver = lserver
+    self.lport = lport
+
+class aclient(anarchy):
+
+  def __init__(self):
+    pass

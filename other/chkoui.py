@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20130227$
-# $Date: 2013-02-27 22:15:05$
+# $Id: 20130228$
+# $Date: 2013-02-28 20:45:37$
 # $Author: Marek Lukaszuk$
 
 import sys
@@ -9,6 +9,7 @@ import os
 import urllib2
 import re
 import pickle
+import bz2
 
 ouidat = "/tmp/oui_cache.dat"
 
@@ -32,14 +33,14 @@ def refreshOUIdata(ouidat):
       b = list()
       oui[a[0].replace("-","").lower()]=" ".join(a[2:])
 
-  fd = open(ouidat,"wb")
+  fd = bz2.BZ2File(ouidat,"wb")
   p = pickle.Pickler(fd,protocol=2)
   p.dump(oui)
   fd.close()
 
 def loadOUI(ouidat):
   # load pickled OUI data from file
-  fd = open(ouidat,"rb")
+  fd = bz2.BZ2File(ouidat,"rb")
   p = pickle.Unpickler(fd)
   return p.load()
 

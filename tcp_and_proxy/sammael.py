@@ -1,7 +1,7 @@
 #!/usr/bin/python -u
 
 # $Id: 20130301$
-# $Date: 2013-03-01 13:53:26$
+# $Date: 2013-03-01 13:55:08$
 # $Author: Marek Lukaszuk$
 
 from OpenSSL import SSL
@@ -127,7 +127,7 @@ class sammael():
       self.ssl.do_handshake()
     except SSL.Error as e:
       self.log(self.ssl.state_string()+": "+str(e))
-      self.ssl.shutdown(2)
+      self.ssl.shutdown()
       conn.shutdown(2)
       sys.exit()
 
@@ -139,7 +139,7 @@ class sammael():
     try:
       data = self.ssl.recv(1024)
     except:
-      self.ssl.shutdown(2)
+      self.ssl.shutdown()
       self.log("can't read - connection closed")
       sys.exit()
 
@@ -162,7 +162,7 @@ class sammael():
     try:
       self.proxy.connect((self.dhost, self.dport))
     except socket.error:
-      self.ssl.shutdown(2)
+      self.ssl.shutdown()
       self.proxy.shutdown(2)
       self.log("problems connecting to "+str(self.dhost)+":"+str(self.dport)+" - connection closed")
       sys.exit()

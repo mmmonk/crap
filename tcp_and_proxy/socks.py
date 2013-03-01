@@ -1,21 +1,28 @@
-#!/usr/bin/python -u
+#!/usr/bin/env python
 
-# $Id$
+# $Id: 20130301$
+# $Date: 2013-03-01 16:33:47$
+# $Author: Marek Lukaszuk$
 
-from fcntl import fcntl, F_SETFL 
+from fcntl import fcntl, F_SETFL
 from os import O_NONBLOCK
 from select import select
-from struct import pack,unpack 
+from struct import pack,unpack
 import socket
 import sys
+import argparse
 
-def usage():
-  sys.stderr.write("\nusage: "+sys.argv[0]+" <options> socks_server socks_port destination_ip destination_port\n\n\
-  version: $Id$\n\n\
-  options:\n\
-  -v socks_ver - 4 or 5, default 5\n\
-  -cork - enables TCP_CORK socket option aka super nagle, default is off\n\n")
-  sys.exit(0)
+
+class socks():
+
+  def __init__(self, shost, sport, host, port, ver=5, cork=False):
+    self.shost = shost
+    self.sport = sport
+    self.host = host
+    self.port = port
+    self.ver = ver
+    self.cork = cork
+
 
 # main data exchnage function
 def exchange(s):
@@ -60,7 +67,7 @@ def socks4(s,host,port):
   # port - destination port
   # return:
   # 1 - if ready
-  # 0 - if needs authentication 
+  # 0 - if needs authentication
 
   try:
     data = pack('!2BH',4,1,port)+socket.inet_aton(host)+chr(0)
@@ -72,9 +79,9 @@ def socks4(s,host,port):
   code = unpack('BBH',data[:4])[1]
 
   if code == 90:
-    return 1 
+    return 1
   else:
-    return 0 
+    return 0
 
 # preaparing a socks5 connection
 def socks5(s,host,port):
@@ -84,7 +91,7 @@ def socks5(s,host,port):
   # port - destination port
   # return:
   # 1 - if ready
-  # 0 - if needs authentication 
+  # 0 - if needs authentication
 
   error = ["succeeded", "general SOCKS server failure", "connection not allowed by ruleset", "Network unreachable", "Host unreachable", "Connection refused", "TTL expired", "Command not supported", "Address type not supported", "unassigned"]
 
@@ -111,7 +118,7 @@ def socks5(s,host,port):
       return 0
 
     if code == 0:
-      return 1 
+      return 1
     else:
       if code > 9:
         code=9
@@ -120,18 +127,26 @@ def socks5(s,host,port):
 
   else:
     sys.stderr.write("[-] socks server requires authentication\n")
-    return 0 
+    return 0
+
+def usage():
+  sys.stderr.write("\nusage: "+sys.argv[0]+" <options> socks_server socks_port destination_ip destination_port\n\n\
+  version: $Id: 20130301$
+  options:\n\
+  -v socks_ver - 4 or 5, default 5\n\
+  -cork - enables TCP_CORK socket option aka super nagle, default is off\n\n")
+  sys.exit(0)
 
 #### main stuff
 if __name__ == '__main__':
 
   len_argv=len(sys.argv)
-  if len_argv >= 5 and len_argv <= 8: 
-    
+  if len_argv >= 5 and len_argv <= 8:
+
     ver = 5
     cork = 0
-   
-    try: 
+
+    try:
       i = 1
       while i<len_argv:
         if sys.argv[i] == '-v':
@@ -140,7 +155,7 @@ if __name__ == '__main__':
         elif sys.argv[i] == '-cork':
           cork = 1
           i+=1
-        else: 
+        else:
           phost = sys.argv[i]
           pport = int(sys.argv[i+1])
           host  = sys.argv[i+2]
@@ -154,8 +169,8 @@ if __name__ == '__main__':
       socks = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     else:
       socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    
-    if cork: 
+
+    if cork:
       socks.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK,1)
 
     try:
@@ -163,18 +178,18 @@ if __name__ == '__main__':
     except socket.error:
       sys.stderr.write("[-] problem connecting to "+str(phost)+":"+str(pport)+"\n")
       socks.close()
-      sys.exit()  
+      sys.exit()
 
     sys.stderr.write("[+] connecting via "+str(phost)+":"+str(pport)+" to "+str(host)+":"+str(port)+"\n")
 
-    if (ver == 5 and socks5(socks,host,port)) or (ver == 4 and socks4(socks,host,port)): 
+    if (ver == 5 and socks5(socks,host,port)) or (ver == 4 and socks4(socks,host,port)):
       try:
         exchange(socks)
-      except KeyboardInterrupt: 
+      except KeyboardInterrupt:
         pass
       socks.close()
     else:
       sys.stderr.write("[-] socks server couldn't establish the connection\n")
 
   else:
-    usage() 
+    usage()

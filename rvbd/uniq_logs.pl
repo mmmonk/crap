@@ -1,8 +1,11 @@
 #!/usr/bin/perl
 
-# $Id: 20130220$
-# $Date: 2013-02-20 15:56:03$
+# $Id: 20130302$
+# $Date: 2013-03-02 14:33:37$
 # $Author: Marek Lukaszuk$
+
+# remove from typical linux log files dates, IPs and numbers,
+# this allows to quickly do some simple statistics
 
 use strict;
 use warnings;

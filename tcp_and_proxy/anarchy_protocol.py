@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20130301$
-# $Date: 2013-03-01 16:43:25$
+# $Id: 20130302$
+# $Date: 2013-03-02 08:49:41$
 # $Author: Marek Lukaszuk$
 
 # anarchy protocol aka stateless protocol ;)
@@ -49,9 +49,9 @@ class anarchy():
 
   def enchead(self, syn=0, fin=0, keepalive=0, moredata=0):
     # header:
-    # flags(syn,fin,keepalive,moredata,0,0,0,0) == byte
-    # seq = 1 byte
-    # ack = 1 byte
+    # flags(syn,fin,keepalive,moredata,0,0,0,0) == 1 byte
+    # session id = 2 bytes
+    # seq = 2 bytes
     # size = 2 bytes
     # TODO
     return ""

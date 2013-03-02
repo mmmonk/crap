@@ -8,6 +8,7 @@ cisco_tcl/        - cisco tcl scripts
 crypto/           - some simple crypto fun
 dsbl_cleanup/     - dsbl cleanup - doesn't work anymore
 expect/           - Expect scripts
+git/              - scripts to help in managing git repos
 home_stuff/       - some scripts that I use at home
 jnpr/             - scripts for juniper devices/software
 other/            - other

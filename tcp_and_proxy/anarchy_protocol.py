@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20130302$
-# $Date: 2013-03-02 08:49:41$
+# $Id: 20130303$
+# $Date: 2013-03-03 21:46:39$
 # $Author: Marek Lukaszuk$
 
 # anarchy protocol aka stateless protocol ;)
@@ -28,7 +28,7 @@ class anarchy():
     self.ack = 0
     self.sent = dict() # this will be used by the client to make sure it keeps track of send packets
     self.headfmt = "BBBH" # TODO
-    self.headsize = struct.calcsize(self.headerfmt)
+    self.headsize = struct.calcsize(self.headfmt)
     self.sessid = 0
 
   def log(self, msg):
@@ -49,8 +49,7 @@ class anarchy():
 
   def enchead(self, syn=0, fin=0, keepalive=0, moredata=0):
     # header:
-    # flags(syn,fin,keepalive,moredata,0,0,0,0) == 1 byte
-    # session id = 2 bytes
+    # session id = 2 bytes (first bit indicates if there is more data)
     # seq = 2 bytes
     # size = 2 bytes
     # TODO

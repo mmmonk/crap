@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20130305$
-# $Date: 2013-03-05 22:14:00$
+# $Date: 2013-03-05 22:16:50$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -108,5 +108,5 @@ if __name__ == "__main__":
   #p.add_argument("-p",action='store_true',help="fetch pdf version if possible") # TODO
   args = p.parse_args()
 
- print query(args.query,args.f)
+  print query(args.query,args.f)
 

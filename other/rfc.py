@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20130305$
-# $Date: 2013-03-05 16:16:43$
+# $Date: 2013-03-05 17:44:26$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -55,32 +55,38 @@ class rfc():
     if s.isdigit():
       # printing given rfc
       self.fetch(s,force)
-      print bz2.BZ2File(self.wdir+os.sep+"rfc"+s+".bz2").read()
+      return(bz2.BZ2File(self.wdir+os.sep+"rfc"+s+".bz2").read())
 
     else:
       # search through the index
       self.fetchidx(force)
       title = ""
+      out = ""
       for line in bz2.BZ2File(self.wdir+os.sep+"rfc-index.bz2").readlines():
         if line == "\n":
-          if s.lower() in title:
-            print title
+          if s.lower() in title.lower():
+            out += title+"\n"
           title = ""
         else:
-          title += line.strip().lower()
+          title += line.strip()
 
+      return(out)
 
 # a helper function
 def query(s,f=False):
   r = rfc()
-  r.query(s,f)
+  return r.query(s,f)
 
 if __name__ == "__main__":
 
   p = argparse.ArgumentParser(description='rfc search tool')
   p.add_argument("query",help="either an RFC number or a string to find in the RFC title")
   p.add_argument("-f",action='store_true',help="force redownload of either specific RFC or RFC index")
+  p.add_argument("-p",action='store_true',help="fetch pdf version if possible") # TODO
   args = p.parse_args()
 
-  query(args.query,args.f)
+  if sys.stdout.isatty(): # TODO: add pager
+    print query(args.query,args.f)
 
+  else:
+    print query(args.query,args.f)

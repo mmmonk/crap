@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20130305$
-# $Date: 2013-03-05 22:16:50$
+# $Date: 2013-03-05 22:22:14$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -103,8 +103,8 @@ def query(s,f=False):
 if __name__ == "__main__":
 
   p = argparse.ArgumentParser(description='rfc search tool')
-  p.add_argument("query",help="either an RFC number or a string to find in the RFC title")
-  p.add_argument("-f",action='store_true',help="force redownload of either specific RFC or RFC index")
+  p.add_argument("query",help="either an RFC number, a full file name of an IETF draft or a string to search in the RFCs and drafts titles")
+  p.add_argument("-f",action='store_true',help="force redownload of either the index or the spcific item")
   #p.add_argument("-p",action='store_true',help="fetch pdf version if possible") # TODO
   args = p.parse_args()
 

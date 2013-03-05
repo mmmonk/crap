@@ -1,7 +1,7 @@
 #!/usr/bin/python -u
 
-# $Id: 20120907$
-# $Date: 2012-09-07 15:43:12$
+# $Id: 20130305$
+# $Date: 2013-03-05 09:42:43$
 # $Author: Marek Lukaszuk$
 
 version = "20111201"
@@ -194,7 +194,7 @@ class upnp_proxy (generic_tcp_proxy):
 
       try:
         self.connect.connect((self.phost, jumpport))
-        sys.stderr.write("[+] connecting to "str(host)+":"+str(port)+" via "+str(self.phost)+":"+str(jumpport)+"\n")
+        sys.stderr.write("[+] connecting to "+str(host)+":"+str(port)+" via "+str(self.phost)+":"+str(jumpport)+"\n")
 
         return
       except socket.error:

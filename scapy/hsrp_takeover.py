@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20121216$
-# $Date: 2012-12-16 22:46:59$
+# $Id: 20130305$
+# $Date: 2013-03-05 22:35:24$
 # $Author: Marek Lukaszuk$
 
 # This takes over any HSRPv1 and v2
@@ -20,6 +20,7 @@ import argparse
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument('-s','--source',help='source IP address, either IPv4 or IPv6, if not set uses the corresponding interface address')
 parser.add_argument('-i','--iface',default="tap0",help='interface to listen on and send packets (default tap0)')
+parser.add_argument('-a','--auth',default="cisco",help='authentication data in the packet (default: cisco)') #TODO
 parser.add_argument('-p','--priority',default=255,help='priority (default 255)', type=int)
 parser.add_argument('-t','--hellotime',default=1,help='hello time (default 1s)', type=int)
 parser.add_argument('-v','--verbose',action="store_true",help='enables scapy verbose output')

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # $Id: 20130305$
-# $Date: 2013-03-05 22:22:14$
+# $Date: 2013-03-05 22:36:30$
 # $Author: Marek Lukaszuk$
 
 import os
@@ -80,7 +80,7 @@ class rfc():
             out += title+"\n"
           title = ""
         else:
-          title += line.strip()
+          title += line.strip()+" "
 
       # search through the draft index
       self.fetchidx(self.wdir+os.sep+"1id-index.bz2",self.idxdrf,force)
@@ -91,7 +91,7 @@ class rfc():
             out += title+"\n"
           title = ""
         else:
-          title += line.strip()
+          title += line.strip()+" "
 
       return(out)
 

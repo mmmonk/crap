@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 
-# $Id: 20121009$
-# $Date: 2012-10-09 13:30:00$
+# $Id: 20130305$
+# $Date: 2013-03-05 09:31:42$
 # $Author: Marek Lukaszuk$
 
 # based on:
 # http://cpansearch.perl.org/src/KBRINT/Crypt-Juniper-0.02/lib/Crypt/Juniper.pm
 
-import sys,re,random
+import sys
+import re
+import random
 
 class junos_passwd_9:
 
@@ -58,7 +60,7 @@ class junos_passwd_9:
       out += chr(num % 256)
       i += len(d)
 
-    return str(pwd)+": "+str(out)
+    return str(out)
 
   def encode(self,pwd,salt=""):
     '''
@@ -92,19 +94,27 @@ class junos_passwd_9:
 
       i += 1
 
-    return str(pwd)+": "+str(out)
+    return str(out)
+
+def encode(s,salt=""):
+  jp9 = junos_passwd_9()
+  return jp9.encode(s,salt)
+
+def decode(s):
+  jp9 = junos_passwd_9()
+  return jp9.decode(s)
 
 if __name__ == "__main__":
 
   jp9 = junos_passwd_9()
 
-  print jp9.decode("$9$LbHX-wg4Z") # lc
-  print jp9.decode("$9$41JDk5T3CpBFnCuB1rl8X7-VYq.5") # netscreen
+  print "$9$LbHX-wg4Z : "+jp9.decode("$9$LbHX-wg4Z") # lc
+  print "$9$41JDk5T3CpBFnCuB1rl8X7-VYq.5 : "+jp9.decode("$9$41JDk5T3CpBFnCuB1rl8X7-VYq.5") # netscreen
 
   a = jp9.encode("JunosPasswordDecoder")
-  print jp9.decode(a.split()[1])
+  print str(a)+" : "+jp9.decode(a)
   a = jp9.encode("netscreen")
-  print jp9.decode(a.split()[1])
+  print str(a)+" : "+jp9.decode(a)
   for line in sys.stdin.read().split("\n"):
     if len(line) > 3:
-      print jp9.decode(line)
+      print str(line)+" : "+jp9.decode(line)

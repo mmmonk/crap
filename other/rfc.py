@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 
-# $Id: 20130306$
-# $Date: 2013-03-06 10:23:05$
-# $Author: Marek Lukaszuk$
+'''
+$Id: 20130306$
+$Date: 2013-03-06 13:43:10$
+$Author: Marek Lukaszuk$
+
+this script will search and download the given draft and rfc and store
+a compress copy (using bz2) in the home folder
+'''
 
 import os
 import sys
@@ -14,7 +19,9 @@ import argparse
 class rfc():
 
   def __init__(self, rfcdir="~/.rfc", indextimeout=7):
-
+    '''
+    indextimeout - how often (in days) to refresh the index
+    '''
     self.timeout = 3600*24*indextimeout # 7 days (by default)
     self.wdir = os.path.expanduser(rfcdir)
     self.idxurl = "https://www.ietf.org/download/rfc-index.txt"
@@ -26,7 +33,9 @@ class rfc():
       os.mkdir(self.wdir,0700)
 
   def fetchrfc(self,query,force=False):
-    # this will fetch the given rfc
+    '''
+    this will fetch the given rfc from https://tools.ietf.org/rfc/
+    '''
     if not os.path.isfile(self.wdir+os.sep+"rfc"+query+".bz2") or force:
       rfc = urllib2.urlopen(self.rfcurl+"rfc"+query+".txt")
       fd = bz2.BZ2File(self.wdir+os.sep+"rfc"+query+".bz2","wb")
@@ -34,7 +43,9 @@ class rfc():
       fd.close()
 
   def fetchdraft(self,query,force=False):
-    # this will fetch the given draft
+    '''
+    this will fetch the given draft from https://www.ietf.org/id/
+    '''
     if not os.path.isfile(self.wdir+os.sep+query+".bz2") or force:
       rfc = urllib2.urlopen(self.drfurl+query)
       fd = bz2.BZ2File(self.wdir+os.sep+query+".bz2","wb")
@@ -42,7 +53,10 @@ class rfc():
       fd.close()
 
   def fetchidx(self,idxfd,url,force=False):
-    # this will fetch the rfc index
+    '''
+    this will fetch the rfc index from https://www.ietf.org/download/rfc-index.txt
+    or a the draft index from https://www.ietf.org/id/1id-index.txt
+    '''
     try:
       mtime = int(time.time()-os.stat(idxfd).st_mtime)
     except OSError:
@@ -55,9 +69,12 @@ class rfc():
       fd.close()
 
   def query(self,s,force=False):
-
-    # query type
-
+    '''
+    based on the provided string it will do the magic(tm):
+     if the string is a number if will show a give RFC
+     if the string stars with "draft-" and ends with ".txt" it show you a given draft
+     if it is anything else then it will search the rfc index and draft index
+    '''
     if s.isdigit():
       # rfc
       try:
@@ -67,7 +84,7 @@ class rfc():
         print "Error: downloading/saving RFC"
         sys.exit()
 
-    elif "draft-" in s and ".txt" in s:
+    elif s.startswith("draft-") and s.endswith(".txt"):
       # draft
       try:
         self.fetchdraft(s,force)
@@ -112,8 +129,10 @@ class rfc():
 
       return(out)
 
-# a helper function
 def query(s,f=False):
+  '''
+  helper function for easier usage
+  '''
   r = rfc()
   return r.query(s,f)
 

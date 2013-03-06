@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20130301$
-# $Date: 2013-03-01 10:13:00$
+# $Id: 20130306$
+# $Date: 2013-03-06 09:53:33$
 # $Author: Marek Lukaszuk$
 
 import sys
@@ -37,8 +37,8 @@ class checkOUI():
     # matching the mac to a vendor
     a ="".join(re.findall("[0-9a-f]",mac.lower()))[:6]
     if self.oui.has_key(a):
-      return str(a)+" - "+str(self.oui[a])
-    return str(a)+" - unknown"
+      return str(self.oui[a])
+    return "unknown"
 
   def downloadDB(self, refresh=False):
     # download new OUI data from a link and pickle it
@@ -78,13 +78,17 @@ class checkOUI():
     self.oui = pickle.Unpickler(fd).load()
     fd.close()
 
+def query(s):
+  oui = checkOUI()
+  return str(s)+" - "+str(oui.check(s))
+
 if __name__ == "__main__":
 
   oui = checkOUI()
 
   if len(sys.argv) == 1:
     for mac in sys.stdin.readlines():
-      print oui.check(mac)
+      print query(mac)
   else:
     for mac in sys.argv[1:]:
-      print oui.check(mac)
+      print query(mac)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20130305$
-# $Date: 2013-03-05 22:35:24$
+# $Id: 20130306$
+# $Date: 2013-03-06 10:27:10$
 # $Author: Marek Lukaszuk$
 
 # This takes over any HSRPv1 and v2
@@ -107,6 +107,7 @@ if str(p[HSRP])[2] == hsrpv2 and str(p[HSRP])[4] == hsrpv2active:
 
     if data[off] == "\x04":
       print "[-] auth HSRP using MD5, stopping"
+      # TODO
       sys.exit(1)
 
     off += ord(data[off+1]) + 2
@@ -116,6 +117,7 @@ if str(p[HSRP])[2] == hsrpv2 and str(p[HSRP])[4] == hsrpv2active:
 else:
   if len(p[HSRP]) > 28: # HSRPv0/1 Auth
     print "[-] auth HSRP using MD5, stopping"
+    # TODO
     sys.exit(1)
 
   p[HSRP].priority = HSRPpri

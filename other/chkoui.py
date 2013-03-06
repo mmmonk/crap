@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 
-# $Id: 20130306$
-# $Date: 2013-03-06 09:53:33$
-# $Author: Marek Lukaszuk$
+'''
+$Id: 20130306$
+$Date: 2013-03-06 13:46:28$
+$Author: Marek Lukaszuk$
+
+OUI checker
+'''
 
 import sys
 import os
@@ -34,15 +38,19 @@ class checkOUI():
 
 
   def check(self,mac):
-    # matching the mac to a vendor
+    '''
+    matching the mac to a vendor
+    '''
     a ="".join(re.findall("[0-9a-f]",mac.lower()))[:6]
     if self.oui.has_key(a):
       return str(self.oui[a])
     return "unknown"
 
   def downloadDB(self, refresh=False):
-    # download new OUI data from a link and pickle it
-
+    '''
+    download new OUI data from a link and pickle it to a bz2 file
+    url: http://standards.ieee.org/develop/regauth/oui/oui.txt
+    '''
     print "[+] downloading the oui database"
     oui = dict()
     fail = False
@@ -73,12 +81,17 @@ class checkOUI():
       os.rename(self.ouidat+"tmp",self.ouidat)
 
   def loadDB(self):
-    # load pickled OUI data from file
+    '''
+    load pickled OUI data from file
+    '''
     fd = bz2.BZ2File(self.ouidat,"rb")
     self.oui = pickle.Unpickler(fd).load()
     fd.close()
 
 def query(s):
+  '''
+  helper function for easier querying
+  '''
   oui = checkOUI()
   return str(s)+" - "+str(oui.check(s))
 

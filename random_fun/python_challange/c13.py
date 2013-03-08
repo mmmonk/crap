@@ -3,7 +3,7 @@
 # http://www.pythonchallenge.com/pc/return/disproportional.html
 # http://www.pythonchallenge.com/pc/phonebook.php
 
-import Image, urllib2
+import urllib2
 import xmlrpclib
 
 auth_handler = urllib2.HTTPBasicAuthHandler()
@@ -15,6 +15,5 @@ urllib2.install_opener(opener)
 
 xml = xmlrpclib.ServerProxy("http://www.pythonchallenge.com/pc/phonebook.php",verbose=1)
 pn = xml.phone("Bert")
-print pn
+print pn.replace("555-","").lower()
 
-# 555-ITALY => 555-48259

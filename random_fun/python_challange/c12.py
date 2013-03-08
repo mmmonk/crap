@@ -7,7 +7,7 @@
 # http://www.pythonchallenge.com/pc/return/evil4.jpg
 # http://www.pythonchallenge.com/pc/return/bert.html
 
-import Image, urllib2, StringIO
+import urllib2
 
 auth_handler = urllib2.HTTPBasicAuthHandler()
 auth_handler.add_password(realm='inflate', uri='http://www.pythonchallenge.com/pc/return/', user='huge', passwd='file')

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 '''
-$Id: 20130306$
-$Date: 2013-03-06 13:43:10$
+$Id: 20130308$
+$Date: 2013-03-08 12:44:32$
 $Author: Marek Lukaszuk$
 
 this script will search and download the given draft and rfc and store
@@ -24,10 +24,11 @@ class rfc():
     '''
     self.timeout = 3600*24*indextimeout # 7 days (by default)
     self.wdir = os.path.expanduser(rfcdir)
-    self.idxurl = "https://www.ietf.org/download/rfc-index.txt"
+    self.idxurl = "https://tools.ietf.org/rfc/rfc-index.txt"
     self.rfcurl = "https://tools.ietf.org/rfc/"
-    self.idxdrf = "https://www.ietf.org/id/1id-index.txt"
-    self.drfurl = "https://www.ietf.org/id/"
+    self.idxdrf = "https://tools.ietf.org/id/1id-index.txt"
+    self.drfurl = "https://tools.ietf.org/id/"
+    self.idxirt = "https://tools.ietf.org/id/all_id2.txt"
 
     if not os.path.exists(self.wdir):
       os.mkdir(self.wdir,0700)
@@ -54,8 +55,9 @@ class rfc():
 
   def fetchidx(self,idxfd,url,force=False):
     '''
-    this will fetch the rfc index from https://www.ietf.org/download/rfc-index.txt
-    or a the draft index from https://www.ietf.org/id/1id-index.txt
+    this will fetch the rfc index from https://tools.ietf.org/rfc/rfc-index.txt
+    or a the draft index from https://tools.ietf.org/id/1id-index.txt
+    or a complete list of drafts from https://tools.ietf.org/id/all_id2.txt
     '''
     try:
       mtime = int(time.time()-os.stat(idxfd).st_mtime)
@@ -112,11 +114,11 @@ class rfc():
         else:
           title += line.strip()+" "
 
-      # search through the draft index
+      # search through the ietf draft index
       try:
         self.fetchidx(self.wdir+os.sep+"1id-index.bz2",self.idxdrf,force)
       except:
-        print "Error: downloading/saving RFC index"
+        print "Error: downloading/saving IETF index"
         sys.exit()
       title = ""
       for line in bz2.BZ2File(self.wdir+os.sep+"1id-index.bz2").readlines():
@@ -127,7 +129,30 @@ class rfc():
         else:
           title += line.strip()+" "
 
+      # search through the irtf draft index
+      try:
+        self.fetchidx(self.wdir+os.sep+"all_id2.bz2",self.idxirt,force)
+      except:
+        print "Error: downloading/saving IRTF index"
+        sys.exit()
+      for line in bz2.BZ2File(self.wdir+os.sep+"all_id2.bz2").readlines():
+        if line[0] == "#":
+          continue
+
+        t = line.strip().split("\t")
+
+        if "rfc" in t[2].lower():
+          continue
+
+        if not "irtf" in t[0].lower():
+          continue
+
+        if s.lower() in line.lower():
+          out += "\""+t[13]+"\", "+t[2]+", "+t[5]+", "+t[6]+", <"+t[0]+".txt>\n"
+
       return(out)
+
+
 
 def query(s,f=False):
   '''

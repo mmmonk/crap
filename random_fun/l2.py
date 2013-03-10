@@ -1,44 +1,48 @@
 #!/usr/bin/env python
 
-import sys
+primes = [2,3]
 
 def isprime(n):
+
+  global primes
 
   if n == 3 or n == 2 or n == 1:
     return True
 
-  if n%2 == 0:
-    return False
-
-  i = 3
   m = (n+1)/2
+  for i in primes:
+    if n%i == 0:
+      return False
+    if i > m:
+      break
+
+  i = primes[-1]
   while i < m:
     if n%i == 0:
       return False
     i+= 2
 
+  primes.append(n)
   return True
 
-a = 1
-b = 1
-c = 0
-while True:
+def findfeb():
 
-  c = a + b
+  a = 1
+  b = 1
+  c = a
+  while True:
 
-  print str(a)+"+"+str(b)+"="+str(c)
+    c = a + b
+    a = b
+    b = c
 
-  a = b
-  b = c
+    if c > 227000:
+      if isprime(c):
+        return c
 
-  if c > 227000:
-    if isprime(c):
-      print c
-      break
 
 dd = dict()
-
-c += 1
+c = findfeb()+1
 co = c
 
 print co
@@ -62,7 +66,6 @@ while True:
       break
 
   if c == 0 or isprime(c):
-    print c
     break
 
 print dd.keys()

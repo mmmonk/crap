@@ -26,3 +26,4 @@ for j in xrange(0,5):
       break
 
   open("evil2-"+str(j)+".bin","wb").write(pic2)
+  print "file evil2-"+str(j)+".bin created, open it in a graphic viewer"

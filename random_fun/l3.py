@@ -27,7 +27,7 @@ def fs(a1,s):
     r = fs(a2,s+e)
     if r == 0:
       d.append(e)
-      if not b.has_key(str(d))
+      if not b.has_key(str(d)):
         b[str(d)] = 1
       d = list()
     elif r >= 0:

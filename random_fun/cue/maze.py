@@ -73,4 +73,3 @@ op = (0,0)
 for i in xrange(0,len(p)):
   dir(op,p[i])
   op = p[i]
-

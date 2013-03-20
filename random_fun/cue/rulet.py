@@ -17,7 +17,7 @@ def loop(x):
     if not x % 36 == j:
       return False
 
-  for i in xrange(0,3):
+  for i in range(3):
     x = gen(x)
     print str(x%36),
   return True

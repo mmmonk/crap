@@ -28,7 +28,7 @@ Directories:
 * [ssh_proxycommand/](ssh_proxycommand/) - things (not all) that can be used as a proxycommand for [OpenSSH](http://www.openssh.org/)
 * [swatch/](swatch/) - scripts and configuration for [swatch](http://sourceforge.net/projects/swatch/)
 * [tcp_and_proxy/](tcp_and_proxy/) - scripts and programs that play with TCP/IP and that use HTTP/SOCKS proxy
-* [wireshark_lua/](wireshark_lua/) - example of wireshark dissector written in [Lua](http://www.lua.org/)
+* [wireshark_lua/](wireshark_lua/) - example of [wireshark](https://www.wireshark.org/) dissectors written in [Lua](http://www.lua.org/)
 
 ### More information
 

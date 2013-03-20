@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 '''
-$Id: 20130308$
-$Date: 2013-03-08 12:44:32$
+$Id: 20130315$
+$Date: 2013-03-15 11:58:10$
 $Author: Marek Lukaszuk$
 
 this script will search and download the given draft and rfc and store
@@ -168,5 +168,7 @@ if __name__ == "__main__":
   p.add_argument("-f",action='store_true',help="force redownload of either the index or the spcific item")
   args = p.parse_args()
 
-  print query(args.query,args.f)
-
+  try:
+    print query(args.query,args.f)
+  except IOError:
+    pass

@@ -1,7 +1,7 @@
 #!/usr/bin/python -u
 
-# $Id: 20130301$
-# $Date: 2013-03-01 13:46:17$
+# $Id: 20130320$
+# $Date: 2013-03-20 07:13:06$
 # $Author: Marek Lukaszuk$
 
 from OpenSSL import SSL
@@ -207,7 +207,7 @@ if __name__ == '__main__':
   p.add_argument("port", type=int, help="destination port")
   p.add_argument("-ph", default="", help="http proxy host")
   p.add_argument("-pp", type=int, default=8080, help="http proxy port (default: 8080)")
-  p.add_argument("-auth", default="", help="base64 encoded string user:pass for proxy auth")
+  p.add_argument("-auth", default="", help="base64 encoded string user:pass for basic proxy auth")
   p.add_argument("-pwd", default="", help="the pass string to connect to the \"hidden\" service")
   p.add_argument("-dc", action='store_true', help="don't check server digest with the local file (it will still be stored if it is not there)")
 

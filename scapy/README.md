@@ -12,6 +12,9 @@ scapy
 * [trace.py](trace.py) - traceroute example in scapy
 * [vrrp_takeover.py](vrrp_takeover.py) - work in progress
 
+Some short examples
+===================
+
 ### Usage of Rand functions
     Ether(src=RandMAC())/IP(src=RandIP(),dst="192.168.1.1")/UDP(sport=35)
 

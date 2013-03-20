@@ -7,27 +7,27 @@ I may consider putting them in a separete repository. For now it is easier for m
 Directories:
 ------------
 
-* [autologin/](autologin/) - automatic login scripts in expect
-* [cable_modems/](cable_modems/) - scripts for cable modems in DOCSIS standard
+* [autologin/](autologin/) - automatic login scripts in [expect](http://expect.sourceforge.net/)
+* [cable_modems/](cable_modems/) - scripts for cable modems in [DOCSIS](https://en.wikipedia.org/wiki/DOCSIS) standard
 * [cisco/](cisco/) - scripts for cisco devices/software
 * [cisco_tcl/](cisco_tcl/) - cisco tcl scripts
 * [crypto/](crypto/) - some simple crypto fun
 * [dsbl_cleanup/](dsbl_cleanup/) - dsbl cleanup - doesn't work anymore
-* [expect/](expect/) - Expect scripts
+* [expect/](expect/) - [expect](http://expect.sourceforge.net/) scripts
 * [git/](git/) - scripts to help in managing git repos
 * [home_stuff/](home_stuff/) - some scripts that I use at home
-* [jnpr/](jnpr/) - scripts for juniper devices/software
+* [jnpr/](jnpr/) - scripts for [Juniper](http://www.juniper.net) devices/software
 * [other/](other/) - other
 * [patches/](patches/) - my patches for not my software
 * [pcap_rawsockets/](pcap_rawsockets/) - playing with pcaps and raw sockets
 * [random_fun/](random_fun/)
 * [rvbd/](rvbd/)
-* [scapy/](scapy/) - different scripts that are based on scapy
+* [scapy/](scapy/) - different scripts that are based on [scapy](http://www.secdev.org/projects/scapy/)
 * [snmp/](snmp/) - playing with snmp
-* [ssh_proxycommand/](ssh_proxycommand/) - things (not all) that can be used as a proxycommand for ssh
+* [ssh_proxycommand/](ssh_proxycommand/) - things (not all) that can be used as a proxycommand for OpenSSH
 * [swatch/](swatch/) - scripts and configuration for swatch
 * [tcp_and_proxy/](tcp_and_proxy/) - scripts and programs that play with TCP/IP and that use HTTP/SOCKS proxy
-* [wireshark_lua/](wireshark_lua/) - example of wireshark dissector written in lua
+* [wireshark_lua/](wireshark_lua/) - example of wireshark dissector written in [Lua](http://www.lua.org/)
 
 ### More information
 

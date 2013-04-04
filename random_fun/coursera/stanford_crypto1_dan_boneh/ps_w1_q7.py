@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 
+import sys
+
 m = "attack at dawn"
-c = "6c73d5240a948c86981bc294814d".decode('hex')
+
+try:
+  c = sys.argv[1].decode('hex')
+except:
+  c = "09e1c5f70a65ac519458e7e53f36".decode('hex')
 m2 = "attack at dusk"
 
 key = "".join([ chr(ord(m[i])^ord(c[i])) for i in range(len(m))])

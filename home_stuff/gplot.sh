@@ -1,6 +1,6 @@
 #!/bin/sh
 
-TITLE="notitle" 
+TITLE="notitle"
 XLABEL=" "
 YLABEL=" "
 STYLE="lines"
@@ -30,4 +30,4 @@ gnuplot -p -e "set autoscale;\
   set grid xtics lt 0 lw 1 lc rgb \"#AAAAAA\";\
   set grid ytics lt 0 lw 1 lc rgb \"#AAAAAA\";\
   set border lc rgb \"black\";\
-  plot \"< cat /proc/\$\$/fd/0\" $TITLE with $STYLE lc rgb \"red\";"
+  plot \"-\" $TITLE with $STYLE lc rgb \"red\";"

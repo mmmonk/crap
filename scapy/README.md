@@ -33,6 +33,6 @@ Some short examples
      except:
       break
 
-### NTP query againt 127.0.0.1
+### NTP query against 127.0.0.1
     IP()/UDP()/NTP()
 

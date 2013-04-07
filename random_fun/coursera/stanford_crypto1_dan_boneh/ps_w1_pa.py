@@ -56,5 +56,8 @@ for i in range(l):
 
   key += chr(32^ord(ctsd[cid][i])) # this will be probably our key
 
-print "  key : "+key.encode('hex')
-print "CT[10]: "+strxor(key,cts[10].decode('hex')) # decoded secret message
+print " key : "+key.encode('hex')
+
+print "[+] all messages decoded (last one is the secret message):"
+for ct in cts:
+  print strxor(key,ct.decode('hex'))

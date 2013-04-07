@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 
-# $Id: 20130305$
-# $Date: 2013-03-05 09:27:22$
+# $Id: 20130407$
+# $Date: 2013-04-07 13:50:27$
 # $Author: Marek Lukaszuk$
 
 # based on:
 # http://wiki.nil.com/Deobfuscating_Cisco_IOS_Passwords
-
-import sys
-import random
 
 class cisco_pwd_t7:
 
@@ -30,6 +27,7 @@ class cisco_pwd_t7:
 
 
   def encode(self,pwd,i=-1):
+    import random
 
     if i < 0 or i > len(self.v)+1:
       i = random.randint(0,len(self.v)+1)
@@ -51,6 +49,8 @@ def encode(s):
   return ct7.encode(s)
 
 if __name__ == "__main__":
+  import sys
+
   ct7 = cisco_pwd_t7()
 
   for line in sys.stdin.read().split("\n"):

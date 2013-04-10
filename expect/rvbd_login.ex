@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
 
-# $Id: 20130115$
-# $Date: 2013-01-15 13:08:06$
+# $Id: 20130410$
+# $Date: 2013-04-10 13:34:30$
 # $Author: Marek Lukaszuk$
 
 # ver: 20120403
@@ -14,13 +14,13 @@ proc backuptimeproc { } {
   return [ timestamp -format "%Y%m%d_%H%M%S"]
 }
 
-proc online_help {ourip} {
+proc online_help {} {
       send_user "
 --- Help ---
 
 Ctrl+a h - this message,
 Ctrl+a ? - also this message ;),
-
+Ctrl+a s - shell access
 "
       send "\r"
 }
@@ -32,7 +32,7 @@ if {[info exists env(LOGIN_ARCH)]} {
   set logdir "$env(HOME)/store/work/_archives_worklogs/"
 }
 
-set send_slow {10 .01}
+set send_slow {10 .1}
 set timeout 90
 
 if { $argc == 0 } {
@@ -63,8 +63,6 @@ spawn ssh -q -o "ControlPersist no" $user@$host
 set stime    [ timestamp -format "%Y/%m/%d %H:%M:%S"]
 set filetime [ timestamp -format "%Y%m%d_%H%M%S"]
 
-#puts "\033]0;$host $filetime\007"
-
 send -s "\r"
 
 expect timeout {
@@ -87,7 +85,7 @@ expect timeout {
   send -s "$pass\r"
   exp_continue
 
-} " > " {
+} -re " > $" {
   send -s "en\r"
   exp_continue
 
@@ -95,17 +93,15 @@ expect timeout {
   send -s "cli session auto-logout 0\r"
 }
 
-set send_slow {5 .01}
-
 expect -re ".*(%|>|#) " {
   log_file "$logdir/$host-$filetime.log"
   send_log "\n---------- log start at $stime ----------\n"
 
-#  send_user "
-#--- Help key ---
-#Ctrl+a h - all shortcuts
-#
-#"
+  send_user "
+--- Help key ---
+Ctrl+a h - all shortcuts
+
+"
   send "\r"
 
   interact {
@@ -119,15 +115,30 @@ expect -re ".*(%|>|#) " {
       } " > " {
         send -s "exit\r"
       }
-      return
+      wait
+      exit
     }
 
-#    \001h {
-#      online_help $ourip
-#    }
-#    \001? {
-#      online_help $ourip
-#    }
+    \001s {
+      send -s "cli challenge generate\r"
+      expect -re "Generated challenge: .+\n" {
+        set challenge ""
+        regexp -line {Generated challenge: (.+?)$} $expect_out(buffer) m challenge
+        set response [ exec ~/bin/rvbd.py -e $challenge]
+        set cmd ""
+        regexp -line {cmd: (.+?)$} $response m cmd
+        send -s "$cmd\r"
+      }
+      expect "Verification succeeded." { send -s "_shell\r" }
+    }
+
+    \001h {
+      online_help
+    }
+
+    \001? {
+      online_help
+    }
 
 #    \001x {
 #      send_user "\nType the action (stop/status/start/restart/version):"
@@ -271,7 +282,7 @@ expect -re ".*(%|>|#) " {
 #        send_user "\nUnknown choice\n"
 #      }
 #    }
-#
+
     \001l {
       send "\r"
       expect " > " {

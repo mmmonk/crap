@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# $Id: 20130221$
-# $Date: 2013-02-21 20:09:13$
+# $Id: 20130606$
+# $Date: 2013-06-06 21:37:01$
 # $Author: Marek Lukaszuk$
 
 from time import strftime,tzset
@@ -68,7 +68,7 @@ if fs_exists("/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0A:00/power_supply/BAT0"
     #h = cur/rate
     txt+="-"+str(round((cur/cmax)*100,2))+"%"
   elif bstat == "Charging":
-    h = (cmax-cur)/rate
+    #h = (cmax-cur)/rate
     txt+="+"+str(round((cur/cmax)*100,2))+"%"   #str(int(h))+"."+str(int(60*(h-int(h))))
   elif bstat == "Full":
     txt+="="+str(round((cur/dmax)*100,2))+"%"

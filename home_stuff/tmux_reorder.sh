@@ -1,6 +1,6 @@
 #!/bin/sh
 
-wid=0
+wid=1
 
 for cwid in `tmux list-windows | awk -F":" '{print $1}'`
 do

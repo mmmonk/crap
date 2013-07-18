@@ -1,0 +1,19 @@
+#### merging two repos - http://jasonkarns.com/blog/merge-two-git-repositories-into-one/
+# create new project as the parent
+$ mkdir new_parent_project
+$ cd new_parent_project
+$ git init
+$ touch .gitignore
+$ git ci -am "initial commit"
+
+# merge project A into subdirectory A
+$ git remote add -f projA /path/to/projA
+$ git merge -s ours --no-commit projA/master
+$ git read-tree --prefix=subdirA/ -u projA/master
+$ git ci -m "merging projA into subdirA"
+
+# merge project B into subdirectory B
+$ git remote add -f projB /path/to/projB
+$ git merge -s ours --no-commit projB/master
+$ git read-tree --prefix=subdirB/ -u projB/master
+$ git ci -m "merging projB into subdirB"

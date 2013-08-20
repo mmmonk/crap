@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-# $Id: 20121128$
-# $Date: 2012-11-28 14:58:45$
-# $Author: Marek Lukaszuk$
-
 from sgmllib import SGMLParser
 from urllib import urlencode,quote
 from cookielib import LWPCookieJar
@@ -524,6 +520,10 @@ if __name__ == '__main__':
     parser.add_argument('-q','--quiet',action='store_true',help='be quiet, print only information when a file is downloaded')
     parser.add_argument('-v','--version',action='version', version="%(prog)s\nversion: "+str(version))
 
+    debug = True
+    if debug:
+      debugfilename = "debug_"+time.strftime("%Y%m%d_%H%M%S")+"txt"
+
     (arg,rest_argv) = parser.parse_known_args(sys.argv)
 
     # setting colors
@@ -586,6 +586,9 @@ if __name__ == '__main__':
 
     text = dat.read()
 
+    if debug:
+      open(debugfile,"a").write(text)
+
     if not "Case Management Home" in text:
       # normal password
       if arg.passwd == "":
@@ -623,6 +626,9 @@ if __name__ == '__main__':
     txt.ok(ct.text("in the CM")+"\r")
 
     mainpage = dat.read()
+
+    if debug:
+      open(debugfile,"a").write("\n########MAINPAGE########\n"+mainpage)
 
     if "Login Error" in mainpage:
       txt.err("wrong credentials for CM.")

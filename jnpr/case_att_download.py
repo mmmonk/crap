@@ -520,9 +520,9 @@ if __name__ == '__main__':
     parser.add_argument('-q','--quiet',action='store_true',help='be quiet, print only information when a file is downloaded')
     parser.add_argument('-v','--version',action='version', version="%(prog)s\nversion: "+str(version))
 
-    debug = True
+    debug = False
     if debug:
-      debugfilename = "debug_"+time.strftime("%Y%m%d_%H%M%S")+"txt"
+      debugfile = "debug_"+time.strftime("%Y%m%d_%H%M%S")+".txt"
 
     (arg,rest_argv) = parser.parse_known_args(sys.argv)
 
@@ -616,9 +616,9 @@ if __name__ == '__main__':
       txt.ok(ct.text("logging into the CM")+"\r")
       try:
         form = fparser.get_form(text,"Login")
-        form['login'] = arg.user
+        form['username'] = arg.user
         form['password'] = arg.passwd
-        dat = urllib2.urlopen(dat.geturl(),urlencode(form))
+        dat = urllib2.urlopen('https://iam-fed.juniper.net/access/oblix/apps/webgate/bin/webgate.so',urlencode(form))
       except urllib2.URLError as errstr:
         txt.err("can't log into CM,\nERROR:"+str(errstr))
         sys.exit(1)
@@ -689,6 +689,8 @@ if __name__ == '__main__':
       txt.ok(ct.text("getting details")+"\r")
       try:
         text = dat.read()
+        if debug:
+          open(debugfile,"a").write("\n########SEARCHING########\n"+text)
         if not caseid in text:
           txt.warn("search returned nothing.")
           continue

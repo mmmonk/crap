@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import print_function
+
 import time
 from struct import pack,unpack
 from hmac import HMAC
@@ -11,10 +13,14 @@ from sys import exit
 try:
   fd = open(getenv("HOME")+"/.gauth.conf")
 except:
-  print "Can't read ~/.gauth.conf file"
+  print("Can't read ~/.gauth.conf file")
   exit(1)
 
-tm = int(time.time() // 30)
+tt = int(time.time())
+tm = tt // 30 # time used for calculations
+td = 30 - (tt % 30)  # reminder of the current time
+
+print("time: ["+(td*"#").ljust(30,".")+"]")
 
 lines = fd.read().split("\n")
 for s in lines:
@@ -37,5 +43,5 @@ for s in lines:
   # get the code from it
   code = ((unpack(">L", truncatedHash)[0]) & 0x7FFFFFFF ) % 1000000
 
-  print str(s[0])+": "+"0"*(6-len(str(code)))+str(code)
+  print(str(s[0])+": "+"0"*(6-len(str(code)))+str(code))
   s = fd.read()

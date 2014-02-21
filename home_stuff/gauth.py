@@ -10,7 +10,6 @@ from base64 import b32decode
 import os
 import sys
 
-
 def hotp(key,counter):
   """
   http://tools.ietf.org/html/rfc4226
@@ -30,13 +29,16 @@ def hotp(key,counter):
 
   return "0"*(6-len(str(code)))+str(code)
 
-def totp(key):
+def totp(key,timeblock):
   """
   http://tools.ietf.org/html/rfc6238
   """
-  return hotp(key,int(time.time())//30)
+  return hotp(key,int(time.time())//timeblock)
 
 if __name__ == "__main__":
+
+  LINEWIDTH = 30
+  TIMEBLOCK = 30
 
   try:
     fd = open(os.getenv("HOME")+"/.gauth.conf")
@@ -44,9 +46,9 @@ if __name__ == "__main__":
     print("Can't read ~/.gauth.conf file")
     sys.exit(1)
 
-  td = 30 - (int(time.time()) % 30)  # reminder of the current time
+  td = TIMEBLOCK - (int(time.time()) % TIMEBLOCK)  # reminder of the current time
 
-  print("time: ["+(td*"#").ljust(30,".")+"]")
+  print("time: ["+(td*"#").ljust(LINEWIDTH,".")+"]")
 
   lines = fd.read().split("\n")
   for s in lines:
@@ -56,6 +58,6 @@ if __name__ == "__main__":
     except:
       continue
 
-    print(str(s[0]).ljust(30,".")+": "+totp(secretkey))
+    print(str(s[0][:LINEWIDTH]).ljust(LINEWIDTH,".")+": "+totp(secretkey,TIMEBLOCK))
     s = fd.read()
   fd.close()

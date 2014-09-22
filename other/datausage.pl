@@ -89,14 +89,14 @@ open(NMOTD,"> /etc/motd_new") or die "$!\n";
 while(<MOTD>){
   next if (/^Current disk usage /);
   if (/^Data usage/){
-    printf NMOTD "Data usage this month %.2f G (limit %d G).\nCurrent disk usage %d%%.\n", (($lbm/1024),$limit),(int((($blocks-$bavail)/$blocks)*100));
+    printf NMOTD "Data usage this month %.2f G (limit %d G).\nCurrent disk usage %d%%.\n", (($mtx/1024),$limit),(int((($blocks-$bavail)/$blocks)*100));
     $print=1;
   }else{ 
     print NMOTD;
   }
 }
 if ($print==0){
-  printf NMOTD "Data usage this month %.2f G (limit %d G).\nCurrent disk usage %d%%.\n", (($lbm/1024),$limit),(int((($blocks-$bavail)/$blocks)*100));
+  printf NMOTD "Data usage this month %.2f G (limit %d G).\nCurrent disk usage %d%%.\n", (($mtx/1024),$limit),(int((($blocks-$bavail)/$blocks)*100));
 }
 close(NMOTD);
 close(MOTD);

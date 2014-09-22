@@ -8,15 +8,19 @@ from os import getenv
 
 servers = []
 
-socket.setdefaulttimeout(30)
+socket.setdefaulttimeout(5)
 
 def testserver(srv):
   s = socket.socket()
   try:
+    start_time = time()
     s.connect((srv,8074))
     data = s.recv(2)
     s.close()
+    conn_time = time()-start_time
     if str(data).encode('hex') == "0100":
+      if conn_time > 0.04:
+        return False
       return True
     return False
   except socket.error:
@@ -45,5 +49,4 @@ if __name__ == '__main__':
             /beep\n")
       except:
         continue
-      sleep(30)
       exit(0)

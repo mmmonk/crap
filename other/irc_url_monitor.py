@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-# $Id: 20130207$
-# $Date: 2013-02-07 14:39:01$
-# $Author: Marek Lukaszuk$
-
 import pymongo
 import sys, os, time, smtplib
 
@@ -78,10 +74,13 @@ if __name__ == '__main__':
       line = line.strip(",.")
       linea = line.split()
 
-      if "://" not in linea[9]:
+      try:
+        if "://" not in linea[7]:
+          continue
+      except:
         continue
 
-      newlinks = mongocheck(newlinks,urls,linea[8],linea[7],linea[9])
+      newlinks = mongocheck(newlinks,urls,linea[6],linea[5],linea[7])
 
   ## send out the email
   if len(newlinks) > 0:
@@ -97,9 +96,9 @@ if __name__ == '__main__':
       item = {'_id': link, 'ts': int(time.time())}
       urls.insert(item)
 
-#    if os.path.isfile(ircurlfile) and os.stat(ircurlfile).st_size > 0:
-#      os.unlink(ircurlfile)
-#    if os.path.isfile(ggurlfile) and os.stat(ggurlfile).st_size > 0:
-#      os.unlink(ggurlfile)
-#    if os.path.isfile(twurlfile) and os.stat(twurlfile).st_size > 0:
-#      os.unlink(twurlfile)
+    if os.path.isfile(ircurlfile) and os.stat(ircurlfile).st_size > 0:
+      os.unlink(ircurlfile)
+    if os.path.isfile(ggurlfile) and os.stat(ggurlfile).st_size > 0:
+      os.unlink(ggurlfile)
+    if os.path.isfile(twurlfile) and os.stat(twurlfile).st_size > 0:
+      os.unlink(twurlfile)

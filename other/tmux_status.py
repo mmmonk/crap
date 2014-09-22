@@ -76,7 +76,7 @@ if fs_exists("/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0A:00/power_supply/BAT0"
 ## data usage
 if fs_exists("/var/local/datausage.dat"):
   try:
-    txt+=str(int(float(open("/var/local/datausage.dat","r").readline().split()[2])/1024/500*100))+"%"
+    txt+=str(int(float(open("/var/local/datausage.dat","r").readline().split()[7])/1024/500*100))+"%"
   except:
     txt+="?%"
 

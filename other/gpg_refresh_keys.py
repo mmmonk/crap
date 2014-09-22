@@ -20,6 +20,8 @@ GPGUPDATEKEY = GPGBIN + " --batch -q "+\
     "--recv-keys "
 
 print("starting the refresh process")
+print("GPGUPDATEKEY: %s" % (GPGUPDATEKEY))
+print("GPGLISTKEYS: %s" % (GPGLISTKEYS))
 
 # building a list of the keys that we can update
 keys_to_check = list()
@@ -36,7 +38,7 @@ max_wait = (REFRESH_LIMIT_HOURS*3600)//len(keys_to_check)
 if max_wait < 15:
   max_wait = 15
 
-print("max_wait is : %s" % (max_wait))
+print("max_wait is: %s" % (max_wait))
 
 # random sleep at begining
 time.sleep(random.randint(10, max_wait))

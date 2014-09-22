@@ -7,6 +7,8 @@ from struct import pack,unpack
 from hmac import HMAC
 from hashlib import sha1
 from base64 import b32decode
+from urllib import quote
+import subprocess 
 import os
 import sys
 
@@ -35,6 +37,30 @@ def totp(key,timeblock):
   """
   return hotp(key,int(time.time())//timeblock)
 
+def decodesecret(textsecret):
+  """
+  decode the b32 encoded secret
+  """
+  return b32decode(textsecret.replace(" ","").rstrip().upper())
+
+def qrcodegen(account, textsecret, issuer=None):
+  """
+  qrcodes generator for Google Authenticator app
+  using: qrencode and display from ImageMagick
+  """
+  cmd = "qrencode -s 7 -o - \"otpauth://totp/"+quote(account)+\
+      "?secret="+textsecret.replace(" ","")
+  if issuer:
+    cmd += "&issuer="+quote(issuer)+"\""
+  else:
+    cmd += "\""
+
+  cmd = cmd.split(" ")
+  p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+  (qrpng, temp) = p.communicate() 
+  p = subprocess.Popen(["display"], stdin=subprocess.PIPE)
+  p.communicate(qrpng)
+
 if __name__ == "__main__":
 
   LINEWIDTH = 30
@@ -43,10 +69,13 @@ if __name__ == "__main__":
   try:
     fd = open(os.getenv("HOME")+"/.gauth.conf")
   except:
-    print("Can't read ~/.gauth.conf file")
+    print("Can't read ~/.gauth.conf file\n"+\
+        "format of that file should be:\n"+\
+        "username|secret\n")
     sys.exit(1)
 
-  td = TIMEBLOCK - (int(time.time()) % TIMEBLOCK)  # reminder of the current time
+  # reminder of the current tim
+  td = TIMEBLOCK - (int(time.time()) % TIMEBLOCK)
 
   print("time: ["+(td*"#").ljust(LINEWIDTH,".")+"]")
 
@@ -54,10 +83,18 @@ if __name__ == "__main__":
   for s in lines:
     try:
       s = s.split("|")
-      secretkey = b32decode(s[1].replace(" ","").rstrip().upper())
+      secretkey = decodesecret(s[1]) 
     except:
       continue
 
-    print(str(s[0][:LINEWIDTH]).ljust(LINEWIDTH,".")+": "+totp(secretkey,TIMEBLOCK))
+    if len(sys.argv) > 1:
+      if sys.argv[1] in s[0]:
+        print(str(s[0][:LINEWIDTH]).ljust(LINEWIDTH,".")+": "+\
+            totp(secretkey,TIMEBLOCK))
+        if len(sys.argv) > 2 and sys.argv[2] == "qr":
+          qrcodegen(s[0],s[1])
+    else:
+      print(str(s[0][:LINEWIDTH]).ljust(LINEWIDTH,".")+": "+\
+          totp(secretkey,TIMEBLOCK))
     s = fd.read()
   fd.close()

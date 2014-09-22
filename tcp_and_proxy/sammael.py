@@ -1,9 +1,5 @@
 #!/usr/bin/python -u
 
-# $Id: 20130301$
-# $Date: 2013-03-01 13:55:08$
-# $Author: Marek Lukaszuk$
-
 from OpenSSL import SSL
 from OpenSSL import crypto
 from select import select
@@ -18,17 +14,18 @@ import random
 
 class sammael():
 
-  def __init__(self,phost="",pport=443,dhost="::1",dport=80):
-    self.ver = "20121028"
+  def __init__(self,phost="", pport=443, dhost="::1", dport=80, certpass=""):
+    self.ver = "20140922"
     self.phost = phost
     self.pport = pport
     self.dhost = dhost
     self.dport = dport
     self.mainpid = os.getpid()
+    self.certpass = certpass
 
   def serve(self):
     # starting the server
-    self.log("sammael ("+str(self.ver)+") - daemon starting")
+    self.log("sammael %s - daemon starting" % self.ver)
     if socket.has_ipv6 == True:
       self.s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     else:
@@ -38,7 +35,7 @@ class sammael():
     self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     self.s.bind((self.phost, self.pport))
     self.s.setblocking(False)
-    self.log("bound to socket - "+str(self.phost)+":"+str(self.pport))
+    self.log("bound to socket - %s:%s " % (self.phost, self.pport))
 
     self.deamonsetup()
     self.sslctx()
@@ -76,21 +73,26 @@ class sammael():
       except OSError:
           pass
 
-  def sslctx(self,prvkeyfile="/usr/local/certs/server.key",certfile="/usr/local/certs/server.crt",dhfile="/usr/local/certs/dh.dat",ciphers="AES:-MEDIUM:RC4:!aNULL"):
+  def sslctx(self,prvkeyfile="/usr/local/certs/server.key",\
+          certfile="/usr/local/certs/server.crt",\
+          dhfile="/usr/local/certs/dh.dat",\
+          ciphers="AES:-MEDIUM:RC4:!aNULL"):
     # SSL context setup
     self.ctx = SSL.Context(SSL.TLSv1_METHOD)
 
-    priv = crypto.load_privatekey(crypto.FILETYPE_PEM,open(prvkeyfile).read())
+    priv = crypto.load_privatekey(crypto.FILETYPE_PEM,\
+            open(prvkeyfile).read(),\
+            self.certpass)
     priv.check()
-    self.log("priv key bits: "+str(priv.bits()))
-    self.log("priv key type: "+str(priv.type()))
+    self.log("priv key bits: %s" % (priv.bits()))
+    self.log("priv key type: %s" % (priv.type()))
     cert = crypto.load_certificate(crypto.FILETYPE_PEM,open(certfile).read())
-    self.log("cert subject: "+str(cert.get_subject().get_components()))
-    self.log("cert notBefore: "+str(cert.get_notBefore()))
-    self.log("cert notAfter: "+str(cert.get_notAfter()))
-    self.log("cert issuer: "+str(cert.get_issuer().get_components()))
-    self.log("cert digest_md5: "+str(cert.digest("md5")))
-    self.log("cert digest_sha1: "+str(cert.digest("sha1")))
+    self.log("cert subject: %s" % (cert.get_subject().get_components()))
+    self.log("cert notBefore: %s" % (cert.get_notBefore()))
+    self.log("cert notAfter: %s" % (cert.get_notAfter()))
+    self.log("cert issuer: %s" % (cert.get_issuer().get_components()))
+    self.log("cert digest_md5: %s" % (cert.digest("md5")))
+    self.log("cert digest_sha1: %s" % (cert.digest("sha1")))
     if cert.has_expired():
       self.log("cert expired !!!!! - exiting")
       sys.exit()
@@ -101,9 +103,9 @@ class sammael():
     if os.path.isfile(dhfile):
       # openssl dHParam -outform PEM -out /usr/local/cert/dh.dat 2048
       self.ctx.load_tmp_dh(dhfile)
-      self.log("Ephemeral Diffie-Hellman parameteres loaded correctly from file")
+      self.log("Ephemeral Diffie-Hellman parameters loaded correctly from file")
     self.ctx.set_cipher_list(ciphers)
-    self.log("cipher suits used are: "+str(ciphers))
+    self.log("cipher suits used are: %s" % ciphers)
     self.log("SSL context ready")
 
   def CertNamePrint(a):
@@ -115,31 +117,34 @@ class sammael():
     # addr - connecting address
     # @data - initial data read
 
-    self.log("new connection from "+str(addr[0])+":"+str(addr[1]))
+    self.log("new connection from %s:%s" % (addr[0], addr[1]))
 
     # let's add SSL to this socket
     self.ssl = SSL.Connection(self.ctx,conn)
     self.ssl.setblocking(True)
     self.ssl.set_accept_state() # we are SSL server
     time.sleep(random.randint(1000,4000)/1000.0) # random sleep
-    self.log(str(self.ssl.state_string()))
+    self.log("before handshake ssl.state_string(): %s" % \
+            (self.ssl.state_string()))
     try:
       self.ssl.do_handshake()
     except SSL.Error as e:
-      self.log(self.ssl.state_string()+": "+str(e))
+      self.log("SSL.ERROR - ssl.state_string(): %s - %s " % \
+              (self.ssl.state_string(),e))
       self.ssl.shutdown()
-      conn.shutdown(2)
+      #conn.shutdown(2)
       sys.exit()
 
-    self.log(str(self.ssl.state_string()))
+    self.log("after handshake ssl.state_string(): %s" % \
+            str(self.ssl.state_string()))
 
     if not self.ssl.get_servername() == None:
-      self.log("client requested servername: "+self.ssl.get_servername())
+      self.log("client requested servername: %s" % self.ssl.get_servername())
 
     try:
       data = self.ssl.recv(1024)
     except:
-      self.ssl.shutdown()
+      #self.ssl.shutdown()
       self.log("can't read - connection closed")
       sys.exit()
 
@@ -151,7 +156,8 @@ class sammael():
     # Proxy connection initiation
     # addr - connecting address
     # data - initial data read while doing SSL handshake
-    self.log("connecting to "+str(self.dhost)+":"+str(self.dport)+" from "+str(addr[0])+":"+str(addr[1]))
+    self.log("connecting to %s:%s from %s:%s " % \
+            (self.dhost, self.dport, addr[0], addr[1]))
 
     if socket.has_ipv6 == True:
       self.proxy = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
@@ -164,13 +170,16 @@ class sammael():
     except socket.error:
       self.ssl.shutdown()
       self.proxy.shutdown(2)
-      self.log("problems connecting to "+str(self.dhost)+":"+str(self.dport)+" - connection closed")
+      self.log("problems connecting to %s:%s - connection closed" % \
+              (self.dhost, self.dport))
       sys.exit()
 
-    self.log("connected to "+str(self.dhost)+":"+str(self.dport)+" from "+str(addr[0])+":"+str(addr[1]))
+    self.log("connected to %s:%s from %s:%s " % \
+            (self.dhost, self.dport, addr[0], addr[1]))
 
     #### DEFAULT
-    if self.dport == 80: # if we hit the default we need to send the data that we already read from the socket
+    if self.dport == 80: # if we hit the default we need to send the data
+                         # that we already read from the socket
       self.proxy.send(data)
 
     fcntl.fcntl(self.proxy, fcntl.F_SETFL, os.O_NONBLOCK)
@@ -178,12 +187,13 @@ class sammael():
   def log(self,msg):
     # a more verbose logging
     try:
-      print "["+str(self.mainpid)+"->"+str(self.chpid)+"] "+str(msg)
-    except:
-      print "["+str(self.mainpid)+"] "+str(msg)
+      print "[%s->%s] %s" % (self.mainpid, self.chpid, msg)
+    except AttributeError:
+      print "[%s] %s" % (self.mainpid, msg)
 
 
-  def deamonsetup(self,path="/var/run/sammael/",uid_name='nobody', gid_name='nogroup'):
+  def deamonsetup(self,path="/var/run/sammael/",uid_name='nobody',\
+          gid_name='nogroup'):
 
     if not os.path.exists(path):
       os.makedirs(path)
@@ -207,13 +217,15 @@ class sammael():
 
     # Ensure a very conservative umask
     os.umask(077)
-    self.log("dropped privs, current ("+str(os.getuid())+"/"+str(os.getgid())+")")
+    self.log("dropped privs, current uid/gid = %s/%s" % \
+            (os.getuid(),os.getgid()))
 
   def exchange(self,addr):
     # main data exchnage function
     # addr - connecting address
 
-    self.log("going into exchange between "+str(self.dhost)+":"+str(self.dport)+" and "+str(addr[0])+":"+str(addr[1]))
+    self.log("going into exchange between %s:%s and %s:%s" % \
+            (self.dhost, self.dport, addr[0], addr[1]))
 
     while 1:
       toread,[],[] = select([self.proxy,self.ssl],[],[],30)
@@ -246,5 +258,5 @@ class sammael():
 
 # main
 if __name__ == "__main__":
-  server = sammael()
+  server = sammael(certpass=sys.argv[1])
   server.serve()

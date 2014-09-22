@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-# $Id: 20130301$
-# $Date: 2013-03-01 16:33:47$
-# $Author: Marek Lukaszuk$
-
 from fcntl import fcntl, F_SETFL
 from os import O_NONBLOCK
 from select import select
@@ -93,7 +89,10 @@ def socks5(s,host,port):
   # 1 - if ready
   # 0 - if needs authentication
 
-  error = ["succeeded", "general SOCKS server failure", "connection not allowed by ruleset", "Network unreachable", "Host unreachable", "Connection refused", "TTL expired", "Command not supported", "Address type not supported", "unassigned"]
+  error = ["succeeded", "general SOCKS server failure",\
+          "connection not allowed by ruleset", "Network unreachable",\
+          "Host unreachable", "Connection refused", "TTL expired",\
+          "Command not supported", "Address type not supported", "unassigned"]
 
   data = pack('!3B',5,1,0)
   s.send(data)
@@ -130,8 +129,9 @@ def socks5(s,host,port):
     return 0
 
 def usage():
-  sys.stderr.write("\nusage: "+sys.argv[0]+" <options> socks_server socks_port destination_ip destination_port\n\n\
-  version: $Id: 20130301$
+  sys.stderr.write("\nusage: "+sys.argv[0]+\
+          " <options> socks_server socks_port destination_ip destination_port\n\n\
+  version: 20140922\n\
   options:\n\
   -v socks_ver - 4 or 5, default 5\n\
   -cork - enables TCP_CORK socket option aka super nagle, default is off\n\n")
@@ -176,13 +176,16 @@ if __name__ == '__main__':
     try:
       socks.connect((phost, pport))
     except socket.error:
-      sys.stderr.write("[-] problem connecting to "+str(phost)+":"+str(pport)+"\n")
+      sys.stderr.write("[-] problem connecting to "+str(phost)+":"+\
+              str(pport)+"\n")
       socks.close()
       sys.exit()
 
-    sys.stderr.write("[+] connecting via "+str(phost)+":"+str(pport)+" to "+str(host)+":"+str(port)+"\n")
+    sys.stderr.write("[+] connecting via "+str(phost)+":"+str(pport)+" to "+\
+            str(host)+":"+str(port)+"\n")
 
-    if (ver == 5 and socks5(socks,host,port)) or (ver == 4 and socks4(socks,host,port)):
+    if (ver == 5 and socks5(socks,host,port)) or \
+            (ver == 4 and socks4(socks,host,port)):
       try:
         exchange(socks)
       except KeyboardInterrupt:

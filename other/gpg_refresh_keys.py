@@ -50,9 +50,10 @@ while keys_to_check:
   # see if there is an update
   try:
     subprocess.check_call(shlex.split(GPGUPDATEKEY+keyid))
-    keys_to_check.remove(keyid)
   except:
-    time.sleep(random.randint(30,max_wait))
+    # if there was a problem refreshing this key we will try
+    # again on another round
+    keys_to_check.remove(keyid)
 
   # random sleep between key checks
   time.sleep(random.randint(10,max_wait))

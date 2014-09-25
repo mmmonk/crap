@@ -7,6 +7,7 @@ import shlex
 import time
 import random
 import os
+import sys
 
 REFRESH_LIMIT_HOURS = 7*24
 HTTP_PROXY = os.environ.get('http_proxy', "127.0.0.1:8123")
@@ -18,6 +19,18 @@ GPGLISTKEYS = GPGBIN + " --batch -q --with-colons --list-keys "+\
 GPGUPDATEKEY = GPGBIN + " --batch -q "+\
     "--keyserver-options no-honor-keyserver-url,http-proxy=%s " % (HTTP_PROXY)+\
     "--recv-keys "
+
+# class for unbuffering stdout
+class Unbuffered:
+  def __init__(self, stream):
+    self.stream = stream
+  def write(self, data):
+    self.stream.write(data)
+    self.stream.flush()
+  def __getattr__(self, attr):
+    return getattr(self.stream, attr)
+
+sys.stdout = Unbuffered(sys.stdout)
 
 print("starting the refresh process")
 print("GPGUPDATEKEY: %s" % (GPGUPDATEKEY))

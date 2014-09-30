@@ -20,6 +20,21 @@ GPGUPDATEKEY = GPGBIN + " --batch -q "+\
     "--keyserver-options no-honor-keyserver-url,http-proxy=%s " % (HTTP_PROXY)+\
     "--recv-keys "
 
+def maxwait(limit, keys):
+  # how long we can sleep between each key check
+  # given that this should be random we should in the long run land somewhere
+  # around the half of this number, this is why it is multiplied by 1.5
+  if len(keys) > 0:
+    max_wait = int((limit*3600)//len(keys) * 1.5)
+
+    # make sure we have a safe minimum limit
+    if max_wait < 15:
+      max_wait = 15
+  else:
+    max_wait = 15
+
+  return max_wait
+
 # class for unbuffering stdout
 class Unbuffered:
   def __init__(self, stream):
@@ -44,20 +59,14 @@ for line in subprocess.check_output(shlex.split(GPGLISTKEYS)).split("\n"):
 
 print("collected the keys to refresh: %s" % (len(keys_to_check)))
 
-# how long we can sleep between each key check
-max_wait = (REFRESH_LIMIT_HOURS*3600)//len(keys_to_check)
-
-# make sure we have a safe minimum limit
-if max_wait < 15:
-  max_wait = 15
-
-print("max_wait is: %s" % (max_wait))
-
+max_wait = maxwait(REFRESH_LIMIT_HOURS, keys_to_check)
 # random sleep at begining
-time.sleep(random.randint(10, max_wait))
+time.sleep(random.randint(1, max_wait))
 
 while keys_to_check:
-  print("keys left to process: %s" % (len(keys_to_check)))
+
+  print("keys left to process: %s, current max_wait %s " % \
+      (len(keys_to_check), max_wait))
 
   # pick random key to check
   keyid = random.choice(keys_to_check)
@@ -71,6 +80,7 @@ while keys_to_check:
     pass
 
   keys_to_check.remove(keyid)
+  max_wait = maxwait(REFRESH_LIMIT_HOURS, keys_to_check)
 
   # random sleep between key checks
-  time.sleep(random.randint(10,max_wait))
+  time.sleep(random.randint(1,max_wait))

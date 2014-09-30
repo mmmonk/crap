@@ -33,7 +33,7 @@ def maxwait(endtime, keys):
   else:
     max_wait = 15
 
-  return max_wait
+  return int(max_wait)
 
 # class for unbuffering stdout
 class Unbuffered:

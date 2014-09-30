@@ -25,7 +25,7 @@ def maxwait(endtime, keys):
   # given that this should be random we should in the long run land somewhere
   # around the half of this number, this is why it is multiplied by 1.5
   if len(keys) > 0:
-    max_wait = (endtime - int(time.time()))//len(keys) * 1.5)
+    max_wait = (endtime - int(time.time()))//len(keys) * 1.5
 
     # make sure we have a safe minimum limit
     if max_wait < 15:

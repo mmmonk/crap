@@ -77,7 +77,7 @@ if __name__ == "__main__":
   # reminder of the current tim
   td = TIMEBLOCK - (int(time.time()) % TIMEBLOCK)
 
-  print("time: ["+(td*"#").ljust(LINEWIDTH,".")+"]")
+  sys.stderr.write("time: ["+(td*"#").ljust(LINEWIDTH,".")+"]\n")
 
   lines = fd.read().split("\n")
   for s in lines:

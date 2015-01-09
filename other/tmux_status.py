@@ -4,19 +4,19 @@
 # $Date: 2013-06-06 21:37:01$
 # $Author: Marek Lukaszuk$
 
-from time import strftime,tzset
+#from time import strftime,tzset
 from os import environ, statvfs
 from os.path import exists as fs_exists, ismount
 
-tzlist = ["America/Los_Angeles","America/New_York","GMT","Asia/Kolkata","Asia/Tokyo","Pacific/Auckland"]
+#tzlist = ["America/Los_Angeles","America/New_York","GMT","Asia/Kolkata","Asia/Tokyo","Pacific/Auckland"]
 mntlist = ["/","/home"]
 
 txt = ""
 
 ## timezone information
-for tz in tzlist:
-  environ['TZ'] = tz
-  txt+=strftime("%H%M")+strftime("%Z")[0]+" "
+#for tz in tzlist:
+#  environ['TZ'] = tz
+#  txt+=strftime("%H%M")+strftime("%Z")[0]+" "
 
 ## disk usage
 for path in mntlist:

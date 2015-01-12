@@ -18,6 +18,37 @@ FURL="http://api.openweathermap.org/data/2.5/forecast?q="
 CACHE="/tmp/openweather_cache_%s" % os.environ['USER']
 FCACHE="/tmp/openweather_forecast_cache_%s" % os.environ['USER']
 
+def beaufort(wind):
+    """
+    https://en.wikipedia.org/wiki/Beaufort_scale
+    """
+    if wind >= 32.7:
+        return "12 hurricane"
+    elif wind > 28.5:
+        return "11 violent storm"
+    elif wind > 24.5:
+        return "10 violent storm"
+    elif wind > 28.5:
+        return "9 violent storm"
+    elif wind > 17.2:
+        return "8 gale"
+    elif wind > 13.9:
+        return "7 high wind"
+    elif wind > 10.8:
+        return "6 strong breeze"
+    elif wind > 8.0:
+        return "5 fresh breeze"
+    elif wind > 5.5:
+        return "4 modere breeze"
+    elif wind > 3.4:
+        return "3 gentle breeze"
+    elif wind > 1.6:
+        return "2 light breeze"
+    elif wind > 0.3:
+        return "1 light air"
+    else:
+        return "0 calm"
+
 def check_cache(cache_file, updatetime=1800):
     try:
         return os.stat(cache_file)[8]
@@ -92,6 +123,8 @@ def current_weather_full(cache_file):
                         j = j - 273.15
                     if i in ['sunrise','sunset']:
                         j = time.asctime(time.localtime(int(j)))
+                    if 'wind' in k and 'speed' in i:
+                        j = "%s (%s)" % (beaufort(j), j)
                     out += " +-%s: %s\n" % (i,j)
             elif type(v) == list:
                 for m in v:
@@ -115,7 +148,8 @@ def weather_forecast(cache_file):
     if data:
         for day in data['list']:
             dt = time.asctime(time.localtime(int(day['dt'])))
-            wind = day['wind']['speed']
+            wind = "%s (%s)" % (beaufort(day['wind']['speed']),\
+                day['wind']['speed'])
             desc = day['weather'][0]['description']
             temp = round(day['main']['temp'] - 273.15,1)
             out += "%s: %s / %sC / %s\n" % (dt, desc, temp, wind)

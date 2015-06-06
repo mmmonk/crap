@@ -7,6 +7,7 @@
 #from time import strftime,tzset
 from os import environ, statvfs
 from os.path import exists as fs_exists, ismount
+import time
 
 #tzlist = ["America/Los_Angeles","America/New_York","GMT","Asia/Kolkata","Asia/Tokyo","Pacific/Auckland"]
 mntlist = ["/","/home"]
@@ -76,8 +77,10 @@ if fs_exists("/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0A:00/power_supply/BAT0"
 ## data usage
 if fs_exists("/var/local/datausage.dat"):
   try:
-    txt+=str(int(float(open("/var/local/datausage.dat","r").readline().split()[7])/1024/500*100))+"%"
+    txt += str(int(float(open("/var/local/datausage.dat","r").readline().split()[7])/1024/500*100))+"%"
   except:
-    txt+="?%"
+    txt += "?%"
 
+  ts = time.localtime()
+  txt += "/%s%%" % (int((ts.tm_mday/31.0)*100))
 print txt

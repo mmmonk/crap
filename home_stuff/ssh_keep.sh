@@ -27,7 +27,7 @@ do
   fi
 
   if [ $SLEEP -le 300 ]; then
-    if [ $C -ge 2 ]; then
+    if [ $C -ge 3 ]; then
       SLEEP=`expr $SLEEP \* 2`  
       C=0
     fi

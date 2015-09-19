@@ -9,32 +9,37 @@ fi
 CT=`date +%s`
 LT=$CT
 DEFAULTSLEEP=2
-SLEEP=$DEFAULTSLEEP
+MAXSLEEP=$DEFAULTSLEEP
 C=0
 
 while [ 1 = 1 ]
 do
-	eval "ssh $*"
-
+  eval "ssh $*"
 
   ### backoff mechanism 
   CT=`date +%s`
   DIFF=`expr $CT - $LT`
   LT=$CT
   if [ $DIFF -ge 1800 ]; then
-    SLEEP=$DEFAULTSLEEP
+    MAXSLEEP=$DEFAULTSLEEP
     C=0
   fi
 
-  if [ $SLEEP -le 300 ]; then
+  if [ $MAXSLEEP -le 300 ]; then
     if [ $C -ge 3 ]; then
-      SLEEP=`expr $SLEEP \* 2`  
+      MAXSLEEP=`expr $MAXSLEEP \* 2`
       C=0
     fi
     C=`expr $C + 1`
   fi
- 
+
   TS=`date "+%Y/%m/%d %H:%M:%S"`
-  echo "--- $TS - $SLEEP:$C : press ctrl+c to exit ---"
-  sleep $SLEEP 
+
+  # this make the reconnect a bit more random
+  # the HALF part makes sure we will always
+  # get the value from the higher part of the MAXSLEEP
+  HALF=`expr $MAXSLEEP / 2`
+  SLEEP=`expr $CT % $HALF + $HALF + 1`
+  echo "--- $TS - $SLEEP:$MAXSLEEP:$C : press ctrl+c to exit ---"
+  sleep $SLEEP
 done

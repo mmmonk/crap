@@ -34,5 +34,5 @@ Directories:
 
 Some of the scripts are described in more detail over here [http://blog.mmmonk.net](http://blog.mmmonk.net)
 
-Unless stated otherwise  all code here is under [https://en.wikipedia.org/wiki/MIT_License](MIT license).
-It is located [LICENSE.txt](here).
+Unless stated otherwise  all code here is under [MIT license](https://en.wikipedia.org/wiki/MIT_License).
+It is located [here](LICENSE.txt).

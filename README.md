@@ -21,7 +21,7 @@ Directories:
 * [other/](other/) - other stuff
 * [patches/](patches/) - my patches for not my software
 * [pcap_rawsockets/](pcap_rawsockets/) - playing with pcaps and raw sockets
-* [random_fun/](random_fun/) - mostly scripts that solve various challanges on the web
+* [random_fun/](random_fun/) - mostly scripts that solve various challenges on the web
 * [rvbd/](rvbd/) - scripts for [Riverbed](http://www.riverbed.com) devices/software
 * [scapy/](scapy/) - different scripts that are based on [scapy](http://www.secdev.org/projects/scapy/)
 * [snmp/](snmp/) - playing with SNMP

@@ -176,6 +176,7 @@ class WS: # {{{
     http://tools.ietf.org/html/rfc6455#section-6.1
     """
     if mask:
+      # http://tools.ietf.org/html/rfc6455#section-5.3
       key = open("/dev/urandom").read(4)
       out = key+self.masking(key, data)
     else:
@@ -186,6 +187,7 @@ class WS: # {{{
   def masking(self, key, data): # {{{
     """
     function for masking input (XORing)
+    http://tools.ietf.org/html/rfc6455#section-5.3
     """
     key = map(ord, key) # we just need the values
     keys = len(key) # size of the key

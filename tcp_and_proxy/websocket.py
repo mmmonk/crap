@@ -56,7 +56,7 @@ class WS: # {{{
         if line.split()[1].strip(", ") in self.proto:
           return True
         else:
-          raise("reponse protocol doesn't match")
+          raise(Exception, "reponse protocol doesn't match")
 
     return True
   # }}}
@@ -74,9 +74,9 @@ class WS: # {{{
         if resp == expc:
           return True
         else:
-          raise(Exception,"reponse key doesn't match")
+          raise(Exception, "reponse key doesn't match")
 
-    raise(Exception,"Sec-WebSocket-Accept header not found")
+    raise(Exception, "Sec-WebSocket-Accept header not found")
   # }}}
 
   def wsheader(self, req, fin=True, opcode="text", mask=True): # {{{
@@ -178,7 +178,7 @@ class WS: # {{{
     main communication - example usage
     """
     if not self.setup():
-      raise(Exception,"connection to %s can't be established" % (self.target))
+      raise(Exception, "connection to %s can't be established" % (self.target))
 
     fcntl(fdrd, F_SETFL, O_NONBLOCK)
 

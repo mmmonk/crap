@@ -10,11 +10,14 @@ import base64
 
 class WS: # {{{
   """
-  a very simple websockets implementation
+  a very simple WebSockets client implementation
   https://tools.ietf.org/html/rfc6455
   """
 
   def __init__(self, target, port=80, path="", proto=[]): # {{{
+    """
+    initialise some variables
+    """
     # TODO add variable for blocking sockets
     self.target = target
     self.port = port
@@ -24,7 +27,9 @@ class WS: # {{{
 
   def setup(self, bufsize=4096): # {{{
     """
-    initial websocket connection setup
+    initial WebSocket connection setup/upgrade
+    http://tools.ietf.org/html/rfc6455#section-4
+    http://tools.ietf.org/html/rfc6455#section-1.3
     """
     req = "GET /%s HTTP/1.1\r\n" % (self.path) +\
       "Upgrade: websocket\r\n" +\
@@ -51,6 +56,11 @@ class WS: # {{{
   # }}}
 
   def vrfyproto(self, data): # {{{
+    """
+    verification of the protocol field
+    http://tools.ietf.org/html/rfc6455#section-11.3.4
+    http://tools.ietf.org/html/rfc6455#section-1.9
+    """
     for line in data.splitlines():
       if "Sec-WebSocket-Protocol:" in line:
         if line.split()[1].strip(", ") in self.proto:
@@ -62,11 +72,18 @@ class WS: # {{{
   # }}}
 
   def genwskey(self, size=16): # {{{
+    """
+    generation of the WebSocket key
+    """
     self.key = base64.b64encode(open("/dev/urandom").read(size))
     return self.key
   # }}}
 
   def vrfywskey(self, data): # {{{
+    """
+    verification of the key
+    http://tools.ietf.org/html/rfc6455#section-11.3.1
+    """
     for line in data.splitlines():
       if "Sec-WebSocket-Accept:" in line:
         resp = base64.b64decode(line.split()[1].strip())
@@ -124,6 +141,7 @@ class WS: # {{{
     parsing the websocket headers here
     this is done in a veeeeeery simple way
     this might produce wrong results
+    http://tools.ietf.org/html/rfc6455#section-6.2
     """
     out = ""
     data = self.s.recv(bufsize)
@@ -155,6 +173,7 @@ class WS: # {{{
   def wssend(self, data, mask=False): # {{{
     """
     sending a websocket request
+    http://tools.ietf.org/html/rfc6455#section-6.1
     """
     if mask:
       key = open("/dev/urandom").read(4)
@@ -195,7 +214,7 @@ class WS: # {{{
   # }}}
 # }}}
 
-if __name__ == "__main__":
+if__name__ == "__main__":
 
   if len(sys.argv) < 4:
     print "usage: %s target port path" % (sys.argv[0])

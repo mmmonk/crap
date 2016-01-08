@@ -17,3 +17,26 @@ $ git remote add -f projB /path/to/projB
 $ git merge -s ours --no-commit projB/master
 $ git read-tree --prefix=subdirB/ -u projB/master
 $ git ci -m "merging projB into subdirB"
+
+# commit log viewing
+$ git log <you can do this for local branch, remote branch, tag, commit id or file> - prints a list of commit messages
+$ git log -p <you can do this for local branch, remote branch, tag, commit id or file> - prints a list of commit messages with code diffs
+
+# checkout code version
+$ git branch -a  - this will print out _ALL_ the git code branches local and remote
+$ git branch - this will print only local branches and should put the start at the current branch
+$ git tag - this will list all tag in the current branch
+$ git checkout <branch, tag or commit id>- checks out to the file system some remote branch
+
+# searching
+$ git log -Sword - searches all the _code_changes_ "word", takes also the same arguments as normal git log
+$ git log --grep=word - search all the commit messages (not the code changes), the rest as above
+$ git log --stat -p -- . ':\!qa' ':\!test'  - this prints all the changes to real production code not QA and test
+
+$ git diff <you can do this for local branch, remote branch, tag, commit id or file> - prints code diffs, very flexible line arguments
+$ git grep - search the current checkout branch recursive from current directory, it takes the same arguments as normal Linux grep
+
+#
+$ git grep --color --break --heading --line-number - my version of grep, nicer output in my opinion,
+
+

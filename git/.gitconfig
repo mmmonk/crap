@@ -1,0 +1,45 @@
+[user]
+  name = Marek Lukaszuk
+  email = my.own@some.email.domain
+  #igningkey =
+
+[color]
+  diff = auto
+  status = auto
+  branch = auto
+
+[alias]
+  co = checkout
+  ci = commit
+  cp = "!git add -p $1; git commit -v"
+  st = status -s -b
+  d = difftool
+  send = "!git gc --quiet;git push --all -q;git push --tags"
+  logd = log -p
+  logp = log --abbrev-commit --pretty=oneline
+  changelog = log --abbrev-commit --pretty=oneline
+  ctags = !.git/hooks/ctags
+  g = grep --color --break --heading --line-number
+  sync = "!git remote update -p; git merge --ff-only @{u}"
+  up = merge --ff-only @{u}
+  up1 = "!git checkout $1; git merge --ff-only @{u}"
+
+[diff]
+  tool = vimdiff
+
+[difftool]
+  prompt = false
+
+[gc]
+  auto = 1
+
+[core]
+  compression = 9
+#  gitproxy = ~/bin/git_proxy.sh
+
+[init]
+  templatedir = ~/.git/git_template
+
+[grep]
+  extendRegexp = true
+  lineNumber = true

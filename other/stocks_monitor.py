@@ -8,7 +8,7 @@ import time
 
 if len(sys.argv) > 1:
   symbol = str(sys.argv[1])
-  path = "%s/%s/.cache/stock_%s.txt" % (os.getenv('HOME'), os.getlogin(), symbol)
+  path = "%s/.cache/stock_%s.txt" % (os.getenv('HOME'), symbol)
   out = ""
   if os.path.exists(path) and time.time() - os.stat(path).st_mtime < 600:
     out = open(path).read()

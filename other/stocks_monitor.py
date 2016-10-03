@@ -11,7 +11,7 @@ if len(sys.argv) > 1:
   uid = os.geteuid()
   path = "/run/user/%s/stock_%s.txt" % (uid, symbol)
   out = ""
-  if os.path.exists(path) and time.time() - os.stat(path).st_mtime > 600:
+  if os.path.exists(path) and time.time() - os.stat(path).st_mtime < 600:
     out = open(path).read()
   else:
     a = urllib.urlopen("http://www.google.com/finance/info?q=%s" % (symbol))

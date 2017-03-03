@@ -17,6 +17,9 @@ if len(sys.argv) > 1:
     b = json.loads(a.read().replace("\n","")[2:])
     out = "%s:" % (symbol)
     for a in b:
-      out += "%s " % (a['l'])
-    open(path,"w").write(out)
-  print out
+      if 'l' in a:
+        out += "%s" % (a['l'],)
+      if "el" in a:
+        out += "/%s" % (a['el'],)
+      open(path,"w").write(out)
+  print "%s " % (out,)

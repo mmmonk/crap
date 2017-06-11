@@ -48,12 +48,10 @@ def qrcodegen(account, textsecret, issuer=None):
   qrcodes generator for Google Authenticator app
   using: qrencode and display from ImageMagick
   """
-  cmd = "qrencode -s 7 -o - \"otpauth://totp/"+quote(account)+\
-      "?secret="+textsecret.replace(" ","")
+  cmd = "qrencode -s 10 -o - otpauth://totp/"+quote(account)+\
+      "?secret="+textsecret.replace(" ","").upper()
   if issuer:
-    cmd += "&issuer="+quote(issuer)+"\""
-  else:
-    cmd += "\""
+    cmd += "&issuer="+quote(issuer)
 
   cmd = cmd.split(" ")
   p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
@@ -92,7 +90,10 @@ if __name__ == "__main__":
         print(str(s[0][:LINEWIDTH]).ljust(LINEWIDTH,".")+": "+\
             totp(secretkey,TIMEBLOCK))
         if len(sys.argv) > 2 and sys.argv[2] == "qr":
-          qrcodegen(s[0],s[1])
+          try:
+            qrcodegen(s[0],s[1])
+          except KeyboardInterrupt: 
+            pass
     else:
       print(str(s[0][:LINEWIDTH]).ljust(LINEWIDTH,".")+": "+\
           totp(secretkey,TIMEBLOCK))

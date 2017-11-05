@@ -1,16 +1,12 @@
 #!/usr/bin/env python
 
-# $Id: 20130606$
-# $Date: 2013-06-06 21:37:01$
-# $Author: Marek Lukaszuk$
-
 #from time import strftime,tzset
 from os import environ, statvfs
 from os.path import exists as fs_exists, ismount
 import time
 
 #tzlist = ["America/Los_Angeles","America/New_York","GMT","Asia/Kolkata","Asia/Tokyo","Pacific/Auckland"]
-mntlist = ["/","/home"]
+mntlist = ["/","/home","/boot"]
 
 txt = ""
 

@@ -25,8 +25,8 @@ do
     C=0
   fi
 
-  if [ $MAXSLEEP -le 300 ]; then
-    if [ $C -ge 3 ]; then
+  if [ $MAXSLEEP -le 180 ]; then
+    if [ $C -ge 5 ]; then
       MAXSLEEP=`expr $MAXSLEEP \* 2`
       C=0
     fi

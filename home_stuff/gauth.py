@@ -5,14 +5,19 @@ from __future__ import print_function
 import time
 from struct import pack,unpack
 from hmac import HMAC
-from hashlib import sha1
+import hashlib
 from base64 import b32decode
 from urllib import quote
-import subprocess 
+import subprocess
 import os
 import sys
 
-def hotp(key,counter):
+"""
+https://github.com/google/google-authenticator/wiki/
+"""
+
+
+def hotp(key, counter, digest=hashlib.sha1, length=6):
   """
   http://tools.ietf.org/html/rfc4226
   """
@@ -20,22 +25,21 @@ def hotp(key,counter):
   b = pack(">q", counter)
 
   # generate HMAC-SHA1 from timestamp based on secret key
-  hm = HMAC(key, b, sha1).digest()
+  hm = HMAC(key, b, digest).digest()
 
   # extract 4 bytes from digest based on LSB
   offset = ord(hm[-1]) & 0x0F
   truncatedHash = hm[offset:offset+4]
 
   # get the code from it
-  code = ((unpack(">L", truncatedHash)[0]) & 0x7FFFFFFF ) % 1000000
+  code = ((unpack(">L", truncatedHash)[0]) & 0x7FFFFFFF ) % 10**length
+  return "0"*(length-len(str(code)))+str(code)
 
-  return "0"*(6-len(str(code)))+str(code)
-
-def totp(key,timeblock):
+def totp(key, timeblock, digest=hashlib.sha1, length=6):
   """
   http://tools.ietf.org/html/rfc6238
   """
-  return hotp(key,int(time.time())//timeblock)
+  return hotp(key,int(time.time())//timeblock, digest, length=length)
 
 def decodesecret(textsecret):
   """
@@ -55,7 +59,7 @@ def qrcodegen(account, textsecret, issuer=None):
 
   cmd = cmd.split(" ")
   p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-  (qrpng, temp) = p.communicate() 
+  (qrpng, temp) = p.communicate()
   p = subprocess.Popen(["display"], stdin=subprocess.PIPE)
   p.communicate(qrpng)
 
@@ -72,7 +76,7 @@ if __name__ == "__main__":
         "username|secret\n")
     sys.exit(1)
 
-  # reminder of the current tim
+  # reminder of the current time
   td = TIMEBLOCK - (int(time.time()) % TIMEBLOCK)
 
   sys.stderr.write("time: ["+(td*"#").ljust(LINEWIDTH,".")+"]\n")
@@ -81,7 +85,7 @@ if __name__ == "__main__":
   for s in lines:
     try:
       s = s.split("|")
-      secretkey = decodesecret(s[1]) 
+      secretkey = decodesecret(s[1])
     except:
       continue
 
@@ -92,7 +96,7 @@ if __name__ == "__main__":
         if len(sys.argv) > 2 and sys.argv[2] == "qr":
           try:
             qrcodegen(s[0],s[1])
-          except KeyboardInterrupt: 
+          except KeyboardInterrupt:
             pass
     else:
       print(str(s[0][:LINEWIDTH]).ljust(LINEWIDTH,".")+": "+\

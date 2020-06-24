@@ -1,0 +1,8 @@
+title: Crap
+description: everything in one place - the best description I could come up with ;)
+google_analytics: 
+show_downloads: true
+theme: jekyll-theme-minimal
+
+gems:
+  - jekyll-mentions

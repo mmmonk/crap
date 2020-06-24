@@ -30,7 +30,7 @@ int main (int argc, char **argv) {
   struct addrinfo *rp;
   struct timeval tv;
   fd_set rfds, wfds;
-  char* buff[BUFFSIZE];
+  static char buff[BUFFSIZE];
   int state = 1;
 
   if (argc != 3) {
